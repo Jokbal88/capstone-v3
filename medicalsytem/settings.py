@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import secrets
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-&w-v&op!wnfqt+)ydyg#kwz4bj8%b!c)a9lv7^&3=a8*u)5k#$'
+SECRET_KEY = secrets.token_urlsafe(64)
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = False
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -48,7 +58,7 @@ INSTALLED_APPS = [
     'medical',
     'tailwind',
     'theme',
-    'django_browser_reload'
+    'django_browser_reload',
 ]
 
 TAILWIND_APP_NAME = 'theme'
@@ -136,9 +146,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    # BASE_DIR / "static",
     BASE_DIR / "main/static",
     BASE_DIR / "medical/static",
 ]
