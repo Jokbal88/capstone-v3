@@ -1,0 +1,322 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HealthHub Connect | Register</title>
+    <link
+      rel="shortcut icon"
+      href="../static/images/CTU_logo.png"
+      type="image/x-icon"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    {% tailwind_css %}
+    <link rel="stylesheet" href="{% static 'styles/base.css' %}" />
+  </head>
+  <body>
+    <div class="flex w-full h-auto overflow-hidden">
+      <div class="xs:w-full flex items-center justify-center xs:p-4 md:p-14 lg:px-[24rem] overflow-auto">
+        <div class="w-full flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <div class="self-center">
+              <img class="size-[7rem]" src="../static/images/CTU_logo.png" alt="CTU Logo">
+            </div>
+            <div class="flex flex-col items-center">
+              <h1 class="text-[1.5rem] font-bold">HealthHub Connect</h1>
+              <p class="font-normal w-[70%] text-center">An Integrated Kahimsug Clinic Management System in CTU Argao</p>
+            </div>
+          </div>
+          <h2 class="font-bold text-[1.3rem]">Account Registration</h2>
+          {% if messages %}
+          <div class="messages">
+              {% for message in messages %}
+              <div class="message {% if message.tags %}message-{{ message.tags }}{% endif %}">
+                  {% if message.tags == 'error' %}
+                      <i class="fas fa-exclamation-circle"></i>
+                  {% elif message.tags == 'success' %}
+                      <i class="fas fa-check-circle"></i>
+                  {% endif %}
+                  {{ message }}
+              </div>
+              {% endfor %}
+          </div>
+          {% endif %}
+          <form class="flex flex-col w-full gap-2" method="POST">
+            {% csrf_token %}
+            <div class="flex w-full gap-2">
+              <div class="w-full flex flex-col">
+                <label for="firstName" class="w-fit">First Name</label>
+                <input
+                  type="text"
+                  class="w-full"
+                  id="firstName"
+                  name="firstName"
+                  placeholder="Enter your first name"
+                  required
+                />
+              </div>
+              <div class="w-full flex flex-col">
+                <label for="middleInitial" class="w-fit">M.I</label>
+                <input
+                  type="text"
+                  class="w-full"
+                  id="middleInitial"
+                  name="middleInitial"
+                  maxlength="1"
+                  placeholder="Enter your middle initial"
+                  required
+                />
+              </div>
+              <div class="w-full flex flex-col">
+                <label for="lastName" class="w-fit">Last Name</label>
+                <input
+                  class="w-full"
+                  type="text"
+                  class="w-full"
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Enter your last name"
+                  required
+                />
+              </div>
+            </div>
+            <!-- Sex, Year Level Section -->
+            <div class="flex w-full gap-2">
+              <div class="flex flex-col w-full">
+                <label for="sex">Sex</label>
+                <select class="w-full" name="sex" id="sex" required>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                </select>
+              </div>
+              <div class="flex flex-col w-full">
+                <label for="yrLevel">Year Level</label>
+                <select class="w-full" name="yrLevel" id="yrLevel" required>
+                  <option value="1">First Year</option>
+                  <option value="2">Second Year</option>
+                  <option value="3">Third Year</option>
+                  <option value="4">Fourth Year</option>
+                </select>
+              </div>
+            </div>
+         
+            <div class="flex w-full gap-2">
+              <div class="flex flex-col w-full">
+                <label for="idNumber">ID Number</label>
+                <input
+                  class="w-full"
+                  type="text"
+                  id="idNumber"
+                  name="idNumber"
+                  maxlength="7"
+                  placeholder="Enter your ID number"
+                  required
+                />
+              </div>
+              <div class="flex flex-col w-full">
+                <label for="lrn">LRN</label>
+                <input
+                  class="w-full"
+                  type="text"
+                  id="lrn"
+                  name="lrn"
+                  maxlength="12"
+                  placeholder="Enter your LRN"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="flex flex-col w-full">
+              <label for="course">Course</label>
+              <select class="w-full" id="course" name="course" required>
+                <optgroup label="College of Education">
+                  <option value="Bachelor of Elementary Education">
+                    Bachelor of Elementary Education
+                  </option>
+                  <option value="Bachelor of Secondary Education Major in Math">
+                    Bachelor of Secondary Education Major in Math
+                  </option>
+                  <option
+                    value="Bachelor of Technology and Livelihood Education Major in Home Economics"
+                  >
+                    Bachelor of Technology and Livelihood Education Major in
+                    Home Economics
+                  </option>
+                </optgroup>
+                <optgroup label="College of Arts and Science">
+                  <option value="Bachelor of Arts in English Language Studies">
+                    Bachelor of Arts in English Language Studies
+                  </option>
+                  <option value="Bachelor of Arts in Literature">
+                    Bachelor of Arts in Literature
+                  </option>
+                </optgroup>
+                <optgroup label="College of Technology and Engineering">
+                  <option value="Bachelor of Science in Industrial Engineering">
+                    Bachelor of Science in Industrial Engineering
+                  </option>
+                  <option value="Bachelor of Science in Information Technology">
+                    Bachelor of Science in Information Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Drafting Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Drafting
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Electronics Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Electronics
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Computer Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Computer
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Garments Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Garments
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Automotive Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Automotive
+                    Technology
+                  </option>
+                </optgroup>
+                <optgroup label="College of Forestry">
+                  <option value="Bachelor of Science in Forestry">
+                    Bachelor of Science in Forestry
+                  </option>
+                </optgroup>
+                <optgroup label="College of Agriculture">
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Animal Science"
+                  >
+                    Bachelor of Science in Agriculture Major in Animal Science
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Horticulture"
+                  >
+                    Bachelor of Science in Agriculture Major in Horticulture
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Agronomy"
+                  >
+                    Bachelor of Science in Agriculture Major in Agronomy
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Crop Protection"
+                  >
+                    Bachelor of Science in Agriculture Major in Crop Protection
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Agricultural Economics"
+                  >
+                    Bachelor of Science in Agriculture Major in Agricultural
+                    Economics
+                  </option>
+                </optgroup>
+                <optgroup label="College of Hospitality Management and Tourism">
+                  <option value="Bachelor of Science in Hospitality Management">
+                    Bachelor of Science in Hospitality Management
+                  </option>
+                  <option value="Bachelor of Science in Tourism">
+                    Bachelor of Science in Tourism
+                  </option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="email">Email</label>
+              <input
+                class="w-full"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="password" class="label">Password</label>
+              <input
+                class="w-full"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="confirmPassword">Confirm Password</label>
+              <input
+                class="w-full"
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                placeholder="Confirm your password"
+                required
+              />
+            </div>
+            <button type="submit" class="bg-[#3b82f6] text-white text-[14px] p-3 rounded-md w-full cursor-pointer mt-4">Register</button>
+          </form>
+          <p class="text-center text-[14px] mt-2">
+            Already have an account? <a href="{% url 'main:login' %}" class="underline">Login</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: new FormData(this),
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Registration Successful!',
+                    text: 'You can now login to your account.',
+                    showConfirmButton: false,
+                    timer: 1500
+                }).then(() => {
+                    window.location.href = "/";
+                });
+            } else {
+                throw new Error('Registration failed');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Registration Failed',
+                text: 'Please check your information and try again.'
+            });
+        });
+    });
+    </script>
+  </body>
+</html>

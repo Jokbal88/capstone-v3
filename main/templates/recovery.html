@@ -1,0 +1,55 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HealthHub Connect | Account Recovery</title>
+    <link
+      rel="shortcut icon"
+      href="../static/images/CTU_logo.png"
+      type="image/x-icon"
+    />
+    {% tailwind_css %}
+    <link rel="stylesheet" href="{% static 'styles/base.css' %}" />
+  </head>
+  <body>
+    <div class="flex w-full h-screen">
+      <div class="w-1/2 xs:hidden lg:flex">
+        <img class="h-full" src="../static/images/auth-image.webp" alt="Consultation image" />
+      </div>
+      <div class="xs:w-full lg:w-1/2 flex items-center justify-center xs:p-4 md:p-14 lg:p-[8rem]">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <div class="self-center">
+              <img class="size-[7rem]" src="../static/images/CTU_logo.png" alt="CTU Logo">
+            </div>
+            <div class="flex flex-col items-center">
+              <h1 class="text-[1.5rem] font-bold">HealthHub Connect</h1>
+              <p class="font-normal w-[70%] text-center">An Integrated Kahimsug Clinic Management System in CTU Argao</p>
+            </div>
+          </div>
+          <div class="flex flex-col w-fit">
+            <h2 class="font-bold text-[1.3rem] w-fit">Account Recovery</h2>
+            <p class="text-base w-fit">
+              Please enter your email to change your password
+            </p>
+          </div>
+          <form class="flex flex-col gap-2">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              class="w-full"
+              type="email"
+              required
+              placeholder="Enter your email"
+            />
+            <div id="error-message" class="error-message"></div>
+            <input class="bg-[#3b82f6] text-white text-[14px] p-2 rounded-md w-[30%] cursor-pointer" type="submit" value="Submit" />
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

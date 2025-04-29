@@ -1,0 +1,92 @@
+{% extends 'mainv2.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}HealthHub Connect | Patient Profile{% endblock %} 
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %}
+
+{% block content %}
+
+<div class="w-full h-full rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2 overflow-hidden">
+  <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4">Patient Profile</h2>
+  <form method="POST" class="flex items-center gap-2">
+    {% csrf_token %}
+    <input class="xs:p-1 sm:p-2 w-full xs:text-[14px] sm:text-base h-full" type="text" name="student_id" placeholder="Enter ID to search" />
+    <button class="bg-[#3b82f6] text-white text-[14px] p-2 w-[30%] h-full cursor-pointer" type="submit">Search</button>
+  </form>
+  <div class="flex w-full h-fit max-h-full xs:overflow-auto md:overflow-hidden">
+    <table class="w-full table-auto border-separate border-spacing-0">
+      <thead class="bg-[#e6e6e6] w-full">
+        <tr class="tr-header">
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Lastname</th>
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Firstname</th>
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Degree</th>
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Year Level</th>
+          <th class="text-center p-2 xs:text-[14px] sm:text-base">Sex</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for patient in patients %}
+        <tr class="tr-td">
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.student_id }}</a
+            >
+          </td>
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.lastname|title }}</a
+            >
+          </td>
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.firstname|title }}</a
+            >
+          </td>
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.degree }}</a
+            >
+          </td>
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.year_level }}</a
+            >
+          </td>
+          <td class="text-center">
+            <a
+              href="{% url 'medical:physical_exam' patient.student.student_id %}"
+              >{{ patient.student.sex }}</a
+            >
+          </td>
+        </tr>
+        {% empty %}
+        <tr class="tr-td">
+          <td colspan="6">No patients found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+    
+ 
+  {% if messages %}
+  <div class="message-container">
+    {% for message in messages %}
+    <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+      {{ message }}
+    </p>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+{% block extra_js %}
+{% endblock %}

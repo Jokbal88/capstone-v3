@@ -1,0 +1,89 @@
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+{% block title %}Dental Request{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'styles/admin/dentalappoint.css' %}">
+    <link rel="stylesheet" media="print" href="{% static 'styles/print.css' %}">
+{% endblock %}
+{% block content %}
+
+<div class="container w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col xs:gap-2 md:gap-4">
+    {% if messages %}
+        {% for message in messages %}
+            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+    <form action="" method="POST" class="flex flex-col h-full">
+        {% csrf_token %}
+        <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4 self-start w-fit">Dental Services Request</h2>
+       
+        <div class="request h-fit max-h-full">
+            <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Request</h3>
+            <table class="w-full table-auto border-separate border-spacing-0">
+                <thead class="bg-[#e6e6e6] w-full">
+                    <tr class="tr-header">
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Lastname</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Firstname</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Service Type</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Date Requested</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in service_request %}
+                        {% if not request.date_appointed %}
+                        <tr class="tr-td">
+                            <input type="hidden" id="request_id" name="request_id" value="{{ request.id }}">
+                            <td class="text-center"><a href="#">{{ request.patient.student.student_id }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.patient.student.lastname|title }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.patient.student.firstname|title }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.service_type }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.date_requested }}</a></td>
+                            <td>
+                                <button type="button" class="approve" onclick="openAppointmentForm()">Set Appointment</button>
+                                <button type="submit" class="reject" name="action" onclick="this.value = 'reject'; ">Reject</button>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% empty %}
+                        <tr class="tr-td">
+                            <td colspan="6">No patients found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="bg-[#3b82f6] w-fit p-2 rounded-md">
+            <a class="text-white" href="{% url 'medical:dentalschedule' %}">Schedule</a>
+        </div>
+        <!-- </div> -->
+        <!-- Appointment Modal -->
+        <div id="appointmentModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAppointmentForm()">&times;</span>
+                <h3>Set Appointment</h3>
+                <label for="appointment_date">Appointment Date:</label>
+                <input type="date" id="appointment_date" name="appointment_date" required>
+                <label for="appointment_time">Appointment Time:</label>
+                <input type="time" id="appointment_time" name="appointment_time" required>
+                <button type="submit" class="action-button">Set Appointment</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openAppointmentForm() {
+        //document.getElementById('student_id').value = studentId;
+        document.getElementById('appointmentModal').style.display = 'block';
+    }
+
+    function closeAppointmentForm() {
+        document.getElementById('appointmentModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

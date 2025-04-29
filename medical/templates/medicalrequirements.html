@@ -1,0 +1,244 @@
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+{% block title %}HealthHub Connect | Medical Requirements Tracker{% endblock %}
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %}
+
+{% block content %}
+<div class="xs:p-4 lg:p-8 bg-white rounded-[18px] flex flex-col gap-4 {% if user.is_superuser or user.is_staff %} w-full {% else %}xs:w-full md:w-1/2 h-[80%] {% endif %}">
+    <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] text-black tracking-tight py-4 text-center">Medical Requirements Tracker</h2>
+    {% if user.is_superuser or user.is_staff %}
+        <form method="POST" class="flex gap-4">
+            {% csrf_token %}
+            <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
+            <button type="submit" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
+                Search
+            </button>
+        </form>
+    {% endif %}
+    <div class="flex flex-col gap-2 h-fit max-h-full">
+        <h3 class="font-medium xs:text-base md:text-[1.3rem] text-center">List of Requirements</h3>
+        <table class="w-full table-auto border-separate border-spacing-0">
+            <thead class="bg-[#e6e6e6] w-full">
+                <tr class="tr-header">
+                    {% if user.is_superuser or user.is_staff %}
+                        <th class="text-center p-2 xs:text-[14px] md:text-base">Remarks</th>
+                    {% endif %}
+                    <th class="text-center p-2 xs:text-[14px] md:text-base">Requirement</th>
+                    <th class="text-center p-2 xs:text-[14px] md:text-base">Status</th>
+                    <th class="text-center p-2 xs:text-[14px] md:text-base">File</th>
+                    <th class="text-center p-2 xs:text-[14px] md:text-base">Preview</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    {% if user.is_superuser or user.is_staff %}
+                        <td class="flex gap-2 items-center">
+                            <input type="text" name="x-ray-remark" value="{{ med_requirements.x_ray_remarks }}" class="w-full p-1 border rounded">
+                            <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
+                                Save
+                            </button>
+                        </td>
+                    {% endif %}
+                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
+                        <td class="text-center">Chest X-Ray</td>
+                        {% if med_requirements.chest_xray.url %}
+                            <td class="text-center">Submitted</td>
+                            <td class="text-center"><a href="{{ med_requirements.chest_xray.url }}">Chest X-Ray</a></td>
+                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.chest_xray.url }}')">View</button></td>
+                        {% else %}
+                            <td class="text-center">Not Submitted</td>
+                            <td>-</td>
+                            <td>-</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                <tr>
+                    {% if user.is_superuser or user.is_staff %}
+                        <td class="flex gap-2 items-center">
+                            <input type="text" name="cbc-remark" value="{{ med_requirements.cbc_remarks }}" class="w-full p-1 border rounded">
+                            <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
+                                Save
+                            </button>
+                        </td>
+                    {% endif %}
+                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
+                        <td class="text-center">Complete Blood Count</td>
+                        {% if med_requirements.cbc.url %}
+                            <td class="text-center">Submitted</td>
+                            <td class="text-center"><a href="{{ med_requirements.cbc.url }}">Complete Blood Count</a></td>
+                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.cbc.url }}')">View</button></td>
+                        {% else %}
+                            <td class="text-center">Not Submitted</td>
+                            <td>-</td>
+                            <td>-</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                <tr>
+                    {% if user.is_superuser or user.is_staff %}
+                        <td class="flex gap-2 items-center">
+                            <input type="text" name="drug-test-remark" value="{{ med_requirements.drug_test_remarks }}" class="w-full p-1 border rounded">
+                            <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
+                                Save
+                            </button>
+                        </td>
+                    {% endif %}
+                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
+                        <td class="text-center">Drug Test</td>
+                        {% if med_requirements.drug_test.url %}
+                            <td class="text-center">Submitted</td>
+                            <td class="text-center"><a href="{{ med_requirements.drug_test.url }}">Drug Test</a></td>
+                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.drug_test.url }}')">View</button></td>
+                        {% else %}
+                            <td class="text-center">Not Submitted</td>
+                            <td>-</td>
+                            <td>-</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                <tr>
+                    {% if user.is_superuser or user.is_staff %}
+                        <td class="flex gap-2 items-center">
+                            <input type="text" name="stool-examination-remark" value="{{ med_requirements.stool_examination_remarks }}" class="w-full p-1 border rounded">
+                            <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
+                                Save
+                            </button>
+                        </td>
+                    {% endif %}
+                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
+                        <td class="text-center">Stool Examination</td>
+                        {% if med_requirements.stool_examination.url %}
+                            <td class="text-center">Submitted</td>
+                            <td class="text-center"><a href="{{ med_requirements.stool_examination.url }}">Stool Examination</a></td>
+                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.stool_examination.url }}')">View</button></td>
+                        {% else %}
+                            <td class="text-center">Not Submitted</td>
+                            <td>-</td>
+                            <td>-</td>
+                        {% endif %}
+                    {% endif %}
+                </tr>
+                {% if med_requirements.pwd_card %}
+                    <tr>
+                        {% if user.is_superuser or user.is_staff %}
+                            <td class="flex gap-2 items-center">
+                                <input type="text" name="pwd-card-remark" value="{{ med_requirements.pwd_card_remarks }}" class="w-full p-1 border rounded">
+                                <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
+                                    Save
+                                </button>
+                            </td>
+                        {% endif %}
+                        <td class="text-center">PWD Card</td>
+                        <td class="text-center">Submitted</td>
+                        <td class="text-center"><a href="{{ med_requirements.pwd_card.url }}">PWD Card</a></td>
+                        <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.pwd_card.url }}')">View</button></td>
+                    </tr>
+                {% endif %}
+                <!-- {% for requirement in medical_requirements %}
+                    <tr class="tr-td">
+                        <td></td>
+                        <td></td>
+                    </tr>
+                {% empty %}
+                    <tr class="tr-td">
+                        <td colspan="2">No medical requirements found</td>
+                    </tr>
+                {% endfor %} -->
+            </tbody>
+        </table>
+    </div>
+    {% if messages %}
+    <div class="message-container">
+        {% for message in messages %}
+        <p class="text-[14px] {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if not user.is_superuser and not user.is_staff %}
+        <button class="bg-[#3b82f6] mt-8 text-white text-[14px] py-2 px-4 rounded-md w-full cursor-pointer">
+            <a href="{% url 'medical:upload_requirements' %}">Upload Requirement</a>
+        </button>
+    {% endif %}
+</div>
+
+<div id="previewModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div id="previewContainer">
+            <!-- For PDFs -->
+            <object id="filePreview" 
+                    data="" 
+                    type="application/pdf" 
+                    width="100%" 
+                    height="600px" 
+                    style="display: none;">
+                <p>Unable to display PDF file. <a id="fallbackLink" href="" target="_blank">Download</a> instead.</p>
+            </object>
+            <!-- For Images -->
+            <img id="imagePreview" style="display: none;">
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewFile(fileUrl) {
+        const modal = document.getElementById('previewModal');
+        const objectPreview = document.getElementById('filePreview');
+        const imagePreview = document.getElementById('imagePreview');
+        const fallbackLink = document.getElementById('fallbackLink');
+        
+        // Check file type based on extension
+        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+        const isPDF = /\.pdf$/i.test(fileUrl);
+        
+        if (isImage) {
+            // Handle image files
+            imagePreview.src = fileUrl;
+            imagePreview.style.display = 'block';
+            objectPreview.style.display = 'none';
+        } else if (isPDF) {
+            // Handle PDF files
+            objectPreview.data = fileUrl;
+            fallbackLink.href = fileUrl;
+            objectPreview.style.display = 'block';
+            imagePreview.style.display = 'none';
+        }
+        
+        modal.style.display = 'block';
+    }
+
+    document.querySelector('.close-modal').onclick = function() {
+        const modal = document.getElementById('previewModal');
+        const objectPreview = document.getElementById('filePreview');
+        const imagePreview = document.getElementById('imagePreview');
+        
+        modal.style.display = 'none';
+        // Clear the sources when closing
+        objectPreview.data = '';
+        imagePreview.src = '';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('previewModal');
+        if (event.target == modal) {
+            const objectPreview = document.getElementById('filePreview');
+            const imagePreview = document.getElementById('imagePreview');
+            
+            modal.style.display = 'none';
+            // Clear the sources when closing
+            objectPreview.data = '';
+            imagePreview.src = '';
+        }
+    }
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                alert("{{ message }}");
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}

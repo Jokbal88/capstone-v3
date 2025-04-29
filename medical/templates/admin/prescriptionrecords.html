@@ -1,0 +1,41 @@
+{% extends 'mainv2.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}HealthHub Connect | Prescription Issuance{% endblock %} 
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %}
+
+{% block content %}
+<div class="w-full xs:p-4 md:p-8 xs:h-screen bg-white rounded-[18px] flex flex-col items-center gap-2 overflow-hidden">
+    <h2 class="font-bold text-[1.5rem] mb-4">Prescription Records</h2>
+    <div class="w-full h-fit max-h-full flex overflow-auto">
+        <table class="w-full table-auto border-separate border-spacing-0">
+            <thead class="bg-[#e6e6e6] w-full">
+                <tr class="tr-header">
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Name</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Problem</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Treatment</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prescription in prescription_records %}
+                    <tr class="tr-td">
+                        <td class="text-center p-2 xs:text-[14px] sm:text-base">{{ prescription.patient.student.student_id }}</td>
+                        <td class="text-center p-2 xs:text-[14px] sm:text-base">{{ prescription.name }}</td>
+                        <td class="text-center p-2 xs:text-[14px] sm:text-base">{{ prescription.problem }}</td>
+                        <td class="text-center p-2 xs:text-[14px] sm:text-base">{{ prescription.treatment }}</td>
+                        <td class="text-center p-2 xs:text-[14px] sm:text-base">{{ prescription.date_prescribed }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <button class=" border border-[#cccccc] flex self-start w-[8rem] rounded-md">
+        <a class="xs:p-2 md:p-3 text-[14px] h-full w-full" href="{% url 'medical:prescription' %}">Back</a>
+    </button>
+</div>
+{% endblock %}
+{% block extra_js %}
+{% endblock %}

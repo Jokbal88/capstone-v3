@@ -1,0 +1,67 @@
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+{% block title %}HealthHub Connect | Medical Requirements Upload{% endblock %}
+{% block extra_css %}
+{% tailwind_css %}
+{% endblock %}
+
+{% block content %}
+<div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-2 rounded-[18px] xs:w-full md:w-1/2">
+    
+    <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] lg:text-base text-black tracking-tight text-center">Upload Medical Requirements</h2>
+    <form method="GET" class="flex flex-col gap-2">
+        <label for="student_id">Student ID</label>
+        <div class="flex gap-2 w-full">
+            <input class="w-full rounded-md" type="text" id="student_id" name="student_id" value="{{ patient.student.student_id }}" required>
+            <button type="submit" class="bg-[#3b82f6] h-full text-white text-[14px] py-2 px-4 rounded-md w-[30%] cursor-pointer">Check</button>
+        </div>
+    </form>
+
+    {% if patient %}
+    <h3>Patient: {{ patient }}</h3>
+        {% if md %}
+        <div class="uploaded-documents">
+            <h3>Uploaded Documents</h3>
+            <p>Chest X-ray: <a href="{{ md.chest_xray.url }}" target="_blank">{{ md.chest_xray.name }}</a></p>
+            <p>CBC: <a href="{{ md.cbc.url }}" target="_blank">{{ md.cbc.name }}</a></p>
+            <p>Drug Test: <a href="{{ md.drug_test.url }}" target="_blank">{{ md.drug_test.name }}</a></p>
+            <p>Stool Examination: <a href="{{ md.stool_examination.url }}" target="_blank">{{ md.stool_examination.name }}</a></p>
+            {% if md.pwd_card %}
+                <p>PWD Card: <a href="{{ md.pwd_card.url }}" target="_blank">{{ md.pwd_card.name }}</a></p>
+            {% endif %}
+        </div>
+        {% endif %}
+        <h3>{{ md|default:"Upload New" }}</h3>
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+            {% csrf_token %}
+            <input type="hidden" name="student_id" value="{{ patient.student.student_id }}">
+            <div class="form-group">
+                <label for="x-ray">Chest X-Ray:</label>
+                <input type="file" id="x-ray" name="x-ray" {% if not md %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="cbc">Complete Blood Count:</label>
+                <input type="file" id="cbc" name="cbc" {% if not md %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="drug-test">Drug Test:</label>
+                <input type="file" id="drug-test" name="drug-test" {% if not md %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="stool-exam">Stool Examination:</label>
+                <input type="file" id="stool-exam" name="stool-exam">
+            </div>
+            <div class="form-group">
+                <label for="pwd-card">PWD ID Card (If you are a PWD):</label>
+                <input type="file" id="pwd-card" name="pwd-card">
+            </div>
+            <button type="submit" class="action-button">{{ md|default:"Upload" }} Files</button>
+        </form>
+    {% endif %}
+    {% if messages %}
+        {% for message in messages %}
+            <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

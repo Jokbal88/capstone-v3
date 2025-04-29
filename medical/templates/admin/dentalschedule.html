@@ -1,0 +1,68 @@
+{% extends 'mainv2.html' %} 
+{% load static tailwind_tags %} 
+{% block title %}HealthHub Connect | Dental Schedule{% endblock %} 
+{% tailwind_css %}
+{% block extra_css %}
+    <link rel="stylesheet" media="print" href="{% static 'styles/print.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col xs:gap-2 md:gap-4">
+    {% if messages %}
+        {% for message in messages %}
+            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+    <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4">Appointment Schedule</h2>
+    <div class="flex flex-col h-fit max-h-full">
+        <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Scheduled Appointments</h3>
+        <table class="w-full table-auto border-separate border-spacing-0">
+            <thead class="bg-[#e6e6e6] w-full">
+                <tr class="tr-header">
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Lastname</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Firstname</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Service Type</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Appointment Date</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in schedules %}
+                    {% if appointment.date_appointed %}
+                    <tr class="tr-td">
+                        <form method="POST" action="">
+                            {% csrf_token %}
+                            <input type="hidden" name="student_id" value="{{ appointment.patient.student.student_id }}">
+                            <input type="hidden" name="service_type" value="{{ appointment.service_type }}">
+                            <td class="text-center">{{ appointment.patient.student.student_id }}</td>
+                            <td class="text-center">{{ appointment.patient.student.lastname|title }}</td>
+                            <td class="text-center">{{ appointment.patient.student.firstname|title }}</td>
+                            <td class="text-center">{{ appointment.service_type }}</td>
+                            <td class="text-center">{{ appointment.date_appointed }}</td>
+                            <td class="text-center">
+                                <button type="submit" class="approve">Mark As Done</button>
+                            </td>
+                        </form>
+                    </tr>
+                    {% endif %}
+                {% empty %}
+                    <tr class="tr-td">
+                        <td colspan="6">No scheduled appointments</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="bg-[#3b82f6] w-fit p-2 rounded-md">
+        <a class="text-white" href="{% url 'medical:dentalrequest' %}">Request</a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+</script>
+{% endblock %}
