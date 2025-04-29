@@ -3,3 +3,5 @@ venv
 Pipfile
 Pipfile.lock
 *.pyc
+__pycache__
+pnpm-lock.yaml
