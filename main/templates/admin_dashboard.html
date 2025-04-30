@@ -1,96 +1,185 @@
-{% extends 'mainv2.html' %} 
-{% load static tailwind_tags %} 
-{% block title %} HealthHub Connect | Admin Dashboard{% endblock %} 
-{% block extra_css %} 
-{% tailwind_css %} 
-{% endblock %} 
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+
+{% block title %}HealthHub Connect | Admin Dashboard{% endblock %}
+
 {% block content %}
-<div
-  class="rounded-[14px] bg-white xs:p-4 md:p-8 w-full h-full flex flex-col gap-4"
->
-  <div class="flex gap-4">
-    <div class="w-full flex flex-col gap-4 bg-violet-600 rounded-lg p-4">
-      <div class="flex items-center gap-2">
-        <i class="fas fa-users text-white"></i>
-        <h2 class="text-white font-bold">Total Students</h2>
-      </div>
-      <div class="stat-content">
-        <p class="text-white text-2xl">{{ total_patients }}</p>
-      </div>
-    </div>
-
-    <div class="w-full flex flex-col gap-4 bg-violet-600 rounded-lg p-4">
-      <div class="flex items-center gap-2">
-        <i class="fas fa-ambulance text-white"></i>
-        <h2 class="text-white font-bold">Emergency Cases</h2>
-      </div>
-
-      <div class="stat-content">
-        <p class="text-white text-2xl">{{ emergency_cases }}</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="h-full flex gap-4">
-    <div class="w-full flex flex-col">
-      <table class="table-auto w-full">
-        <thead>
-          <tr>
-            <th class="text-center p-2 xs:text-[14px] sm:text-base">Student</th>
-            <th class="text-center p-2 xs:text-[14px] sm:text-base">
-              Request Type
-            </th>
-            <th class="text-center p-2 xs:text-[14px] sm:text-base">Date</th>
-            <th class="text-center p-2 xs:text-[14px] sm:text-base">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if upcoming_requests %} {% for request in upcoming_requests %}
-          <tr>
-            <td class="text-center">{{ request.student }}</td>
-            <td class="text-center">{{ request.request_type }}</td>
-            <td class="text-center">{{ request.date }}</td>
-            <td class="text-center">
-              <span class="status-badge">{{ request.status }}</span>
-            </td>
-          </tr>
-          {% endfor %} {% else %}
-          <tr>
-            <td colspan="4" class="text-center pt-4">No upcoming requests</td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-    <div class="w-full">
-      <div class="calendar-header">
-        <button class="calendar-nav">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <h3>January 2025</h3>
-        <button class="calendar-nav">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-      <div class="calendar-grid">
-        <div class="weekdays">
-          <div>Sun</div>
-          <div>Mon</div>
-          <div>Tue</div>
-          <div>Wed</div>
-          <div>Thu</div>
-          <div>Fri</div>
-          <div>Sat</div>
+<div class="w-full h-full">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-4 gap-4">
+        <!-- Total Patients -->
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+            <p class="text-sm text-gray-500">Total Patients</p>
+            <p class="text-2xl font-semibold">{{ total_patients }}</p>
+            <i class="fas fa-users text-blue-500"></i>
         </div>
-        <div class="days calendar-days"></div>
-      </div>
-      <div class="schedule-list"></div>
+
+        <!-- Total Records -->
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+            <p class="text-sm text-gray-500">Total Records</p>
+            <p class="text-2xl font-semibold">{{ total_records|default:0 }}</p>
+            <i class="fas fa-file-medical text-green-500"></i>
+        </div>
+
+        <!-- Pending Requests -->
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+            <p class="text-sm text-gray-500">Pending Requests</p>
+            <p class="text-2xl font-semibold">{{ pending_requests|default:0 }}</p>
+            <i class="fas fa-clock text-yellow-500"></i>
+        </div>
+
+        <!-- Today's Schedule -->
+        <div class="bg-white p-4 rounded-lg shadow-sm">
+            <p class="text-sm text-gray-500">Today's Schedule</p>
+            <p class="text-2xl font-semibold">{{ todays_schedule|default:0 }}</p>
+            <i class="fas fa-calendar-check text-purple-500"></i>
+        </div>
     </div>
-  </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-2 gap-6 mt-6">
+        <!-- Upcoming Requests Table -->
+        <div class="bg-white rounded-lg shadow-sm">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold">Upcoming Requests</h2>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-left py-2">Student</th>
+                            <th class="text-left py-2">Request Type</th>
+                            <th class="text-left py-2">Date</th>
+                            <th class="text-left py-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in upcoming_requests %}
+                        <tr>
+                            <td class="py-2">{{ request.patient.user.get_full_name }}</td>
+                            <td class="py-2">{{ request.request_type }}</td>
+                            <td class="py-2">{{ request.date_requested|date:"M d, Y" }}</td>
+                            <td class="py-2">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                    {% if request.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% elif request.status == 'approved' %}bg-green-100 text-green-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ request.status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-gray-500">No upcoming requests</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Calendar Section -->
+        <div class="bg-white rounded-lg shadow-sm">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold">Calendar</h2>
+                    <div class="flex space-x-4">
+                        <button onclick="previousMonth()" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="currentMonth" class="font-medium"></span>
+                        <button onclick="nextMonth()" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="grid grid-cols-7 gap-1">
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Sun</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Mon</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Tue</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Wed</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Thu</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Fri</div>
+                    <div class="text-center py-2 text-sm font-medium text-gray-600">Sat</div>
+                </div>
+                <div id="calendar" class="grid grid-cols-7 gap-1"></div>
+            </div>
+            <div class="p-4 border-t border-gray-200">
+                <h3 class="font-medium mb-3">Schedule</h3>
+                <div class="space-y-2">
+                    {% for event in events %}
+                    <div class="flex items-center space-x-3">
+                        <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div>
+                            <p class="text-sm font-medium">{{ event.student }}</p>
+                            <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-500">No scheduled events</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% endblock %} {% block extra_js %}
+
 <script>
-  /*  const events = {{ events|safe }}; */
+    let currentDate = new Date();
+    const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    // Parse events from Django template
+    const calendarEvents = JSON.parse('{{ events|safe }}');
+
+    function updateCalendar() {
+        const calendar = document.getElementById('calendar');
+        const monthLabel = document.getElementById('currentMonth');
+        
+        calendar.innerHTML = '';
+        monthLabel.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const startingDay = firstDay.getDay();
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const totalDays = lastDay.getDate();
+        
+        for (let i = 0; i < startingDay; i++) {
+            const emptyCell = document.createElement('div');
+            calendar.appendChild(emptyCell);
+        }
+        
+        for (let day = 1; day <= totalDays; day++) {
+            const cell = document.createElement('div');
+            cell.className = 'p-2 text-center hover:bg-gray-50 cursor-pointer';
+            
+            const currentDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const hasEvent = calendarEvents.some(event => event.date === currentDateStr);
+            
+            if (hasEvent) {
+                cell.className += ' bg-blue-100 text-blue-800 font-medium rounded';
+            }
+            
+            cell.textContent = day;
+            calendar.appendChild(cell);
+        }
+    }
+
+    function previousMonth() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateCalendar();
+    }
+
+    function nextMonth() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateCalendar();
+    }
+
+    // Initialize calendar
+    updateCalendar();
 </script>
-<script src="{% static 'scripts/dashboard.js' %}"></script>
 {% endblock %}

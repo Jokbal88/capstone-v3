@@ -10,7 +10,8 @@ from medical.models import (
     MedicalHistory,
     FamilyMedicalHistory,
     RiskAssessment,
-    MentalHealthRecord
+    MentalHealthRecord,
+    PatientRequest
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -145,8 +146,8 @@ def patient_form(request):
         
         if request.method == 'GET':
             try:
-                patient = medical_models.Patient.objects.get(student_id=request.user.username)
-                return redirect('main:student_dashboard') if patient else None
+            patient = medical_models.Patient.objects.get(student_id=request.user.username)
+            return redirect('main:student_dashboard') if patient else None
             except medical_models.Patient.DoesNotExist:
                 pass
         
@@ -222,10 +223,10 @@ def patient_form(request):
                 clearance=patient,
                 cardiovascular_disease='cardiovascular' in request.POST.getlist('risk_assessment'),
                 chronic_lung_disease='chronic_lung' in request.POST.getlist('risk_assessment'),
-                chronic_renal_disease='chronic_renal_disease' in request.POST.getlist('risk_assessment'),
-                chronic_liver_disease='chronic_liver_disease' in request.POST.getlist('risk_assessment'),
+                chronic_renal_disease='chronic_kidney' in request.POST.getlist('risk_assessment'),
+                chronic_liver_disease='chronic_liver' in request.POST.getlist('risk_assessment'),
                 cancer='cancer' in request.POST.getlist('risk_assessment'),
-                autoimmune_disease='autoimmune_disease' in request.POST.getlist('risk_assessment'),
+                autoimmune_disease='autoimmune' in request.POST.getlist('risk_assessment'),
                 pwd='pwd' in request.POST.getlist('risk_assessment'),
                 disability=request.POST.get('disability', '')
             )
@@ -257,35 +258,55 @@ def process_checkboxes(checkbox_list, other_value):
 
 @user_passes_test(is_admin)
 def admin_dashboard_view(request):
+    # Get total patients count
     total_patients = Patient.objects.count()
-    recent_examinations = PhysicalExamination.objects.order_by('-date_created')[:5]
-    pending_clearances = Patient.objects.filter(riskassessment__isnull=True).count()
-
-    # Add events data
+    
+    # Get total medical records
+    total_records = PhysicalExamination.objects.count()
+    
+    # Get pending requests
+    pending_requests = PatientRequest.objects.filter(status='pending').count()
+    
+    # Get today's schedule count
+    today = timezone.now().date()
+    todays_schedule = PatientRequest.objects.filter(
+        date_requested__date=today,
+        status='approved'
+    ).count()
+    
+    # Get upcoming requests
+    upcoming_requests = PatientRequest.objects.filter(
+        date_requested__gte=today
+    ).order_by('date_requested')[:5]
+    
+    # Add events data for the calendar
     events = [
         {
             'date': '2025-01-13',
-            'student': 'Test',
-            'service': 'Cleaning'
+            'student': 'John Doe',
+            'service': 'Medical Check-up'
         },
         {
             'date': '2025-01-13',
-            'student': 'test',
-            'service': 'Dental Filling'
+            'student': 'Jane Smith',
+            'service': 'Dental Check-up'
         },
         {
             'date': '2025-01-20',
-            'student': 'test',
-            'service': 'Tooth Extraction'
+            'student': 'Mike Johnson',
+            'service': 'Vision Test'
         }
     ]
     
     context = {
         'total_patients': total_patients,
-        'recent_examinations': recent_examinations,
-        'pending_clearances': pending_clearances,
+        'total_records': total_records,
+        'pending_requests': pending_requests,
+        'todays_schedule': todays_schedule,
+        'upcoming_requests': upcoming_requests,
         'events': events
     }
+    
     return render(request, 'admin_dashboard.html', context)
 
 @login_required
@@ -304,6 +325,8 @@ def dashboard_view(request):
             medical_history = medical_models.MedicalHistory.objects.get(examination=physical_exam)
             family_history = medical_models.FamilyMedicalHistory.objects.get(examination=physical_exam)
             risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+            # Get patient requests
+            patient_requests = PatientRequest.objects.filter(patient=patient).order_by('-date_requested')
             
             context = {
                 'student': student,
@@ -311,7 +334,8 @@ def dashboard_view(request):
                 'medical_history': medical_history,
                 'family_history': family_history,
                 'risk_assessment': risk_assessment,
-                'physical_exam': physical_exam
+                'physical_exam': physical_exam,
+                'patient_requests': patient_requests,
             }
             
             return render(request, 'student_dashboard.html', context)
