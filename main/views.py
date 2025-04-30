@@ -144,12 +144,13 @@ def patient_form(request):
         medical_student = medical_models.Student.objects.get(student_id=request.user.username)
         
         if request.method == 'GET':
-            patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            
-            return redirect('main:student_dashboard') if patient else None
+            try:
+                patient = medical_models.Patient.objects.get(student_id=request.user.username)
+                return redirect('main:student_dashboard') if patient else None
+            except medical_models.Patient.DoesNotExist:
+                pass
         
         if request.method == 'POST':
-            # print("test", f"test {request.POST.get('birth_date')}")
             # Create PhysicalExamination first
             physical_exam = medical_models.PhysicalExamination.objects.create(
                 student=medical_student,
@@ -164,10 +165,10 @@ def patient_form(request):
                 weight=float(request.POST.get('weight')),
                 height=float(request.POST.get('height')),
                 bloodtype=request.POST.get('bloodtype'),
-                allergies=request.POST.get('allergies'),
+                allergies=process_checkboxes(request.POST.getlist('allergies'), request.POST.get('other_allergies')),
                 medications=request.POST.get('medications', 'None'),
                 home_address=request.POST.get('home_address'),
-                city='Cebu City', #request.POST.get('city'),
+                city='Cebu City',
                 state_province=request.POST.get('state_province'),
                 postal_zipcode=request.POST.get('postal_zipcode'),
                 country=request.POST.get('country'),
@@ -181,19 +182,52 @@ def patient_form(request):
                 examination=physical_exam
             )
             
-            # Create or update RiskAssessment record
-            risk_assessment, created = medical_models.RiskAssessment.objects.update_or_create(
+            # Create MedicalHistory record
+            medical_history = medical_models.MedicalHistory.objects.create(
+                examination=physical_exam,
+                tuberculosis='tuberculosis' in request.POST.getlist('medical_history'),
+                hypertension='hypertension' in request.POST.getlist('medical_history'),
+                heart_disease='heart_disease' in request.POST.getlist('medical_history'),
+                hernia='hernia' in request.POST.getlist('medical_history'),
+                epilepsy='epilepsy' in request.POST.getlist('medical_history'),
+                peptic_ulcer='peptic_ulcer' in request.POST.getlist('medical_history'),
+                kidney_disease='kidney_disease' in request.POST.getlist('medical_history'),
+                asthma='asthma' in request.POST.getlist('medical_history'),
+                insomnia='insomnia' in request.POST.getlist('medical_history'),
+                malaria='malaria' in request.POST.getlist('medical_history'),
+                venereal_disease='venereal_disease' in request.POST.getlist('medical_history'),
+                nervous_breakdown='nervous_breakdown' in request.POST.getlist('medical_history'),
+                jaundice='jaundice' in request.POST.getlist('medical_history'),
+                others=request.POST.get('other_medical', ''),
+                no_history='no_medical_history' in request.POST.getlist('medical_history')
+            )
+            
+            # Create FamilyMedicalHistory record
+            family_history = medical_models.FamilyMedicalHistory.objects.create(
+                examination=physical_exam,
+                hypertension='family_hypertension' in request.POST.getlist('family_history'),
+                asthma='family_asthma' in request.POST.getlist('family_history'),
+                cancer='family_cancer' in request.POST.getlist('family_history'),
+                tuberculosis='family_tuberculosis' in request.POST.getlist('family_history'),
+                diabetes='family_diabetes' in request.POST.getlist('family_history'),
+                bleeding_disorder='family_bleeding' in request.POST.getlist('family_history'),
+                epilepsy='family_epilepsy' in request.POST.getlist('family_history'),
+                mental_disorder='family_mental' in request.POST.getlist('family_history'),
+                no_history='no_family_history' in request.POST.getlist('family_history'),
+                other_medical_history=request.POST.get('other_family_medical', '')
+            )
+            
+            # Create RiskAssessment record
+            risk_assessment = medical_models.RiskAssessment.objects.create(
                 clearance=patient,
-                defaults={
-                    'cardiovascular_disease': 'cardiovascular_disease' in request.POST,
-                    'chronic_lung_disease': 'chronic_lung_disease' in request.POST,
-                    'chronic_renal_disease': 'chronic_renal_disease' in request.POST,
-                    'chronic_liver_disease': 'chronic_liver_disease' in request.POST,
-                    'cancer': 'cancer' in request.POST,
-                    'autoimmune_disease': 'autoimmune_disease' in request.POST,
-                    'pwd': 'pwd' in request.POST,
-                    'disability': request.POST.get('disability', '')
-                }
+                cardiovascular_disease='cardiovascular' in request.POST.getlist('risk_assessment'),
+                chronic_lung_disease='chronic_lung' in request.POST.getlist('risk_assessment'),
+                chronic_renal_disease='chronic_renal_disease' in request.POST.getlist('risk_assessment'),
+                chronic_liver_disease='chronic_liver_disease' in request.POST.getlist('risk_assessment'),
+                cancer='cancer' in request.POST.getlist('risk_assessment'),
+                autoimmune_disease='autoimmune_disease' in request.POST.getlist('risk_assessment'),
+                pwd='pwd' in request.POST.getlist('risk_assessment'),
+                disability=request.POST.get('disability', '')
             )
             
             messages.success(request, 'Medical information submitted successfully!')
@@ -263,38 +297,43 @@ def dashboard_view(request):
         try:
             # Get the medical student instance
             medical_student = medical_models.Student.objects.get(student_id=student.student_id)
-            patient = medical_models.Patient.objects.filter(student=medical_student).first()
             
-            if patient:
-                context = {
-                    'student': student,
-                    'patient': patient,
-                    'medical_history': medical_models.MedicalHistory.objects.filter(examination=patient.examination).first(),
-                    'family_history': medical_models.FamilyMedicalHistory.objects.filter(examination=patient.examination).first(),
-                    'risk_assessment': medical_models.RiskAssessment.objects.filter(clearance=patient).first(),
-                    'physical_exam': patient.examination,
-                }
-            else:
-                context = {
-                    'student': student,
-                    'patient': None
-                }
-                messages.info(request, 'Please complete your medical profile.')
-                return redirect('main:patient_form')
-                
-        except medical_models.Student.DoesNotExist:
+            # Get patient record and related data
+            patient = medical_models.Patient.objects.get(student=medical_student)
+            physical_exam = patient.examination
+            medical_history = medical_models.MedicalHistory.objects.get(examination=physical_exam)
+            family_history = medical_models.FamilyMedicalHistory.objects.get(examination=physical_exam)
+            risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+            
             context = {
                 'student': student,
-                'patient': None
+                'patient': patient,
+                'medical_history': medical_history,
+                'family_history': family_history,
+                'risk_assessment': risk_assessment,
+                'physical_exam': physical_exam
             }
-            messages.error(request, 'Medical profile not found.')
+            
+            return render(request, 'student_dashboard.html', context)
+            
+        except medical_models.Student.DoesNotExist:
+            messages.error(request, 'Medical student profile not found.')
+            return redirect('main:login')
+        except medical_models.Patient.DoesNotExist:
+            messages.info(request, 'Please complete your medical profile first.')
             return redirect('main:patient_form')
+        except Exception as e:
+            print(e)
+            messages.error(request, 'Error loading dashboard data.')
+            return redirect('main:login')
             
     except Student.DoesNotExist:
         messages.error(request, 'Student profile not found.')
         return redirect('main:login')
-
-    return render(request, 'student_dashboard.html', context)
+    except Exception as e:
+        print(e)
+        messages.error(request, 'An error occurred.')
+        return redirect('main:login')
 
 @user_passes_test(is_admin)
 def mental_health_view(request):

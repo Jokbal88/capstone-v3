@@ -5,92 +5,312 @@
 
 {% block extra_css %} 
 {% tailwind_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    .tab-button.active {
+        background-color: #3B82F6;
+        color: white;
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .profile-icon {
+        font-size: 4rem;
+        width: 8rem;
+        height: 8rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #E5F2FF;
+        color: #3B82F6;
+        border-radius: 9999px;
+    }
+    /* Hide scrollbar but maintain functionality */
+    .custom-scrollbar {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(156, 163, 175, 0.7);
+    }
+    /* Ensure content area is scrollable */
+    .content-area {
+        height: calc(100vh - 4rem); /* Adjust based on your header height */
+        overflow-y: auto;
+    }
+    /* Add smooth transition for tab changes */
+    .tab-content {
+        transition: opacity 0.2s ease-in-out;
+    }
+    .tab-content:not(.active) {
+        display: none;
+        opacity: 0;
+    }
+    .tab-content.active {
+        display: block;
+        opacity: 1;
+    }
+    /* Fix for sticky header and scrollable content */
+    .sticky {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+    }
+    /* Ensure content fills available space */
+    .tab-content > div {
+        min-height: 100%;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-2 rounded-[18px] xs:w-full md:w-1/2">
+<div class="h-full w-full custom-scrollbar content-area bg-gradient-to-b from-blue-100 to-green-100 p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
     {% if patient %}
-    <div class="flex flex-col gap-2">
-        <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] lg:text-base text-black tracking-tight text-center">Patient Information</h2>
-        <div class="grid xs:grid-cols-1 md:grid-cols-2 gap-2">
-            <div class="bg-blue-400 p-3 rounded-md">
-                <h3 class="font-bold">Age</h3>
-                <p class="text-base">{{ patient.age }}</p>
-            </div>
-            <div class="bg-blue-400 p-3 rounded-md">
-                <h3 class="font-bold">Blood Type</h3>
-                <p class="text-base">{{ patient.bloodtype }}</p>
-            </div>
-            <div class="bg-blue-400 p-3 rounded-md">
-                <h3 class="font-bold">Height</h3>
-                <p class="text-base">{{ patient.height }}</p>
-            </div>
-            <div class="bg-blue-400 p-3 rounded-md">
-                <h3 class="font-bold">Weight</h3>
-                <p class="text-base">{{ patient.weight }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="flex xs:flex-col md:flex-row xs:gap-4 md:gap-2 h-full">
-            <div class="w-full h-fit max-h-full flex flex-col">
-                <h5 class="font-bold">Medical History</h5>
-                <div class="card-body">
-                    {% if medical_history %}
-                        <ul class="list-unstyled">
-                            {% if medical_history.tuberculosis %}<li>✓ Tuberculosis</li>{% endif %}
-                            {% if medical_history.hypertension %}<li>✓ Hypertension</li>{% endif %}
-                            {% if medical_history.heart_disease %}<li>✓ Heart Disease</li>{% endif %}
-                            {% if medical_history.asthma %}<li>✓ Asthma</li>{% endif %}
-                        </ul>
-                    {% else %}
-                        <p>No medical history recorded.</p>
-                    {% endif %}
+        <div class="flex flex-col gap-6">
+            <!-- Top Section with Profile and Info -->
+            <div class="bg-white rounded-[24px] shadow-lg overflow-hidden">
+                <div class="flex flex-col md:flex-row">
+                    <!-- Left Profile Section -->
+                    <div class="md:w-1/4 p-6 bg-white border-r">
+                        <div class="flex flex-col items-center text-center mt-8">
+                            <div class="profile-icon mb-8">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
+                            <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
+                            <p class="text-gray-600">{{ student.degree }}</p>
+                            <p class="text-gray-600">Year {{ student.year_level }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Content Section -->
+                    <div class="md:w-3/4">
+                        <!-- Tabs Navigation -->
+                        <div class="border-b sticky top-0 bg-white z-10">
+                            <div class="flex overflow-x-auto">
+                                <button class="tab-button active px-6 py-3 text-sm font-medium" data-tab="general">
+                                    General Information
+                                </button>
+                                <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="medical">
+                                    Medical Information
+                                </button>
+                                <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="history">
+                                    Medical History
+                                </button>
+                                <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="contact">
+                                    Contact Information
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tab Contents -->
+                        <div class="overflow-y-auto custom-scrollbar" style="max-height: calc(100vh - 250px);">
+                            <div class="p-6">
+                                <!-- General Information Tab -->
+                                <div class="tab-content active" id="general-tab">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Sex</h3>
+                                            <p class="text-gray-900">{{ student.sex }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Age</h3>
+                                            <p class="text-gray-900">{{ patient.age }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Birth Date</h3>
+                                            <p class="text-gray-900">{{ patient.birth_date }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Civil Status</h3>
+                                            <p class="text-gray-900">{{ patient.civil_status }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Nationality</h3>
+                                            <p class="text-gray-900">{{ patient.nationality }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Religion</h3>
+                                            <p class="text-gray-900">{{ patient.religion }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Medical Information Tab -->
+                                <div class="tab-content" id="medical-tab">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Blood Type</h3>
+                                            <p class="text-gray-900">{{ patient.bloodtype }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Height</h3>
+                                            <p class="text-gray-900">{{ patient.height }} cm</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Weight</h3>
+                                            <p class="text-gray-900">{{ patient.weight }} kg</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Blood Pressure</h3>
+                                            <p class="text-gray-900">{{ patient.blood_pressure|default:"Not recorded" }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-2">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Allergies</h3>
+                                            <p class="text-gray-900">{{ patient.allergies|default:"None" }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-3">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Current Medications</h3>
+                                            <p class="text-gray-900">{{ patient.medications|default:"None" }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Contact Information Tab -->
+                                <div class="tab-content" id="contact-tab">
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-3">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Home Address</h3>
+                                            <p class="text-gray-900">{{ patient.home_address }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">City</h3>
+                                            <p class="text-gray-900">{{ patient.city }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Province</h3>
+                                            <p class="text-gray-900">{{ patient.state_province }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Postal Code</h3>
+                                            <p class="text-gray-900">{{ patient.postal_zipcode }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm col-span-2">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Emergency Contact</h3>
+                                            <p class="text-gray-900">{{ patient.parent_guardian }}</p>
+                                        </div>
+                                        <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                            <h3 class="font-semibold text-gray-700 mb-2">Emergency Contact Number</h3>
+                                            <p class="text-gray-900">{{ patient.parent_guardian_contact_number }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="w-full h-fit max-h-full flex flex-col">
-                <h5 class="font-bold">Risk Assessment</h5>
-                <div class="card-body">
-                    {% if risk_assessment %}
-                        <ul class="list-unstyled">
-                            {% if risk_assessment.cardiovascular_disease %}
-                                <li>✓ Cardiovascular Disease</li>
-                            {% endif %}
-                            {% if risk_assessment.chronic_lung_disease %}
-                                <li>✓ Chronic Lung Disease</li>
-                            {% endif %}
-                            {% if risk_assessment.pwd %}
-                                <li>✓ PWD: {{ risk_assessment.disability }}</li>
-                            {% endif %}
-                        </ul>
-                    {% else %}
-                        <p>No risk assessment recorded.</p>
-                    {% endif %}
+
+            <!-- Bottom Section - Requests -->
+            <div class="bg-white rounded-[24px] shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">My Requests</h2>
+                    <div class="overflow-x-auto rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Request Type</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date Requested</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date Approved</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for request in patient_requests %}
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ request.request_type }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-600">{{ request.date_requested|date:"M d, Y" }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if request.approve %}
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Approved
+                                            </span>
+                                        {% else %}
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-600">
+                                            {% if request.date_approved %}
+                                                {{ request.date_approved|date:"M d, Y" }}
+                                            {% else %}
+                                                <span class="text-gray-400">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <svg class="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <p class="text-gray-500 text-sm font-medium">No requests found</p>
+                                            <p class="text-gray-400 text-xs mt-1">Your medical requests will appear here</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
     </div>
     {% else %}
-    <div class="alert alert-warning">
-            No medical records found. Please complete your medical form.
-            <a href="{% url 'main:patient_form' %}" class="btn btn-primary ml-3">Complete Medical Form</a>
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+            <p class="text-gray-600 mb-4">No medical records found. Please complete your medical form.</p>
+            <a href="{% url 'main:patient_form' %}" class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Complete Medical Form</a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
-<style>
-    tr:last-child {
-        border-bottom: none;
-    }
-    
-    .bg-[#E9967A] {
-        background-color: #E9967A;
-    }
-    
-    .bg-[#FFE4E1] {
-        background-color: #FFE4E1;
-    }
-    
-    .bg-[#DEB887] {
-        background-color: #DEB887;
-    }
-</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab-button');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const contentId = tab.getAttribute('data-tab') + '-tab';
+            document.getElementById(contentId).classList.add('active');
+        });
+    });
+});
+</script>
 {% endblock %}

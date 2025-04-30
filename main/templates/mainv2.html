@@ -383,18 +383,6 @@
         </div> 
         -->
     {% else %}
-        <!-- Student Dashboard Section -->
-        <div class="col-md-4">
-          <div class="card">
-              <div class="card-header">Personal Information</div>
-              <div class="card-body">
-                  <p><strong>Age:</strong> {{ patient.age }}</p>
-                  <p><strong>Blood Type:</strong> {{ patient.bloodtype }}</p>
-                  <p><strong>Height:</strong> {{ patient.height }} cm</p>
-                  <p><strong>Weight:</strong> {{ patient.weight }} kg</p>
-              </div>
-          </div>
-      </div>
         {% if patient %}
             <!-- Student-specific content here -->
         {% endif %}
