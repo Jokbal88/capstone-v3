@@ -264,14 +264,14 @@ def admin_dashboard_view(request):
     # Get total medical records
     total_records = PhysicalExamination.objects.count()
     
-    # Get pending requests
-    pending_requests = PatientRequest.objects.filter(status='pending').count()
+    # Get pending requests (not approved)
+    pending_requests = PatientRequest.objects.filter(approve=False).count()
     
     # Get today's schedule count
     today = timezone.now().date()
     todays_schedule = PatientRequest.objects.filter(
         date_requested__date=today,
-        status='approved'
+        approve=True
     ).count()
     
     # Get upcoming requests
