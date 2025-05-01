@@ -146,8 +146,8 @@ def patient_form(request):
         
         if request.method == 'GET':
             try:
-            patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            return redirect('main:student_dashboard') if patient else None
+                patient = medical_models.Patient.objects.get(student_id=request.user.username)
+                return redirect('main:student_dashboard') if patient else None
             except medical_models.Patient.DoesNotExist:
                 pass
         
@@ -240,7 +240,7 @@ def patient_form(request):
     except Exception as e:
         print(e)
         messages.error(request, f'Error saving patient information: {str(e)}')
-        
+    
     return render(request, 'patient_form.html')
 
 def calculate_age(birthdate):

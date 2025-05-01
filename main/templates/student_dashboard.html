@@ -74,24 +74,70 @@
     .tab-content > div {
         min-height: 100%;
     }
+    .calendar-grid {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .calendar-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-bottom: 0.5rem;
+    }
+    .calendar-header-cell {
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: #6B7280;
+        padding: 0.5rem 0;
+    }
+    #calendarDays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+    }
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        color: #374151;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .calendar-day:hover:not(.empty-day) {
+        background-color: #E5F2FF;
+    }
+    .calendar-day.today {
+        background-color: #3B82F6;
+        color: white;
+    }
+    .calendar-day.empty-day {
+        cursor: default;
+        color: #D1D5DB;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-100 to-green-100">
-    <div class="w-[1100px] h-[650px] bg-white rounded-[24px] shadow-lg overflow-hidden flex mt-10">
-        {% if patient %}
+<div class="w-full h-full flex items-center justify-center">
+    <div class="w-[1100px] bg-white rounded-[24px] shadow-lg overflow-hidden flex">
+    {% if patient %}
             <!-- Left: Profile Section -->
-            <div class="w-[260px] h-full p-6 bg-white border-r flex flex-col items-center text-center justify-center relative">
-                <div class="profile-icon mb-8">
+            <div class="w-[260px] p-6 bg-white border-r flex flex-col items-center text-center">
+                <div class="profile-icon mb-6">
                     <i class="fas fa-user-circle"></i>
                 </div>
                 <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
                 <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
                 <p class="text-gray-600">{{ student.degree }}</p>
-                <p class="text-gray-600">Year {{ student.year_level }}</p>
-                <button id="editProfileBtn" class="mt-6 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Edit Profile</button>
-                <!-- Edit Profile Modal (Mockup) -->
+                <p class="text-gray-600 mb-4">Year {{ student.year_level }}</p>
+                <button id="editProfileBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Edit Profile</button>
+
+                <!-- Edit Profile Modal -->
                 <div id="editProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
                     <div class="bg-white rounded-lg p-8 w-[350px] shadow-xl relative">
                         <button id="closeEditProfile" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700">&times;</button>
@@ -142,7 +188,7 @@
                     </div>
                 </div>
                 <!-- Tab Contents -->
-                <div class="overflow-y-auto custom-scrollbar flex-1" style="max-height: calc(650px - 56px);">
+                <div class="overflow-y-auto custom-scrollbar flex-1">
                     <div class="p-2">
                         <!-- General Information Tab -->
                         <div class="tab-content active" id="general-tab">
@@ -330,13 +376,15 @@
                 </div>
             </div>
             <!-- Right: Requests Tracker -->
-            <div class="w-[260px] h-full p-6 bg-gray-50 border-l flex flex-col">
+            <div class="w-[260px] p-6 bg-gray-50 border-l flex flex-col">
+                <!-- My Requests Section -->
                 <h2 class="text-lg font-bold text-gray-800 mb-4">My Requests</h2>
-                <div class="flex-1 overflow-y-auto rounded-lg">
+                <div class="flex-1 overflow-y-auto rounded-lg mb-6">
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead>
                             <tr class="bg-gray-100">
                                 <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                                <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Date</th>
                                 <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
@@ -344,6 +392,7 @@
                             {% for request in patient_requests %}
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-3 py-2">{{ request.request_type }}</td>
+                                <td class="px-3 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
                                 <td class="px-3 py-2">
                                     {% if request.approve %}
                                         <span class="inline-block px-2 py-1 rounded bg-green-100 text-green-800">Approved</span>
@@ -354,11 +403,34 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="2" class="px-3 py-8 text-center text-gray-400">No requests found</td>
+                                <td colspan="3" class="px-3 py-8 text-center text-gray-400">No requests found</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Calendar Section -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <div class="text-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800" id="currentMonthYear"></h3>
+                        <p class="text-sm text-blue-600 font-medium" id="currentDate"></p>
+                    </div>
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid">
+                        <!-- Days Header -->
+                        <div class="calendar-header">
+                            <div class="calendar-header-cell">Su</div>
+                            <div class="calendar-header-cell">Mo</div>
+                            <div class="calendar-header-cell">Tu</div>
+                            <div class="calendar-header-cell">We</div>
+                            <div class="calendar-header-cell">Th</div>
+                            <div class="calendar-header-cell">Fr</div>
+                            <div class="calendar-header-cell">Sa</div>
+                        </div>
+                        <!-- Calendar Days -->
+                        <div id="calendarDays"></div>
+                    </div>
                 </div>
             </div>
         {% else %}
@@ -371,6 +443,8 @@
         {% endif %}
     </div>
 </div>
+
+{% block extra_js %}
 <script>
 // Edit Profile Modal Logic
 const editBtn = document.getElementById('editProfileBtn');
@@ -383,6 +457,77 @@ if (editBtn && modal && closeModal) {
         if (e.target === modal) modal.classList.add('hidden');
     };
 }
-// ... existing tab logic ...
+
+// Tab Switching Logic
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button
+            button.classList.add('active');
+
+            // Show corresponding content
+            const tabId = button.getAttribute('data-tab');
+            const content = document.getElementById(`${tabId}-tab`);
+            if (content) {
+                content.classList.add('active');
+            }
+        });
+    });
+
+    // Calendar Logic
+    const today = new Date();
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Update current date display
+    document.getElementById('currentMonthYear').textContent = `${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+    document.getElementById('currentDate').textContent = 
+        `${dayNames[today.getDay()]}, ${monthNames[today.getMonth()]} ${today.getDate()}`;
+
+    // Generate calendar days
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const calendarDays = document.getElementById('calendarDays');
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay.getDay(); i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty-day';
+        calendarDays.appendChild(emptyDay);
+    }
+
+    // Add the days of the month
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        
+        // Highlight current day
+        if (day === today.getDate()) {
+            dayElement.className += ' today';
+        }
+        
+        dayElement.textContent = day;
+        calendarDays.appendChild(dayElement);
+    }
+
+    // Add empty cells for remaining days to complete the grid
+    const remainingDays = 42 - (firstDay.getDay() + lastDay.getDate()); // 42 = 6 rows × 7 days
+    for (let i = 0; i < remainingDays; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty-day';
+        calendarDays.appendChild(emptyDay);
+    }
+});
 </script>
+{% endblock %}
 {% endblock %}
