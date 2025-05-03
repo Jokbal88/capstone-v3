@@ -411,13 +411,13 @@
                 </div>
 
                 <!-- Calendar Section -->
-                <div class="bg-white rounded-lg p-4 shadow-sm">
+                <div class="bg-white rounded-lg p-8 shadow-sm w-full max-w-[420px] h-[420px] mx-auto flex flex-col">
                     <div class="text-center mb-4">
                         <h3 class="text-lg font-semibold text-gray-800" id="currentMonthYear"></h3>
                         <p class="text-sm text-blue-600 font-medium" id="currentDate"></p>
                     </div>
                     <!-- Calendar Grid -->
-                    <div class="calendar-grid">
+                    <div class="calendar-grid h-full flex-1 flex flex-col justify-between">
                         <!-- Days Header -->
                         <div class="calendar-header">
                             <div class="calendar-header-cell">Su</div>
@@ -429,7 +429,7 @@
                             <div class="calendar-header-cell">Sa</div>
                         </div>
                         <!-- Calendar Days -->
-                        <div id="calendarDays"></div>
+                        <div id="calendarDays" class="flex-1 grid grid-cols-7 grid-rows-6 gap-1"></div>
                     </div>
                 </div>
             </div>
