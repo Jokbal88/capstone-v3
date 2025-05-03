@@ -3,103 +3,184 @@
 
 {% block title %}HealthHub Connect | Admin Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    html, body, #__next, main, .admin-dashboard-container {
+        height: 100%;
+        min-height: 100vh;
+    }
+    .admin-dashboard-container {
+        width: 100%;
+        min-height: 100vh;
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+        padding: 2.5rem 2.5rem 2.5rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+    .dashboard-main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        flex: 1;
+        height: 100%;
+        align-items: stretch;
+    }
+    .dashboard-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+        padding: 1.5rem;
+        margin-bottom: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        transition: box-shadow 0.2s;
+    }
+    .dashboard-card:hover {
+        box-shadow: 0 4px 16px 0 rgba(59,130,246,0.10);
+    }
+    .dashboard-table th {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.95rem;
+        color: #374151;
+        background: #f9fafb;
+        letter-spacing: 0.04em;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+    .dashboard-table td {
+        font-size: 1rem;
+        color: #222;
+        background: #fff;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+    }
+    .calendar-admin {
+        width: 100%;
+        max-width: 420px;
+        height: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+        padding: 1.5rem 1rem 1rem 1rem;
+        border: 1.5px solid #e5e7eb;
+    }
+    .calendar-header-admin {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+        margin-bottom: 0.5rem;
+    }
+    .calendar-header-cell-admin {
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #6B7280;
+        padding: 0.5rem 0 0.25rem 0;
+        letter-spacing: 0.04em;
+    }
+    #calendarDaysAdmin {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        gap: 2px;
+        flex: 1;
+    }
+    .calendar-day-admin {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        color: #374151;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #f3f4f6;
+        border: 1.5px solid #e5e7eb;
+    }
+    .calendar-day-admin:hover:not(.empty-day) {
+        background: #e0e7ff;
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+    .calendar-day-admin.today {
+        background-color: #3B82F6;
+        color: white;
+        font-weight: 700;
+        border: 2px solid #2563eb;
+    }
+    .calendar-day-admin.empty-day {
+        cursor: default;
+        color: #D1D5DB;
+        background: #fff;
+        border: 1.5px solid #fff;
+    }
+    @media (max-width: 1024px) {
+        .dashboard-main-grid {
+            grid-template-columns: 1fr;
+        }
+        .calendar-admin {
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="w-full h-full p-4">
+<div class="admin-dashboard-container">
     <!-- Stats Grid -->
-    <div class="flex gap-4 mb-6">
-        <!-- Total Patients -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm">
-            <div class="p-4">
-                <p class="text-sm text-gray-500 mb-1">Total Patients</p>
-                <div class="flex items-center justify-between">
-                    <p class="text-2xl font-semibold">{{ total_patients }}</p>
-                    <i class="fas fa-users text-blue-500"></i>
-                </div>
-            </div>
+    <div class="flex gap-4 mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
+            <i class="fas fa-users text-blue-500 text-xl mb-1"></i>
+            <span class="text-xs text-gray-500 mb-1">Total Patients</span>
+            <span class="text-2xl font-bold text-blue-600">{{ total_patients }}</span>
         </div>
-
-        <!-- Total Records -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm">
-            <div class="p-4">
-                <p class="text-sm text-gray-500 mb-1">Total Records</p>
-                <div class="flex items-center justify-between">
-                    <p class="text-2xl font-semibold">{{ total_records|default:0 }}</p>
-                    <i class="fas fa-file-medical text-green-500"></i>
-                </div>
-            </div>
+        <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
+            <i class="fas fa-file-medical text-green-500 text-xl mb-1"></i>
+            <span class="text-xs text-gray-500 mb-1">Total Records</span>
+            <span class="text-2xl font-bold text-green-600">{{ total_records|default:0 }}</span>
         </div>
-
-        <!-- Pending Requests -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm">
-            <div class="p-4">
-                <p class="text-sm text-gray-500 mb-1">Pending Requests</p>
-                <div class="flex items-center justify-between">
-                    <p class="text-2xl font-semibold">{{ pending_requests|default:0 }}</p>
-                    <i class="fas fa-clock text-yellow-500"></i>
-                </div>
-            </div>
+        <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
+            <i class="fas fa-clock text-yellow-500 text-xl mb-1"></i>
+            <span class="text-xs text-gray-500 mb-1">Pending Requests</span>
+            <span class="text-2xl font-bold text-yellow-600">{{ pending_requests|default:0 }}</span>
         </div>
-
-        <!-- Today's Schedule -->
-        <div class="flex-1 bg-white rounded-lg shadow-sm">
-            <div class="p-4">
-                <p class="text-sm text-gray-500 mb-1">Today's Schedule</p>
-                <div class="flex items-center justify-between">
-                    <p class="text-2xl font-semibold">{{ todays_schedule|default:0 }}</p>
-                    <i class="fas fa-calendar-check text-purple-500"></i>
-                </div>
-            </div>
+        <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
+            <i class="fas fa-calendar-check text-purple-500 text-xl mb-1"></i>
+            <span class="text-xs text-gray-500 mb-1">Today's Schedule</span>
+            <span class="text-2xl font-bold text-purple-600">{{ todays_schedule|default:0 }}</span>
         </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="space-y-6">
-        <!-- Top Row: Schedule and Upcoming Requests -->
-        <div class="grid grid-cols-2 gap-6">
-            <!-- Schedule Section -->
-            <div class="bg-white rounded-lg shadow-sm">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h2 class="text-sm font-semibold text-gray-800">Schedule</h2>
-                </div>
-                <div class="p-4">
-                    <div class="space-y-3">
-                        {% for event in events %}
-                        <div class="flex items-start space-x-3">
-                            <div class="w-2 h-2 mt-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">{{ event.student }}</p>
-                                <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
-                            </div>
-                        </div>
-                        {% empty %}
-                        <p class="text-sm text-center text-gray-500">No scheduled events</p>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Upcoming Requests -->
-            <div class="bg-white rounded-lg shadow-sm">
-                <div class="px-4 py-3 border-b border-gray-200">
-                    <h2 class="text-sm font-semibold text-gray-800">Upcoming Requests</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+    <div class="dashboard-main-grid">
+        <!-- Left Column: Upcoming Requests -->
+        <div class="flex flex-col h-full flex-1 gap-6">
+            <div class="dashboard-card flex-1 flex flex-col">
+                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Requests</h2>
+                <div class="overflow-x-auto flex-1">
+                    <table class="min-w-full dashboard-table">
+                        <thead>
                             <tr>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request Type</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3">Student</th>
+                                <th class="px-4 py-3">Request Type</th>
+                                <th class="px-4 py-3">Date</th>
+                                <th class="px-4 py-3">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody>
                             {% for request in upcoming_requests %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-4 py-3 text-sm text-gray-900">{{ request.patient.user.get_full_name }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-900">{{ request.request_type }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-900">{{ request.date_requested|date:"M d, Y" }}</td>
-                                <td class="px-4 py-3 text-sm">
+                            <tr class="hover:bg-blue-50 transition-colors">
+                                <td class="px-4 py-3">{{ request.patient.user.get_full_name }}</td>
+                                <td class="px-4 py-3">{{ request.request_type }}</td>
+                                <td class="px-4 py-3">{{ request.date_requested|date:"M d, Y" }}</td>
+                                <td class="px-4 py-3">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
                                         {% if not request.approve %}bg-yellow-100 text-yellow-800
                                         {% else %}bg-green-100 text-green-800{% endif %}">
@@ -109,7 +190,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="px-4 py-8 text-sm text-center text-gray-500">No upcoming requests</td>
+                                <td colspan="4" class="px-4 py-8 text-center text-gray-400">No upcoming requests</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -117,125 +198,105 @@
                 </div>
             </div>
         </div>
-
-        <!-- Calendar Section -->
-        <div class="bg-white rounded-lg shadow-sm">
-            <div class="px-4 py-3 border-b border-gray-200">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-sm font-semibold text-gray-800">Calendar</h2>
+        <!-- Right Column: Schedule (top) and Calendar (bottom) -->
+        <div class="flex flex-col h-full flex-1 gap-6">
+            <div class="dashboard-card flex-1 flex flex-col mb-0">
+                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Schedule</h2>
+                <div class="space-y-3 flex-1">
+                    {% for event in events %}
+                    <div class="flex items-start space-x-3">
+                        <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-800">{{ event.student }}</p>
+                            <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-center text-gray-400">No scheduled events</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="calendar-admin w-full flex-1 flex flex-col justify-end">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-lg font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
                     <div class="flex items-center space-x-4">
-                        <button onclick="previousMonth()" class="text-gray-600 hover:text-gray-800">
+                        <button onclick="previousMonthAdmin()" class="text-gray-600 hover:text-gray-800">
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <span id="currentMonth" class="text-sm font-medium"></span>
-                        <button onclick="nextMonth()" class="text-gray-600 hover:text-gray-800">
+                        <span id="currentMonthAdmin" class="text-sm font-medium"></span>
+                        <button onclick="nextMonthAdmin()" class="text-gray-600 hover:text-gray-800">
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="p-4">
-                <!-- Calendar Grid -->
-                <div class="mb-4">
-                    <!-- Days Header -->
-                    <div class="grid grid-cols-7 text-center mb-2">
-                        <div class="text-xs font-medium text-gray-500">Su</div>
-                        <div class="text-xs font-medium text-gray-500">Mo</div>
-                        <div class="text-xs font-medium text-gray-500">Tu</div>
-                        <div class="text-xs font-medium text-gray-500">We</div>
-                        <div class="text-xs font-medium text-gray-500">Th</div>
-                        <div class="text-xs font-medium text-gray-500">Fr</div>
-                        <div class="text-xs font-medium text-gray-500">Sa</div>
-                    </div>
-                    <!-- Calendar Days -->
-                    <div id="calendar" class="grid grid-cols-7 gap-px bg-gray-200">
-                        <!-- Days will be inserted here by JavaScript -->
-                    </div>
+                <div class="calendar-header-admin">
+                    <div class="calendar-header-cell-admin">Su</div>
+                    <div class="calendar-header-cell-admin">Mo</div>
+                    <div class="calendar-header-cell-admin">Tu</div>
+                    <div class="calendar-header-cell-admin">We</div>
+                    <div class="calendar-header-cell-admin">Th</div>
+                    <div class="calendar-header-cell-admin">Fr</div>
+                    <div class="calendar-header-cell-admin">Sa</div>
                 </div>
+                <div id="calendarDaysAdmin" class="flex-1"></div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let currentDate = new Date();
-    const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
+let currentDateAdmin = new Date();
+const monthNamesAdmin = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
 
-    // Parse events from Django template
-    const calendarEvents = JSON.parse('{{ events|safe }}');
-
-    function updateCalendar() {
-        const calendar = document.getElementById('calendar');
-        const monthLabel = document.getElementById('currentMonth');
-        
-        calendar.innerHTML = '';
-        monthLabel.textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-        
-        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const startingDay = firstDay.getDay();
-        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-        const totalDays = lastDay.getDate();
-        
-        // Add empty cells for days before the first day of the month
-        for (let i = 0; i < startingDay; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.className = 'bg-white h-12 text-center text-sm text-gray-400 flex items-center justify-center';
-            calendar.appendChild(emptyCell);
-        }
-        
-        // Add the days of the month
-        for (let day = 1; day <= totalDays; day++) {
-            const cell = document.createElement('div');
-            cell.className = 'bg-white h-12 flex items-center justify-center relative';
-            
-            const currentDateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const hasEvent = calendarEvents.some(event => event.date === currentDateStr);
-            
-            const dayNumber = document.createElement('span');
-            dayNumber.className = 'text-sm';
-            
-            // Highlight today
-            const today = new Date();
-            if (day === today.getDate() && 
-                currentDate.getMonth() === today.getMonth() && 
-                currentDate.getFullYear() === today.getFullYear()) {
-                dayNumber.className += ' w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center';
-            }
-            
-            if (hasEvent) {
-                const eventDot = document.createElement('div');
-                eventDot.className = 'absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full';
-                cell.appendChild(eventDot);
-            }
-            
-            dayNumber.textContent = day;
-            cell.appendChild(dayNumber);
-            calendar.appendChild(cell);
-        }
-        
-        // Add empty cells for remaining days to complete the grid
-        const remainingDays = 42 - (startingDay + totalDays); // 42 = 6 rows × 7 days
-        for (let i = 0; i < remainingDays; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.className = 'bg-white h-12 text-center text-sm text-gray-400 flex items-center justify-center';
-            calendar.appendChild(emptyCell);
-        }
+function updateCalendarAdmin() {
+    const calendar = document.getElementById('calendarDaysAdmin');
+    const monthLabel = document.getElementById('currentMonthAdmin');
+    calendar.innerHTML = '';
+    monthLabel.textContent = `${monthNamesAdmin[currentDateAdmin.getMonth()]} ${currentDateAdmin.getFullYear()}`;
+    const firstDay = new Date(currentDateAdmin.getFullYear(), currentDateAdmin.getMonth(), 1);
+    const startingDay = firstDay.getDay();
+    const lastDay = new Date(currentDateAdmin.getFullYear(), currentDateAdmin.getMonth() + 1, 0);
+    const totalDays = lastDay.getDate();
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day-admin empty-day';
+        calendar.appendChild(emptyCell);
     }
-
-    function previousMonth() {
-        currentDate.setMonth(currentDate.getMonth() - 1);
-        updateCalendar();
+    // Add the days of the month
+    for (let day = 1; day <= totalDays; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day-admin';
+        const today = new Date();
+        if (
+            day === today.getDate() &&
+            currentDateAdmin.getMonth() === today.getMonth() &&
+            currentDateAdmin.getFullYear() === today.getFullYear()
+        ) {
+            cell.className += ' today';
+        }
+        cell.textContent = day;
+        calendar.appendChild(cell);
     }
-
-    function nextMonth() {
-        currentDate.setMonth(currentDate.getMonth() + 1);
-        updateCalendar();
+    // Add empty cells for remaining days to complete the grid
+    const remainingDays = 42 - (startingDay + totalDays); // 42 = 6 rows × 7 days
+    for (let i = 0; i < remainingDays; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day-admin empty-day';
+        calendar.appendChild(emptyCell);
     }
-
-    // Initialize calendar
-    document.addEventListener('DOMContentLoaded', updateCalendar);
+}
+function previousMonthAdmin() {
+    currentDateAdmin.setMonth(currentDateAdmin.getMonth() - 1);
+    updateCalendarAdmin();
+}
+function nextMonthAdmin() {
+    currentDateAdmin.setMonth(currentDateAdmin.getMonth() + 1);
+    updateCalendarAdmin();
+}
+document.addEventListener('DOMContentLoaded', updateCalendarAdmin);
 </script>
 {% endblock %}
