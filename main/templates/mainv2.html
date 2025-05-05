@@ -43,7 +43,7 @@
           </h1>
         </div>
         <ul
-          class="xs:hidden {% if user.is_superuser or user.is_staff %} lg:flex flex-col {% else %} lg:flex {% endif %}"
+          class="{% if user.is_superuser or user.is_staff %} xs:hidden lg:flex flex-col {% else %} flex flex-row w-full justify-between items-center{% endif %}"
         >
           {% if user.is_superuser or user.is_staff %}
           <li>
@@ -123,35 +123,22 @@
             </a>
           </li>
           {% else %}
-          <li>
-            <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'student_dashboard' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-b-[4px] {% endif %}"
-              href="{% url 'main:student_dashboard' %}"
-              >Dashboard</a
-            >
-          </li>
-          <li>
-            <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'request' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-b-[4px] {% endif %}"
-              href="{% url 'medical:request' %}"
-              href="{% url 'medical:request' %}"
-              >Documentary Request</a
-            >
-          </li>
-          <li>
-            <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'medtracker' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-b-[4px] {% endif %}"
-              href="{% url 'medical:medtracker' %}"
-              >Medical Requirements Upload</a
-            >
-          </li>
-          <li>
-            <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'dentalservice' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-b-[4px] {% endif %}"
-              href="{% url 'medical:dentalservice' %}"
-              >Dental Services Availment</a
-            >
-          </li>
+            <li>
+              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'main:student_dashboard' %}">Dashboard</a>
+            </li>
+            <li>
+              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:request' %}">Documentary Request</a>
+            </li>
+            <li>
+              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'medtracker' or request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:upload_requirements' %}">Medical Requirements Upload</a>
+            </li>
+            <li>
+              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:dentalservice' %}">Dental Services Availment</a>
+            </li>
+            <li class="flex items-center gap-2 pr-4 ml-auto">
+              <span class="font-semibold text-black">{{ user.get_full_name|default:user.username }}</span>
+              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all text-blue-600 border border-blue-200 rounded" href="{% url 'main:logout' %}">Logout</a>
+            </li>
           {% endif %}
         </ul>
         <svg
@@ -259,6 +246,13 @@
                 >Transaction Reports</a
               >
             </li>
+            <li class="menu-item border-b border-[#e6e6e6] flex">
+              <a
+                class="p-3 font-bold text-black w-full"
+                href="{% url 'main:logout' %}"
+                >Logout</a
+              >
+            </li>
             {% else %}
             <li class="menu-item border-b border-[#e6e6e6] flex">
               <a
@@ -277,7 +271,7 @@
             <li class="menu-item border-b border-[#e6e6e6] flex">
               <a
                 class="p-3 font-bold text-black w-full"
-                href="{% url 'medical:medtracker' %}"
+                href="{% url 'medical:upload_requirements' %}"
                 >Medical Requirements Upload</a
               >
             </li>
@@ -286,6 +280,13 @@
                 class="p-3 font-bold text-black w-full"
                 href="{% url 'medical:dentalservice' %}"
                 >Dental Services Availment</a
+              >
+            </li>
+            <li class="menu-item border-b border-[#e6e6e6] flex">
+              <a
+                class="p-3 font-bold text-black w-full"
+                href="{% url 'main:logout' %}"
+                >Logout</a
               >
             </li>
             {% endif %}

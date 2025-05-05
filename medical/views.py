@@ -863,6 +863,8 @@ def submit_request(request):
 
 # Views for medical requirements tracker
 def student_medical_requirements_tracker(request):
+    if not (request.user.is_superuser or request.user.is_staff):
+        return redirect('medical:upload_requirements')
     if request.method == "POST":
         student_id = request.POST.get("student_id")
         

@@ -19,7 +19,7 @@
                 <label class="w-full text-center font-bold xs:text-[14px] md:text-base" for="requestType">Service Type</label>
             </div>
             <div class="flex gap-2 py-2">
-                <input class="w-full xs:text-[14px] md:text-base" type="text" id="student_id" placeholder="Enter Your ID" name="student_id">
+                <input class="w-full xs:text-[14px] md:text-base" type="text" id="student_id" name="student_id" value="{{ user.username }}" readonly>
                 <select class="w-full xs:text-[14px] md:text-base" id="requestType" name="service_type" required>
                     <option value="">Select Service Type</option>
                     <option value="Cleaning">Cleaning</option>
