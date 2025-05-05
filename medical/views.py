@@ -32,6 +32,7 @@ import json
 import calendar
 import csv
 from django.contrib.auth.decorators import user_passes_test, login_required
+import os
 
 from .forms import UploadFileForm
 
@@ -905,76 +906,55 @@ def student_medical_requirements_tracker(request):
 
 # Views for handling the medical requirements uploaded file
 def upload_requirements(request):
-    if request.method == "POST":
-        student_id = request.POST.get("student_id")
+    requirements = [
+        {'slug': 'chest_xray', 'name': 'Chest X-ray'},
+        {'slug': 'cbc', 'name': 'Complete Blood Count (CBC)'},
+        {'slug': 'drug_test', 'name': 'Drug Test'},
+        {'slug': 'stool_examination', 'name': 'Stool Examination'},
+        {'slug': 'pwd_card', 'name': 'PWD Card'}
+    ]
+    student_id = request.GET.get("student_id") or getattr(request.user, 'username', None)
+    md = None
+    patient = None
+
+    if student_id:
         try:
             patient = Patient.objects.get(student__student_id=student_id)
+            md, _ = MedicalRequirement.objects.get_or_create(patient=patient)
         except Patient.DoesNotExist:
-            # If patient does not exist, redirect to basicinfo.html
-            messages.info(request, "Fill out this form first before doing any transactions")
-            return redirect('medical:patient_basicinfo', student_id=student_id)
+            patient = None
+            md = None
 
-        x_ray = request.FILES.get("x-ray")
-        cbc = request.FILES.get("cbc")
-        drug_test = request.FILES.get("drug-test")
-        stool_exam = request.FILES.get("stool-exam")
-        pwd_card = request.FILES.get("pwd-card")
-
-        # Check if file is less than 5 MB, pwd card excluded
-        if (x_ray and (x_ray.size / 1_048_576) > 5) or (cbc and (cbc.size / 1_048_576) > 5) or (stool_exam and (stool_exam.size / 1_048_576) > 5) or (drug_test and (drug_test.size / 1_048_576) > 5):
-            messages.error(request, "File size exceeds the limit.")
-            return render(request, "students/medupload.html", {"patient": patient})
-
-        # Check if the medical requirements already exist
-        try:
-            md = MedicalRequirement.objects.get(patient=patient)
-
-            # Update existing records
-            if x_ray:
-                md.chest_xray.save(x_ray.name, x_ray)
-            if cbc:
-                md.cbc.save(cbc.name, cbc)
-            if drug_test:
-                md.drug_test.save(drug_test.name, drug_test)
-            if stool_exam:
-                md.stool_examination.save(stool_exam.name, stool_exam)
-            if pwd_card:
-                md.pwd_card.save(pwd_card.name, pwd_card)
-
+    if request.method == "POST" and patient:
+        requirement_type = request.POST.get("requirement_type")
+        file = request.FILES.get("file")
+        if requirement_type and file:
+            ext = os.path.splitext(file.name)[1]
+            today = datetime.now().strftime("%Y%m%d")
+            new_filename = f"{requirement_type}_{student_id}_{today}{ext}"
+            if requirement_type == "chest_xray":
+                md.chest_xray.save(new_filename, file)
+            elif requirement_type == "cbc":
+                md.cbc.save(new_filename, file)
+            elif requirement_type == "drug_test":
+                md.drug_test.save(new_filename, file)
+            elif requirement_type == "stool_examination":
+                md.stool_examination.save(new_filename, file)
+            elif requirement_type == "pwd_card":
+                md.pwd_card.save(new_filename, file)
             md.save()
-            messages.success(request, "Your files have been successfully updated")
-        except MedicalRequirement.DoesNotExist:
-            # Create new records
-            md = MedicalRequirement.objects.create(
-                patient=patient,
-                chest_xray=x_ray,
-                cbc=cbc,
-                drug_test=drug_test,
-                stool_examination=stool_exam
-            )
-            if pwd_card:
-                md.pwd_card.save(pwd_card.name, pwd_card)
+            messages.success(request, f"{dict((r['slug'], r['name']) for r in requirements)[requirement_type]} uploaded successfully.")
 
-            messages.success(request, "Your files have been successfully uploaded")
+    return render(request, "students/medupload.html", {"requirements": requirements, "md": md, "patient": patient})
 
-        return render(request, "students/medupload.html", {"patient": patient, "md": md})
+# Custom template filter for basename
+def basename(value):
+    return os.path.basename(value)
 
-    # GET request
-    if request.method == "GET":
-        student_id = request.GET.get("student_id")
-        if student_id:
-            try:
-                patient = Patient.objects.get(student__student_id=student_id)
-                md = MedicalRequirement.objects.get(patient=patient)
-                return render(request, "students/medupload.html", {"patient": patient, "md": md})
-            except Patient.DoesNotExist:
-                # If patient does not exist, redirect to basicinfo.html
-                messages.info(request, "Fill out this form first before doing any transactions")
-                return redirect('medical:patient_basicinfo', student_id=student_id)
-            except MedicalRequirement.DoesNotExist:
-                return render(request, "students/medupload.html", {"patient": patient})
+from django import template
+register = template.Library()
+register.filter('basename', basename)
 
-    return render(request, "students/medupload.html", {})
 # Views for handling students request for dental services
 def dental_services(request):
     if request.method == "POST":

@@ -18,11 +18,11 @@
             <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
                 <p class="text-sm text-blue-800">Please submit all required medical documents. These are essential for ensuring the health and safety of all students.</p>
             </div>
+            <p>DEBUG: requirements = {{ requirements|length }} items</p>
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
                 <thead class="bg-[#e6e6e6]">
                     <tr>
-                        <th class="p-2 text-left">Requirement</th>
-                        <th class="p-2 text-left">Description</th>
+                        <th class="p-2 text-left">Requirement Type</th>
                         <th class="p-2 text-left">File</th>
                         <th class="p-2 text-center">Status</th>
                         <th class="p-2 text-center">Upload</th>
@@ -31,45 +31,68 @@
                 <tbody>
                     {% for req in requirements %}
                     <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2 font-medium">{{ req.label }}</td>
-                        <td class="p-2 text-sm text-gray-600">
-                            {% if req.slug == 'chest_xray' %}
-                                A radiographic examination of your chest to screen for potential lung or heart conditions.
-                            {% elif req.slug == 'cbc' %}
-                                Complete Blood Count test to assess your overall health status and screen for various disorders.
-                            {% elif req.slug == 'drug_test' %}
-                                Standard drug screening test required for all students as per university policy.
-                            {% elif req.slug == 'stool_examination' %}
-                                Laboratory analysis of stool sample to check for parasites and other digestive health issues.
-                            {% elif req.slug == 'pwd_card' %}
-                                Person with Disability (PWD) identification card, if applicable.
-                            {% endif %}
-                        </td>
+                        <td class="p-2 font-medium">{{ req.name }}</td>
                         <td class="p-2">
-                            {% if req.url %}
-                                <a class="text-blue-600 underline" href="{{ req.url }}" target="_blank">{{ req.name }}</a>
+                            {% if md %}
+                                {% if req.slug == 'chest_xray' and md.chest_xray %}
+                                    <a class="text-blue-600 underline" href="{{ md.chest_xray.url }}" target="_blank">{{ md.chest_xray.name|slice:"11:" }}</a>
+                                {% elif req.slug == 'cbc' and md.cbc %}
+                                    <a class="text-blue-600 underline" href="{{ md.cbc.url }}" target="_blank">{{ md.cbc.name|slice:"4:" }}</a>
+                                {% elif req.slug == 'drug_test' and md.drug_test %}
+                                    <a class="text-blue-600 underline" href="{{ md.drug_test.url }}" target="_blank">{{ md.drug_test.name|slice:"11:" }}</a>
+                                {% elif req.slug == 'stool_examination' and md.stool_examination %}
+                                    <a class="text-blue-600 underline" href="{{ md.stool_examination.url }}" target="_blank">{{ md.stool_examination.name|slice:"11:" }}</a>
+                                {% elif req.slug == 'pwd_card' and md.pwd_card %}
+                                    <a class="text-blue-600 underline" href="{{ md.pwd_card.url }}" target="_blank">{{ md.pwd_card.name|slice:"9:" }}</a>
+                                {% else %}
+                                    <span class="text-gray-400">None</span>
+                                {% endif %}
                             {% else %}
                                 <span class="text-gray-400">None</span>
                             {% endif %}
                         </td>
                         <td class="p-2 text-center">
-                            {% if req.url %}
-                                <span class="text-green-600 text-xl">&#10003;</span>
+        {% if md %}
+                                {% if req.slug == 'chest_xray' and md.chest_xray %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% elif req.slug == 'cbc' and md.cbc %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% elif req.slug == 'drug_test' and md.drug_test %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% elif req.slug == 'stool_examination' and md.stool_examination %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% elif req.slug == 'pwd_card' and md.pwd_card %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% else %}
+                                    <span class="text-red-500 text-xl">&#10007;</span>
+            {% endif %}
                             {% else %}
-                                <span class="text-red-500 text-xl">&#10007;</span>
-                            {% endif %}
+                                <span class="text-gray-400">None</span>
+        {% endif %}
                         </td>
                         <td class="p-2 text-center">
-                            <form method="POST" enctype="multipart/form-data" class="flex flex-col items-center gap-2">
-                                {% csrf_token %}
-                                <input type="hidden" name="student_id" value="{{ user.username }}">
-                                <input type="hidden" name="requirement_type" value="{{ req.slug }}">
-                                <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full mb-2" required>
-                                <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Upload</button>
-                            </form>
+                            {% if md %}
+                                <form method="POST" enctype="multipart/form-data" class="flex flex-col items-center gap-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ user.username }}">
+                                    <input type="hidden" name="requirement_type" value="{{ req.slug }}">
+                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full mb-2" required>
+                                    <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Upload</button>
+                                </form>
+                            {% else %}
+                                <form method="POST">
+            {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ user.username }}">
+                                    <input type="hidden" name="requirement_type" value="{{ req.slug }}">
+                                    <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Submit</button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
+                    <tr>
+                        <td colspan="4" style="color:red;">TEST ROW - Template is rendering</td>
+                      </tr>
                 </tbody>
             </table>
             </div>
