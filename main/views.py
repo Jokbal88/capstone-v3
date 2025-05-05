@@ -279,24 +279,20 @@ def admin_dashboard_view(request):
         date_requested__gte=today
     ).order_by('date_requested')[:5]
     
-    # Add events data for the calendar
-    events = [
-        {
-            'date': '2025-01-13',
-            'student': 'John Doe',
-            'service': 'Medical Check-up'
-        },
-        {
-            'date': '2025-01-13',
-            'student': 'Jane Smith',
-            'service': 'Dental Check-up'
-        },
-        {
-            'date': '2025-01-20',
-            'student': 'Mike Johnson',
-            'service': 'Vision Test'
-        }
-    ]
+    # Get scheduled appointments for the calendar
+    scheduled_appointments = PatientRequest.objects.filter(
+        date_requested__gte=today
+    ).values('date_requested', 'approve', 'student__first_name', 'student__last_name', 'request_type')
+    
+    # Format appointments for the calendar
+    events = []
+    for appointment in scheduled_appointments:
+        events.append({
+            'date': appointment['date_requested'].strftime('%Y-%m-%d'),
+            'student': f"{appointment['student__first_name']} {appointment['student__last_name']}",
+            'service': appointment['request_type'],
+            'status': 'approved' if appointment['approve'] else 'pending'
+        })
     
     context = {
         'total_patients': total_patients,

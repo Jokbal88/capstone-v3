@@ -10,9 +10,7 @@
 {% block content %}
 <div class="w-1/2 h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
-        {% for message in messages %}
-            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+    
     {% endif %}
     <form class="h-full flex flex-col" action="" method="POST" id="med_cert_form">
         {% csrf_token %}

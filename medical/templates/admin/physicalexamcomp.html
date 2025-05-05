@@ -10,9 +10,7 @@
 {% block content %}
 <div class="w-full h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
-        {% for message in messages %}
-            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+    
     {% endif %}
     <form class="flex flex-col gap-4" method="POST" enctype="multipart/form-data" id="physical-exam-form">
         {% csrf_token %}

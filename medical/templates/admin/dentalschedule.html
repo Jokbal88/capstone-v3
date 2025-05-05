@@ -10,9 +10,7 @@
 
 <div class="w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col xs:gap-2 md:gap-4">
     {% if messages %}
-        {% for message in messages %}
-            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+    
     {% endif %}
     <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4">Appointment Schedule</h2>
     <div class="flex flex-col h-fit max-h-full">

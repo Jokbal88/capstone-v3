@@ -10,11 +10,7 @@
 {% block content %}
 <div class="w-1/2 h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-    </div>
+    
     {% endif %}
     <form id="medicalclearance-form" class="flex flex-col h-full" method="POST">
         {% csrf_token %}

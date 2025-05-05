@@ -7,11 +7,7 @@
 {% endblock %}
 {% block content %}
 {% if messages %}
-<div>
-    {% for message in messages %}  <!-- Iterates over each message -->
-        {{ message }}  <!-- Displays the message -->
-    {% endfor %}
-</div>
+
 {% endif %}
 <div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     <div class="flex self-center items-center gap-8">

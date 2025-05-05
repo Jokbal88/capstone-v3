@@ -34,20 +34,6 @@
             </div>
           </div>
           <h2 class="font-bold text-[1.3rem]">Account Registration</h2>
-          {% if messages %}
-          <div class="messages">
-              {% for message in messages %}
-              <div class="message {% if message.tags %}message-{{ message.tags }}{% endif %}">
-                  {% if message.tags == 'error' %}
-                      <i class="fas fa-exclamation-circle"></i>
-                  {% elif message.tags == 'success' %}
-                      <i class="fas fa-check-circle"></i>
-                  {% endif %}
-                  {{ message }}
-              </div>
-              {% endfor %}
-          </div>
-          {% endif %}
           <form class="flex flex-col w-full gap-2" method="POST">
             {% csrf_token %}
             <div class="flex w-full gap-2">

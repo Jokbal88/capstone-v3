@@ -12,11 +12,7 @@
 
 <div class="container">
     {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-    </div>
+    
     {% endif %}
     <h2>List of PWD</h2>
     <br><br>

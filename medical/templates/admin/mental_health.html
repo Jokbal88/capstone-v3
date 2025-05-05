@@ -70,11 +70,7 @@
         </div>
     </div>
     {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <p class="text-[14px] {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-    </div>
+    
     {% endif %}
 </div>
 

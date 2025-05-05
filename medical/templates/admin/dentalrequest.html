@@ -10,9 +10,7 @@
 
 <div class="container w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col xs:gap-2 md:gap-4">
     {% if messages %}
-        {% for message in messages %}
-            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+    
     {% endif %}
     <form action="" method="POST" class="flex flex-col h-full">
         {% csrf_token %}

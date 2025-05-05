@@ -29,13 +29,7 @@
 					{% csrf_token %}
 					<label for="email" class="text-base">Email or Student ID</label>
 					<input type="text" id="email" name="email" placeholder="Enter your email or student ID" required>
-					<span class="error-message" id="emailError">
-						{% if messages %}
-							{% for message in messages %}
-								{{ message }}
-							{% endfor %}
-						{% endif %}
-					</span>
+					<span class="error-message" id="emailError"></span>
 					
 					<label for="password" class="label">Password</label>
                     <div class="w-full flex relative">

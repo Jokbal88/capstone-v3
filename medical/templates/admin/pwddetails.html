@@ -18,11 +18,7 @@
 {% block content %}
 <div class="container">
     {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-    </div>
+    
     {% endif %}
     <h2>Student Detail</h2><br><br>
     {% if md.pwd_card.url %}

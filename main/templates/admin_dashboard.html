@@ -1,21 +1,21 @@
-{% extends 'mainv2.html' %}
-{% load static tailwind_tags %}
+{% extends 'mainv2.html' %} 
+{% load static tailwind_tags %} 
 
 {% block title %}HealthHub Connect | Admin Dashboard{% endblock %}
 
-{% block extra_css %}
+{% block extra_css %} 
 <style>
     html, body, #__next, main, .admin-dashboard-container {
         height: 100%;
         min-height: 100vh;
     }
     .admin-dashboard-container {
-        width: 100%;
+        width: 100vw;
         min-height: 100vh;
         background: #fff;
-        border-radius: 24px;
-        box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
-        padding: 2.5rem 2.5rem 2.5rem 2.5rem;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0;
         display: flex;
         flex-direction: column;
     }
@@ -60,51 +60,60 @@
     }
     .calendar-admin {
         width: 100%;
-        max-width: 420px;
-        height: 100%;
+        max-width: none;
+        min-width: 0;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
         background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
-        padding: 1.5rem 1rem 1rem 1rem;
-        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        box-shadow: 0 1px 4px 0 rgba(0,0,0,0.06);
+        padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+        border: 1px solid #e5e7eb;
     }
     .calendar-header-admin {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        margin-bottom: 0.5rem;
+        gap: 1px;
+        margin-bottom: 0.2rem;
     }
     .calendar-header-cell-admin {
         text-align: center;
-        font-size: 1rem;
-        font-weight: 700;
+        font-size: 0.78rem;
+        font-weight: 500;
         color: #6B7280;
-        padding: 0.5rem 0 0.25rem 0;
-        letter-spacing: 0.04em;
+        height: 28px;
+        line-height: 28px;
+        padding: 0;
+        letter-spacing: 0.02em;
     }
     #calendarDaysAdmin {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         grid-template-rows: repeat(6, 1fr);
-        gap: 2px;
+        gap: 1px;
         flex: 1;
     }
     .calendar-day-admin {
+        min-width: 34px;
+        min-height: 34px;
+        max-width: 34px;
+        max-height: 34px;
+        font-size: 1rem;
+        margin: 0 auto;
         aspect-ratio: 1;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.1rem;
+        text-align: center;
         color: #374151;
-        border-radius: 8px;
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
         background: #f3f4f6;
-        border: 1.5px solid #e5e7eb;
+        border: 1px solid #e5e7eb;
+        position: relative;
     }
     .calendar-day-admin:hover:not(.empty-day) {
         background: #e0e7ff;
@@ -115,13 +124,50 @@
         background-color: #3B82F6;
         color: white;
         font-weight: 700;
-        border: 2px solid #2563eb;
+        border: 1.5px solid #2563eb;
     }
     .calendar-day-admin.empty-day {
         cursor: default;
         color: #D1D5DB;
         background: #fff;
-        border: 1.5px solid #fff;
+        border: 1px solid #fff;
+    }
+    .calendar-day-admin.has-approved-event {
+        background: #d1fae5;
+        color: #065f46;
+        border: 1px solid #34d399;
+    }
+    .calendar-day-admin.has-approved-event:hover {
+        background: #a7f3d0;
+        color: #065f46;
+    }
+    .calendar-day-admin.has-pending-event {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fbbf24;
+    }
+    .calendar-day-admin.has-pending-event:hover {
+        background: #fde68a;
+        color: #92400e;
+    }
+    .calendar-day-admin.has-both-events {
+        background: linear-gradient(135deg, #d1fae5 50%, #fef3c7 50%);
+        color: #065f46;
+        border: 1px solid #34d399;
+    }
+    .calendar-day-admin.has-both-events:hover {
+        background: linear-gradient(135deg, #a7f3d0 50%, #fde68a 50%);
+    }
+    .calendar-day-admin.has-event::after {
+        content: '';
+        position: absolute;
+        bottom: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
     }
     @media (max-width: 1024px) {
         .dashboard-main-grid {
@@ -132,7 +178,7 @@
         }
     }
 </style>
-{% endblock %}
+{% endblock %} 
 
 {% block content %}
 <div class="admin-dashboard-container">
@@ -142,92 +188,130 @@
             <i class="fas fa-users text-blue-500 text-xl mb-1"></i>
             <span class="text-xs text-gray-500 mb-1">Total Patients</span>
             <span class="text-2xl font-bold text-blue-600">{{ total_patients }}</span>
-        </div>
+      </div>
         <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
             <i class="fas fa-file-medical text-green-500 text-xl mb-1"></i>
             <span class="text-xs text-gray-500 mb-1">Total Records</span>
             <span class="text-2xl font-bold text-green-600">{{ total_records|default:0 }}</span>
-        </div>
+      </div>
         <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
             <i class="fas fa-clock text-yellow-500 text-xl mb-1"></i>
             <span class="text-xs text-gray-500 mb-1">Pending Requests</span>
             <span class="text-2xl font-bold text-yellow-600">{{ pending_requests|default:0 }}</span>
-        </div>
+    </div>
         <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
             <i class="fas fa-calendar-check text-purple-500 text-xl mb-1"></i>
             <span class="text-xs text-gray-500 mb-1">Today's Schedule</span>
             <span class="text-2xl font-bold text-purple-600">{{ todays_schedule|default:0 }}</span>
-        </div>
+      </div>
     </div>
     <div class="dashboard-main-grid">
-        <!-- Left Column: Upcoming Requests -->
-        <div class="flex flex-col h-full flex-1 gap-6">
-            <div class="dashboard-card flex-1 flex flex-col">
-                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Requests</h2>
+        <!-- Left Column: Upcoming Requests + Transaction Log -->
+        <div class="flex flex-col h-full flex-1 gap-3">
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Requests</h2>
                 <div class="overflow-x-auto flex-1">
-                    <table class="min-w-full dashboard-table">
-                        <thead>
-                            <tr>
-                                <th class="px-4 py-3">Student</th>
-                                <th class="px-4 py-3">Request Type</th>
-                                <th class="px-4 py-3">Date</th>
-                                <th class="px-4 py-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <table class="min-w-full dashboard-table text-sm">
+        <thead>
+          <tr>
+                                <th class="px-2 py-2">Student</th>
+                                <th class="px-2 py-2">Request Type</th>
+                                <th class="px-2 py-2">Date</th>
+                                <th class="px-2 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody>
                             {% for request in upcoming_requests %}
                             <tr class="hover:bg-blue-50 transition-colors">
-                                <td class="px-4 py-3">{{ request.patient.user.get_full_name }}</td>
-                                <td class="px-4 py-3">{{ request.request_type }}</td>
-                                <td class="px-4 py-3">{{ request.date_requested|date:"M d, Y" }}</td>
-                                <td class="px-4 py-3">
+                                <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                <td class="px-2 py-2">{{ request.request_type }}</td>
+                                <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
+                                <td class="px-2 py-2">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
                                         {% if not request.approve %}bg-yellow-100 text-yellow-800
                                         {% else %}bg-green-100 text-green-800{% endif %}">
                                         {% if request.approve %}Approved{% else %}Pending{% endif %}
                                     </span>
-                                </td>
-                            </tr>
+            </td>
+          </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="px-4 py-8 text-center text-gray-400">No upcoming requests</td>
+                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No upcoming requests</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+            <div class="dashboard-card flex-1 flex flex-col p-4" style="min-height: 180px; max-height: 220px; overflow-y: auto;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-file-invoice-dollar text-blue-400"></i> Transaction Log</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full dashboard-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="px-2 py-2">Student</th>
+                                <th class="px-2 py-2">Type</th>
+                                <th class="px-2 py-2">Amount</th>
+                                <th class="px-2 py-2">Status</th>
+                                <th class="px-2 py-2">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in transaction_log|slice:":5" %}
+                            <tr class="hover:bg-blue-50 transition-colors">
+                                <td class="px-2 py-2">{{ tx.patient.student.firstname }} {{ tx.patient.student.lastname }}</td>
+                                <td class="px-2 py-2">{{ tx.transac_type }}</td>
+                                <td class="px-2 py-2 font-medium {% if tx.transac_type == 'Payment' %}text-green-600{% else %}text-blue-600{% endif %}">₱{{ tx.transac_amount|floatformat:2 }}</td>
+                                <td class="px-2 py-2">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        {% if tx.transac_status == 'Completed' %}bg-green-100 text-green-800
+                                        {% elif tx.transac_status == 'Pending' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ tx.transac_status }}
+                                    </span>
+                                </td>
+                                <td class="px-2 py-2">{{ tx.transac_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="px-2 py-6 text-center text-gray-400">No transaction records</td>
+          </tr>
+                            {% endfor %}
+        </tbody>
+      </table>
+    </div>
+            </div>
         </div>
-        <!-- Right Column: Schedule (top) and Calendar (bottom) -->
-        <div class="flex flex-col h-full flex-1 gap-6">
-            <div class="dashboard-card flex-1 flex flex-col mb-0">
-                <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Schedule</h2>
-                <div class="space-y-3 flex-1">
+        <!-- Right Column: Schedule (top), Calendar (middle), Recent Transactions (bottom) -->
+        <div class="flex flex-col h-full flex-1 gap-1">
+            <div class="dashboard-card flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-calendar-alt text-blue-400"></i> Schedule</h2>
+                <div class="space-y-2">
                     {% for event in events %}
-                    <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-2">
                         <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
                         <div>
-                            <p class="text-sm font-semibold text-gray-800">{{ event.student }}</p>
+                            <p class="text-xs font-semibold text-gray-800">{{ event.student }}</p>
                             <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-sm text-center text-gray-400">No scheduled events</p>
+                    <p class="text-xs text-center text-gray-400">No scheduled events</p>
                     {% endfor %}
                 </div>
             </div>
-            <div class="calendar-admin w-full flex-1 flex flex-col justify-end">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-lg font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
-                    <div class="flex items-center space-x-4">
-                        <button onclick="previousMonthAdmin()" class="text-gray-600 hover:text-gray-800">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span id="currentMonthAdmin" class="text-sm font-medium"></span>
-                        <button onclick="nextMonthAdmin()" class="text-gray-600 hover:text-gray-800">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
+            <div class="calendar-admin w-full flex flex-col justify-end mb-1 p-1" style="min-height: 120px; height: auto; width: 100%;">
+                <div class="flex items-center justify-between mb-2 w-full gap-2">
+                    <span class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+                        <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-base shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
+                        <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
                 </div>
                 <div class="calendar-header-admin">
                     <div class="calendar-header-cell-admin">Su</div>
@@ -240,11 +324,44 @@
                 </div>
                 <div id="calendarDaysAdmin" class="flex-1"></div>
             </div>
+            <div class="dashboard-card flex flex-col p-2" style="min-height: 40px; height: auto;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-exchange-alt text-blue-400"></i> Recent Transactions</h2>
+                <div class="overflow-x-auto" style="max-height: 90px; overflow-y: auto;">
+                    <table class="min-w-full dashboard-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="px-2 py-2">Student</th>
+                                <th class="px-2 py-2">Type</th>
+                                <th class="px-2 py-2">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tx in recent_transactions|slice:":5" %}
+                            <tr class="hover:bg-blue-50 transition-colors">
+                                <td class="px-2 py-2">{{ tx.patient.student.firstname }} {{ tx.patient.student.lastname }}</td>
+                                <td class="px-2 py-2">{{ tx.transac_type }}</td>
+                                <td class="px-2 py-2">{{ tx.transac_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-2 py-6 text-center text-gray-400">No recent transactions</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
+<!-- Pass Django events to JS safely -->
+{{ events|json_script:"admin-events-data" }}
+
 <script>
+// Parse events from Django context
+const events = JSON.parse(document.getElementById('admin-events-data').textContent);
+
 let currentDateAdmin = new Date();
 const monthNamesAdmin = [
     "January", "February", "March", "April", "May", "June",
@@ -260,29 +377,51 @@ function updateCalendarAdmin() {
     const startingDay = firstDay.getDay();
     const lastDay = new Date(currentDateAdmin.getFullYear(), currentDateAdmin.getMonth() + 1, 0);
     const totalDays = lastDay.getDate();
+
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDay; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'calendar-day-admin empty-day';
         calendar.appendChild(emptyCell);
     }
+
     // Add the days of the month
     for (let day = 1; day <= totalDays; day++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-day-admin';
+        
+        // Create date string for comparison
+        const dateString = `${currentDateAdmin.getFullYear()}-${String(currentDateAdmin.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        // Check for events on this day
+        const dayEvents = events.filter(event => event.date === dateString);
+        if (dayEvents.length > 0) {
+            const hasApproved = dayEvents.some(event => event.status === 'approved');
+            const hasPending = dayEvents.some(event => event.status === 'pending');
+            
+            if (hasApproved && hasPending) {
+                cell.className += ' has-both-events';
+            } else if (hasApproved) {
+                cell.className += ' has-approved-event';
+            } else if (hasPending) {
+                cell.className += ' has-pending-event';
+            }
+        }
+
+        // Highlight current day
         const today = new Date();
-        if (
-            day === today.getDate() &&
+        if (day === today.getDate() &&
             currentDateAdmin.getMonth() === today.getMonth() &&
-            currentDateAdmin.getFullYear() === today.getFullYear()
-        ) {
+            currentDateAdmin.getFullYear() === today.getFullYear()) {
             cell.className += ' today';
         }
+
         cell.textContent = day;
         calendar.appendChild(cell);
     }
+
     // Add empty cells for remaining days to complete the grid
-    const remainingDays = 42 - (startingDay + totalDays); // 42 = 6 rows × 7 days
+    const remainingDays = 42 - (startingDay + totalDays);
     for (let i = 0; i < remainingDays; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.className = 'calendar-day-admin empty-day';

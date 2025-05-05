@@ -446,5 +446,26 @@
     <a href="{% url 'main:patient_form' %}" class="btn btn-primary ml-3">Complete Medical Form</a>
 </div>
 {% endif %}
+
+<!-- SweetAlert2 for Django messages -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+{% if messages %}
+{% for message in messages %}
+(function() {
+  var config = {
+    icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+    title: '',
+    text: "{% autoescape off %}{{ message }}{% endautoescape %}",
+    showConfirmButton: true
+  };
+  {% if "success" in message.tags %}
+  config.timer = 1800;
+  {% endif %}
+  Swal.fire(config);
+})();
+{% endfor %}
+{% endif %}
+</script>
   </body>
 </html>

@@ -133,9 +133,7 @@
         </div>
     </div>
     {% if messages %}
-        {% for message in messages %}
-            <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+    
     {% endif %}
 </div>
 {% endblock %}
