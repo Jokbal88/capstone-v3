@@ -11,7 +11,8 @@ from medical.models import (
     FamilyMedicalHistory,
     RiskAssessment,
     MentalHealthRecord,
-    PatientRequest
+    PatientRequest,
+    TransactionRecord
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -240,7 +241,7 @@ def patient_form(request):
     except Exception as e:
         print(e)
         messages.error(request, f'Error saving patient information: {str(e)}')
-    
+        
     return render(request, 'patient_form.html')
 
 def calculate_age(birthdate):
@@ -274,25 +275,43 @@ def admin_dashboard_view(request):
         approve=True
     ).count()
     
-    # Get upcoming requests
-    upcoming_requests = PatientRequest.objects.filter(
+    # Get upcoming requests with patient and student information
+    upcoming_requests = PatientRequest.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(
         date_requested__gte=today
     ).order_by('date_requested')[:5]
     
     # Get scheduled appointments for the calendar
-    scheduled_appointments = PatientRequest.objects.filter(
+    scheduled_appointments = PatientRequest.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(
         date_requested__gte=today
-    ).values('date_requested', 'approve', 'student__first_name', 'student__last_name', 'request_type')
+    ).values(
+        'date_requested',
+        'approve',
+        'patient__student__firstname',
+        'patient__student__lastname',
+        'request_type'
+    )
     
     # Format appointments for the calendar
     events = []
     for appointment in scheduled_appointments:
         events.append({
             'date': appointment['date_requested'].strftime('%Y-%m-%d'),
-            'student': f"{appointment['student__first_name']} {appointment['student__last_name']}",
+            'student': f"{appointment['patient__student__firstname']} {appointment['patient__student__lastname']}",
             'service': appointment['request_type'],
             'status': 'approved' if appointment['approve'] else 'pending'
         })
+    
+    # Get recent transactions with patient and student information
+    transaction_log = TransactionRecord.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-transac_date')[:5]
     
     context = {
         'total_patients': total_patients,
@@ -300,7 +319,8 @@ def admin_dashboard_view(request):
         'pending_requests': pending_requests,
         'todays_schedule': todays_schedule,
         'upcoming_requests': upcoming_requests,
-        'events': events
+        'events': events,
+        'transaction_log': transaction_log
     }
     
     return render(request, 'admin_dashboard.html', context)
