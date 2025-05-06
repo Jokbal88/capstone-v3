@@ -123,22 +123,22 @@
             </a>
           </li>
           {% else %}
-            <li>
+          <li>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'main:student_dashboard' %}">Dashboard</a>
-            </li>
-            <li>
+          </li>
+          <li>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:request' %}">Documentary Request</a>
-            </li>
-            <li>
+          </li>
+          <li>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'medtracker' or request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:upload_requirements' %}">Medical Requirements Upload</a>
-            </li>
-            <li>
+          </li>
+          <li>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:dentalservice' %}">Dental Services Availment</a>
             </li>
             <li class="flex items-center gap-2 pr-4 ml-auto">
               <span class="font-semibold text-black">{{ user.get_full_name|default:user.username }}</span>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all text-blue-600 border border-blue-200 rounded" href="{% url 'main:logout' %}">Logout</a>
-            </li>
+          </li>
           {% endif %}
         </ul>
         <svg
@@ -320,153 +320,20 @@
     <script src="{% static 'scripts/jquery/jquery-3.7.1.min.js' %}"></script>
     <script src="{% static 'scripts/newmain.js' %}"></script>
     {% block extra_js %}{% endblock %}
-{% if user.is_authenticated %}
-    {% if user.is_staff %}
-        <!-- Admin Dashboard Section -->
-        <!-- 
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Patients</h5>
-                        <p class="card-text">{{ total_patients }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Pending Clearances</h5>
-                        <p class="card-text">{{ pending_clearances }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        Recent Examinations
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Student ID</th>
-                                        <th>Name</th>
-                                        <th>Date</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for exam in recent_examinations %}
-                                    <tr>
-                                        <td>{{ exam.student.student_id }}</td>
-                                        <td>{{ exam.student.get_full_name }}</td>
-                                        <td>{{ exam.date_created|date:"F d, Y" }}</td>
-                                        <td>
-                                            <button class="btn btn-primary btn-sm">View Details</button>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">No recent examinations found.</td>
-                                    </tr>
+    <!-- SweetAlert2 for Django messages -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% if messages %}
+    <script>
+        {% for message in messages %}
+        Swal.fire({
+            icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+            title: '',
+            text: "{{ message|escapejs }}",
+            timer: 2500,
+            showConfirmButton: false
+        });
                                     {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div> 
-        -->
-    {% else %}
-        {% if patient %}
-            <!-- Student-specific content here -->
-        {% endif %}
-    {% endif %}
+    </script>
 {% endif %}
-
-<!-- <div class="row">
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Medical History</div>
-            <div class="card-body">
-                {% if medical_history %}
-                <ul class="list-unstyled">
-                    {% if medical_history.tuberculosis %}
-                    <li>✓ Tuberculosis</li>
-                    {% endif %}
-                    {% if medical_history.hypertension %}
-                    <li>✓ Hypertension</li>
-                    {% endif %}
-                    {% if medical_history.heart_disease %}
-                    <li>✓ Heart Disease</li>
-                    {% endif %}
-                    {% if medical_history.asthma %}
-                    <li>✓ Asthma</li>
-                    {% endif %}
-                </ul>
-                {% else %}
-                <p>No medical history recorded.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Risk Assessment</div>
-            <div class="card-body">
-                {% if risk_assessment %}
-                <ul class="list-unstyled">
-                    {% if risk_assessment.cardiovascular_disease %}
-                    <li>✓ Cardiovascular Disease</li>
-                    {% endif %}
-                    {% if risk_assessment.chronic_lung_disease %}
-                    <li>✓ Chronic Lung Disease</li>
-                    {% endif %}
-                    {% if risk_assessment.pwd %}
-                    <li>✓ PWD: {{ risk_assessment.disability }}</li>
-                    {% endif %}
-                </ul>
-                {% else %}
-                <p>No risk assessment recorded.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div> -->
-
-{% if not user.is_authenticated %}
-<div class="alert alert-warning">
-    No medical records found. Please complete your medical form.
-    <a href="{% url 'main:patient_form' %}" class="btn btn-primary ml-3">Complete Medical Form</a>
-</div>
-{% endif %}
-
-<!-- SweetAlert2 for Django messages -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-{% if messages %}
-{% for message in messages %}
-(function() {
-  var config = {
-    icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
-    title: '',
-    text: "{% autoescape off %}{{ message }}{% endautoescape %}",
-    showConfirmButton: true
-  };
-  {% if "success" in message.tags %}
-  config.timer = 1800;
-  {% endif %}
-  Swal.fire(config);
-})();
-{% endfor %}
-{% endif %}
-</script>
   </body>
 </html>

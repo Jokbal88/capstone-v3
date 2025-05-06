@@ -182,8 +182,8 @@
 
 {% block content %}
 <div class="admin-dashboard-container">
-    <!-- Stats Grid -->
-    <div class="flex gap-4 mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200">
+    <!-- Stats Grid with Time/Date -->
+    <div class="flex gap-4 mb-8 bg-gray-50 rounded-xl p-4 border border-gray-200 items-stretch">
         <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
             <i class="fas fa-users text-blue-500 text-xl mb-1"></i>
             <span class="text-xs text-gray-500 mb-1">Total Patients</span>
@@ -204,12 +204,17 @@
             <span class="text-xs text-gray-500 mb-1">Today's Schedule</span>
             <span class="text-2xl font-bold text-purple-600">{{ todays_schedule|default:0 }}</span>
       </div>
+        <!-- Move clock/date to far right and make it bigger -->
+        <div class="flex flex-col justify-center items-end flex-[2] bg-white rounded-xl shadow border border-blue-100 ml-4 p-8" style="min-width:320px; min-height:100px;">
+            <div id="adminLiveTime" class="text-5xl font-extrabold text-blue-700 mb-2" style="letter-spacing:1px;"></div>
+            <div id="adminLiveDate" class="text-xl font-semibold text-gray-600"></div>
+      </div>
     </div>
     <div class="dashboard-main-grid">
         <!-- Left Column: Upcoming Requests + Transaction Log -->
         <div class="flex flex-col h-full flex-1 gap-3">
             <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Requests</h2>
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Documentary Requests</h2>
                 <div class="overflow-x-auto flex-1">
                     <table class="min-w-full dashboard-table text-sm">
         <thead>
@@ -282,24 +287,8 @@
     </div>
             </div>
         </div>
-        <!-- Right Column: Schedule (top), Calendar (middle), Recent Transactions (bottom) -->
+        <!-- Right Column: Calendar (top), Schedule (below), Recent Transactions (bottom) -->
         <div class="flex flex-col h-full flex-1 gap-1">
-            <div class="dashboard-card flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-calendar-alt text-blue-400"></i> Schedule</h2>
-                <div class="space-y-2">
-                    {% for event in events %}
-                    <div class="flex items-start space-x-2">
-                        <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                        <div>
-                            <p class="text-xs font-semibold text-gray-800">{{ event.student }}</p>
-                            <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-xs text-center text-gray-400">No scheduled events</p>
-                    {% endfor %}
-                </div>
-            </div>
             <div class="calendar-admin w-full flex flex-col justify-end mb-1 p-1" style="min-height: 120px; height: auto; width: 100%;">
                 <div class="flex items-center justify-between mb-2 w-full gap-2">
                     <span class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
@@ -323,6 +312,22 @@
                     <div class="calendar-header-cell-admin">Sa</div>
                 </div>
                 <div id="calendarDaysAdmin" class="flex-1"></div>
+            </div>
+            <div class="dashboard-card flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-calendar-alt text-blue-400"></i> Schedule</h2>
+                <div class="space-y-2">
+                    {% for event in events %}
+                    <div class="flex items-start space-x-2">
+                        <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-800">{{ event.student }}</p>
+                            <p class="text-xs text-gray-500">{{ event.service }} - {{ event.date }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-xs text-center text-gray-400">No scheduled events</p>
+                    {% endfor %}
+                </div>
             </div>
             <div class="dashboard-card flex flex-col p-2" style="min-height: 40px; height: auto;">
                 <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-exchange-alt text-blue-400"></i> Recent Transactions</h2>
@@ -359,6 +364,16 @@
 {{ events|json_script:"admin-events-data" }}
 
 <script>
+function updateAdminLiveTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateString = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('adminLiveTime').textContent = timeString;
+    document.getElementById('adminLiveDate').textContent = dateString;
+}
+setInterval(updateAdminLiveTime, 1000);
+document.addEventListener('DOMContentLoaded', updateAdminLiveTime);
+
 // Parse events from Django context
 const events = JSON.parse(document.getElementById('admin-events-data').textContent);
 

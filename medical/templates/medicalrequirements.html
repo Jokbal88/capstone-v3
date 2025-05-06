@@ -149,13 +149,6 @@
             </tbody>
         </table>
     </div>
-    {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <p class="text-[14px] {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-    </div>
-    {% endif %}
     {% if not user.is_superuser and not user.is_staff %}
         <button class="bg-[#3b82f6] mt-8 text-white text-[14px] py-2 px-4 rounded-md w-full cursor-pointer">
             <a href="{% url 'medical:upload_requirements' %}">Upload Requirement</a>
@@ -232,13 +225,7 @@
             imagePreview.src = '';
         }
     }
-
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == 'success' %}
-                alert("{{ message }}");
-            {% endif %}
-        {% endfor %}
-    {% endif %}
 </script>
 {% endblock %}
+
+{% block messages %}{% endblock %}
