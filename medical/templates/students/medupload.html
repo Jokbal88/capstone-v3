@@ -18,7 +18,6 @@
             <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
                 <p class="text-sm text-blue-800">Please submit all required medical documents. These are essential for ensuring the health and safety of all students.</p>
             </div>
-            <p>DEBUG: requirements = {{ requirements|length }} items</p>
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
                 <thead class="bg-[#e6e6e6]">
                     <tr>
@@ -35,15 +34,15 @@
                         <td class="p-2">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <a class="text-blue-600 underline" href="{{ md.chest_xray.url }}" target="_blank">{{ md.chest_xray.name|slice:"11:" }}</a>
+                                    <button onclick="openFilePreview('{{ md.chest_xray.url }}')" class="text-blue-600 underline">Preview</button>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <a class="text-blue-600 underline" href="{{ md.cbc.url }}" target="_blank">{{ md.cbc.name|slice:"4:" }}</a>
+                                    <button onclick="openFilePreview('{{ md.cbc.url }}')" class="text-blue-600 underline">Preview</button>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <a class="text-blue-600 underline" href="{{ md.drug_test.url }}" target="_blank">{{ md.drug_test.name|slice:"11:" }}</a>
+                                    <button onclick="openFilePreview('{{ md.drug_test.url }}')" class="text-blue-600 underline">Preview</button>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <a class="text-blue-600 underline" href="{{ md.stool_examination.url }}" target="_blank">{{ md.stool_examination.name|slice:"11:" }}</a>
+                                    <button onclick="openFilePreview('{{ md.stool_examination.url }}')" class="text-blue-600 underline">Preview</button>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <a class="text-blue-600 underline" href="{{ md.pwd_card.url }}" target="_blank">{{ md.pwd_card.name|slice:"9:" }}</a>
+                                    <button onclick="openFilePreview('{{ md.pwd_card.url }}')" class="text-blue-600 underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
@@ -52,7 +51,7 @@
                             {% endif %}
                         </td>
                         <td class="p-2 text-center">
-        {% if md %}
+                            {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
                                     <span class="text-green-600 text-xl">&#10003;</span>
                                 {% elif req.slug == 'cbc' and md.cbc %}
@@ -65,10 +64,10 @@
                                     <span class="text-green-600 text-xl">&#10003;</span>
                                 {% else %}
                                     <span class="text-red-500 text-xl">&#10007;</span>
-            {% endif %}
+                                {% endif %}
                             {% else %}
                                 <span class="text-gray-400">None</span>
-        {% endif %}
+                            {% endif %}
                         </td>
                         <td class="p-2 text-center">
                             {% if md %}
@@ -81,7 +80,7 @@
                                 </form>
                             {% else %}
                                 <form method="POST">
-            {% csrf_token %}
+                                    {% csrf_token %}
                                     <input type="hidden" name="student_id" value="{{ user.username }}">
                                     <input type="hidden" name="requirement_type" value="{{ req.slug }}">
                                     <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Submit</button>
@@ -90,19 +89,60 @@
                         </td>
                     </tr>
                     {% endfor %}
-                    <tr>
-                        <td colspan="4" style="color:red;">TEST ROW - Template is rendering</td>
-                      </tr>
                 </tbody>
             </table>
-            </div>
-            </div>
+        </div>
+    </div>
     {% if messages %}
         <div class="mt-4">
-        {% for message in messages %}
+            {% for message in messages %}
                 <p class="text-[14px] {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
+            {% endfor %}
         </div>
     {% endif %}
 </div>
+
+<!-- Modal -->
+<div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white p-4 rounded-lg shadow-lg w-[90%] h-[90%] relative">
+        <button onclick="closeFilePreview()" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        <div class="w-full h-full pt-8">
+            <iframe id="filePreview" class="w-full h-full" frameborder="0"></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+function openFilePreview(url) {
+    document.getElementById('filePreview').src = url;
+    document.getElementById('previewModal').classList.remove('hidden');
+    document.getElementById('previewModal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFilePreview() {
+    document.getElementById('previewModal').classList.add('hidden');
+    document.getElementById('previewModal').classList.remove('flex');
+    document.getElementById('filePreview').src = '';
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeFilePreview();
+    }
+});
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeFilePreview();
+    }
+});
+</script>
 {% endblock %}
