@@ -1451,33 +1451,3 @@ def dashboard_view(request):
         return redirect('main:login')
 
     return render(request, 'student_dashboard.html', context)
-
-def preview_file(request, file_type, student_id):
-    if not request.user.is_authenticated:
-        return HttpResponseForbidden("Please log in to view files")
-    
-    try:
-        patient = Patient.objects.get(student__student_id=student_id)
-        med_requirement = MedicalRequirement.objects.get(patient=patient)
-        
-        file_field = None
-        if file_type == 'chest_xray':
-            file_field = med_requirement.chest_xray
-        elif file_type == 'cbc':
-            file_field = med_requirement.cbc
-        elif file_type == 'drug_test':
-            file_field = med_requirement.drug_test
-        elif file_type == 'stool_examination':
-            file_field = med_requirement.stool_examination
-        elif file_type == 'pwd_card':
-            file_field = med_requirement.pwd_card
-            
-        if not file_field:
-            return HttpResponse("File not found", status=404)
-            
-        response = HttpResponse(file_field.read(), content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="{file_field.name}"'
-        return response
-        
-    except (Patient.DoesNotExist, MedicalRequirement.DoesNotExist):
-        return HttpResponse("File not found", status=404)
