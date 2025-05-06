@@ -17,8 +17,7 @@
         {% csrf_token %}
         <h1>PATIENT'S BASIC INFORMATION</h1>
         <fieldset>
-            <legend><strong>Information</strong></legend>
-            <!-- <input type="hidden" name="student_id" value="{{ students.student_id }}"> -->
+            <legend><strong>Personal Information</strong></legend>
             <div class="user-details">
                 <div class="input-box">
                     <span class="details">Student ID:</span>
@@ -39,12 +38,6 @@
                 <div class="input-box">
                     <span class="details">Sex:</span>
                     <input type="text" name="sex" value="{{ student.sex }}">
-                    <!-- <select name="sex" required>
-                        <option value="" selected disabled>Select your sex:</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
-                    </select> -->
                 </div>
                 <div class="input-box">
                     <span class="details">Email Address:</span>
@@ -58,6 +51,12 @@
                     <span class="details">Course:</span>
                     <input type="text" value="{{ student.degree|title }}" name="course">
                 </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend><strong>Medical Information</strong></legend>
+            <div class="user-details">
                 <div class="input-box">
                     {% if patient.birth_date %}
                         <span class="details">Birth Date:</span>
@@ -72,15 +71,15 @@
                     <input type="number" value="{{ patient.age }}" name="age" required>
                 </div>
                 <div class="input-box">
-                    <span class="details">Weight:</span>
-                    <input type="text" value="{{ patient.weight }}" name="weight" required>
+                    <span class="details">Weight (kg):</span>
+                    <input type="number" step="0.01" value="{{ patient.weight }}" name="weight" required>
                 </div>
                 <div class="input-box">
-                    <span class="details">Height:</span>
-                    <input type="text" value="{{ patient.height }}" name="height" required>
+                    <span class="details">Height (cm):</span>
+                    <input type="number" step="0.01" value="{{ patient.height }}" name="height" required>
                 </div>
                 <div class="input-box">
-                    <span class="details">Bloodtype:</span>
+                    <span class="details">Blood Type:</span>
                     <input type="text" value="{{ patient.bloodtype }}" name="bloodtype" required>
                 </div>
                 <div class="input-box">
@@ -91,6 +90,12 @@
                     <span class="details">Medications:</span>
                     <input type="text" value="{{ patient.medications }}" name="medications" required>
                 </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend><strong>Address Information</strong></legend>
+            <div class="user-details">
                 <div class="input-box">
                     <span class="details">Home Address:</span>
                     <input type="text" value="{{ patient.home_address|title }}" name="home_address" required>
@@ -111,12 +116,22 @@
                     <span class="details">Country:</span>
                     <input type="text" name="country" value="{{ patient.country }}" required>
                 </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend><strong>Additional Information</strong></legend>
+            <div class="user-details">
                 <div class="input-box">
                     <span class="details">Nationality:</span>
                     <input type="text" value="{{ patient.nationality|title }}" name="nationality">
                 </div>
                 <div class="input-box">
-                    {% if  patient.civil_status %}
+                    <span class="details">Religion:</span>
+                    <input type="text" value="{{ patient.religion|title }}" name="religion">
+                </div>
+                <div class="input-box">
+                    {% if patient.civil_status %}
                         <span class="details">Civil Status:</span>
                         <input type="text" value="{{ patient.civil_status }}" name="civil_status">
                     {% else %}
@@ -125,13 +140,14 @@
                             <option value="" selected disabled>Select your status:</option>
                             <option value="Single">Single</option>
                             <option value="Married">Married</option>
-                            <option value="Divorce">Divorce</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
                         </select>
                     {% endif %}
                 </div>
                 <div class="input-box">
                     <span class="details">Number of Children:</span>
-                    <input type="number" value="{{ patient.number_of_children }}" name="number_of_children" required>
+                    <input type="number" value="{{ patient.number_of_children }}" name="number_of_children" min="0">
                 </div>
                 <div class="input-box">
                     <span class="details">Academic Year:</span>

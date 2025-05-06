@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Function to handle "None" checkbox logic
+    // Function to handle 'None' checkbox logic for mutually exclusive selection
     function handleNoneCheckbox(noneId, groupName, otherDivClass) {
         const noneCheckbox = document.getElementById(noneId);
         const otherCheckboxes = document.querySelectorAll(`input[name="${groupName}"]:not(#${noneId})`);
-        const otherDiv = document.querySelector(`.${otherDivClass}`);
+        const otherDiv = otherDivClass ? document.querySelector(`.${otherDivClass}`) : null;
 
         if (noneCheckbox) {
             noneCheckbox.addEventListener('change', function() {
@@ -27,11 +27,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize checkbox handlers for each section
+    // Initialize checkbox handlers for each section with correct IDs
     handleNoneCheckbox('allergy_none', 'allergies', 'other-allergies');
-    handleNoneCheckbox('history_none', 'medical_history', 'other-medical-history');
-    handleNoneCheckbox('family_none', 'family_history', 'other-family-history');
-    handleNoneCheckbox('risk_none', 'risk_assessment', 'pwd-details');
+    handleNoneCheckbox('history_none', 'medical_history');
+    handleNoneCheckbox('family_none', 'family_history', 'other-family-conditions-input');
+    handleNoneCheckbox('risk_none', 'risk_assessment', 'pwd_specification_input');
 
     // Special handler for PWD checkbox
     const pwdCheckbox = document.getElementById('pwd');
@@ -63,4 +63,31 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = value;
         });
     }
+
+    // Show/hide 'Other Medical Conditions' input
+    const otherConditionsCheckbox = document.getElementById('other_conditions');
+    const otherConditionsInput = document.getElementById('other_conditions_input');
+    if (otherConditionsCheckbox && otherConditionsInput) {
+        otherConditionsCheckbox.addEventListener('change', function() {
+            otherConditionsInput.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('other_medical').value = '';
+            }
+        });
+    }
+
+    // Show/hide 'Other Family Medical Conditions' input
+    const otherFamilyConditionsCheckbox = document.getElementById('other_family_conditions');
+    const otherFamilyConditionsInput = document.getElementById('other_family_conditions_input');
+    if (otherFamilyConditionsCheckbox && otherFamilyConditionsInput) {
+        otherFamilyConditionsCheckbox.addEventListener('change', function() {
+            otherFamilyConditionsInput.style.display = this.checked ? 'block' : 'none';
+            if (!this.checked) {
+                document.getElementById('other_family_medical').value = '';
+            }
+        });
+    }
+
+    // Debug log for Family Medical History Other Medical Conditions
+    console.log('other_family_conditions:', document.getElementById('other_family_conditions'), document.getElementById('other_family_conditions_input'));
 });

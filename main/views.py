@@ -147,8 +147,8 @@ def patient_form(request):
         
         if request.method == 'GET':
             try:
-                patient = medical_models.Patient.objects.get(student_id=request.user.username)
-                return redirect('main:student_dashboard') if patient else None
+            patient = medical_models.Patient.objects.get(student_id=request.user.username)
+            return redirect('main:student_dashboard') if patient else None
             except medical_models.Patient.DoesNotExist:
                 pass
         
@@ -184,51 +184,64 @@ def patient_form(request):
                 examination=physical_exam
             )
             
+            # --- Medical History logic ---
+            med_hist_list = request.POST.getlist('medical_history')
+            if 'No Medical History' in med_hist_list:
+                med_hist_list = ['No Medical History']
+            # --- Family Medical History logic ---
+            fam_hist_list = request.POST.getlist('family_history')
+            if 'No Family History' in fam_hist_list:
+                fam_hist_list = ['No Family History']
+            # --- Risk Assessment logic ---
+            risk_list = request.POST.getlist('risk_assessment')
+            if 'No Risk' in risk_list:
+                risk_list = ['No Risk']
+
             # Create MedicalHistory record
             medical_history = medical_models.MedicalHistory.objects.create(
                 examination=physical_exam,
-                tuberculosis='tuberculosis' in request.POST.getlist('medical_history'),
-                hypertension='hypertension' in request.POST.getlist('medical_history'),
-                heart_disease='heart_disease' in request.POST.getlist('medical_history'),
-                hernia='hernia' in request.POST.getlist('medical_history'),
-                epilepsy='epilepsy' in request.POST.getlist('medical_history'),
-                peptic_ulcer='peptic_ulcer' in request.POST.getlist('medical_history'),
-                kidney_disease='kidney_disease' in request.POST.getlist('medical_history'),
-                asthma='asthma' in request.POST.getlist('medical_history'),
-                insomnia='insomnia' in request.POST.getlist('medical_history'),
-                malaria='malaria' in request.POST.getlist('medical_history'),
-                venereal_disease='venereal_disease' in request.POST.getlist('medical_history'),
-                nervous_breakdown='nervous_breakdown' in request.POST.getlist('medical_history'),
-                jaundice='jaundice' in request.POST.getlist('medical_history'),
+                tuberculosis='tuberculosis' in med_hist_list,
+                hypertension='hypertension' in med_hist_list,
+                heart_disease='heart_disease' in med_hist_list,
+                hernia='hernia' in med_hist_list,
+                epilepsy='epilepsy' in med_hist_list,
+                peptic_ulcer='peptic_ulcer' in med_hist_list,
+                kidney_disease='kidney_disease' in med_hist_list,
+                asthma='asthma' in med_hist_list,
+                insomnia='insomnia' in med_hist_list,
+                malaria='malaria' in med_hist_list,
+                venereal_disease='venereal_disease' in med_hist_list,
+                nervous_breakdown='nervous_breakdown' in med_hist_list,
+                jaundice='jaundice' in med_hist_list,
                 others=request.POST.get('other_medical', ''),
-                no_history='no_medical_history' in request.POST.getlist('medical_history')
+                no_history='No Medical History' in med_hist_list
             )
             
             # Create FamilyMedicalHistory record
             family_history = medical_models.FamilyMedicalHistory.objects.create(
                 examination=physical_exam,
-                hypertension='family_hypertension' in request.POST.getlist('family_history'),
-                asthma='family_asthma' in request.POST.getlist('family_history'),
-                cancer='family_cancer' in request.POST.getlist('family_history'),
-                tuberculosis='family_tuberculosis' in request.POST.getlist('family_history'),
-                diabetes='family_diabetes' in request.POST.getlist('family_history'),
-                bleeding_disorder='family_bleeding' in request.POST.getlist('family_history'),
-                epilepsy='family_epilepsy' in request.POST.getlist('family_history'),
-                mental_disorder='family_mental' in request.POST.getlist('family_history'),
-                no_history='no_family_history' in request.POST.getlist('family_history'),
+                hypertension='hypertension' in fam_hist_list,
+                asthma='asthma' in fam_hist_list,
+                cancer='cancer' in fam_hist_list,
+                tuberculosis='tuberculosis' in fam_hist_list,
+                diabetes='diabetes' in fam_hist_list,
+                bleeding_disorder='bleeding_disorder' in fam_hist_list,
+                epilepsy='epilepsy' in fam_hist_list,
+                mental_disorder='mental_disorder' in fam_hist_list,
+                no_history='No Family History' in fam_hist_list,
                 other_medical_history=request.POST.get('other_family_medical', '')
             )
             
             # Create RiskAssessment record
             risk_assessment = medical_models.RiskAssessment.objects.create(
                 clearance=patient,
-                cardiovascular_disease='cardiovascular' in request.POST.getlist('risk_assessment'),
-                chronic_lung_disease='chronic_lung' in request.POST.getlist('risk_assessment'),
-                chronic_renal_disease='chronic_kidney' in request.POST.getlist('risk_assessment'),
-                chronic_liver_disease='chronic_liver' in request.POST.getlist('risk_assessment'),
-                cancer='cancer' in request.POST.getlist('risk_assessment'),
-                autoimmune_disease='autoimmune' in request.POST.getlist('risk_assessment'),
-                pwd='pwd' in request.POST.getlist('risk_assessment'),
+                cardiovascular_disease='cardiovascular' in risk_list,
+                chronic_lung_disease='chronic_lung' in risk_list,
+                chronic_renal_disease='chronic_kidney' in risk_list,
+                chronic_liver_disease='chronic_liver' in risk_list,
+                cancer='cancer' in risk_list,
+                autoimmune_disease='autoimmune' in risk_list,
+                pwd='pwd' in risk_list,
                 disability=request.POST.get('disability', '')
             )
             

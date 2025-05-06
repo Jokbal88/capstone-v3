@@ -60,6 +60,7 @@ def patient_basic_info(request, student_id):
         postal_zipcode = request.POST.get("postal-zip-code")
         country = request.POST.get("country")
         nationality = request.POST.get("nationality")
+        religion = request.POST.get("religion")
         civil_status = request.POST.get("civil_status")
         number_of_children = request.POST.get("number_of_children")
         academic_year = request.POST.get("academic_year")
@@ -82,6 +83,7 @@ def patient_basic_info(request, student_id):
             postal_zipcode = postal_zipcode,
             country = country,
             nationality = nationality,
+            religion = religion,
             civil_status = civil_status,
             number_of_children = number_of_children,
             academic_year = academic_year,

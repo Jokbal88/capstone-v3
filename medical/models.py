@@ -35,6 +35,7 @@ class Patient(models.Model):
     country = models.CharField(max_length=100)
     nationality = models.CharField(max_length=100)
     civil_status = models.CharField(max_length=20)
+    religion = models.CharField(max_length=50, null=True, blank=True)
     number_of_children = models.PositiveIntegerField(null=True, blank=True)
     academic_year = models.CharField(max_length=20)
     section = models.CharField(max_length=20)

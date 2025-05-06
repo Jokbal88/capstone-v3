@@ -39,39 +39,37 @@
             {% csrf_token %}
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Personal Information</h3>
-                <div class="flex flex-col">
-                    <div class="flex gap-2">
-                        <div class="flex flex-col w-full">
-                            <label for="birth_date">Birth Date</label>
-                            <input type="date" id="birth_date" name="birth_date" required>
-                        </div>
-                        <div class="flex flex-col w-full">
-                            <label for="bloodtype">Blood Type</label>
-                            <select id="bloodtype" name="bloodtype" required>
-                                <option value="">Select Blood Type</option>
-                                <option value="Unknown">Unknown</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                            </select>
-                        </div>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <div class="flex flex-col w-full">
+                        <label for="birth_date">Birth Date</label>
+                        <input type="date" id="birth_date" name="birth_date" required>
                     </div>
-                    <div class="flex gap-2">
-                        <div class="flex flex-col w-full">
-                            <label for="height">Height (cm)</label>
-                            <input type="number" step="0.01" id="height" name="height" required>
-                        </div>
-                        <div class="flex flex-col w-full">
-                            <label for="weight">Weight (kg)</label>
-                            <input type="number" step="0.01" id="weight" name="weight" required>
-                        </div>
+                    <div class="flex flex-col w-full">
+                        <label for="bloodtype">Blood Type</label>
+                        <select id="bloodtype" name="bloodtype" required>
+                            <option value="">Select Blood Type</option>
+                            <option value="Unknown">Unknown</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
                     </div>
-                </div>                
+                </div>
+                <div class="flex flex-col md:flex-row gap-2">
+                    <div class="flex flex-col w-full">
+                        <label for="height">Height (cm)</label>
+                        <input type="number" step="0.01" id="height" name="height" min="0" required>
+                    </div>
+                    <div class="flex flex-col w-full">
+                        <label for="weight">Weight (kg)</label>
+                        <input type="number" step="0.01" id="weight" name="weight" min="0" required>
+                    </div>
+                </div>
             </div>
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Medical Information</h3>
@@ -102,8 +100,8 @@
                         <label>Medical History (select all that apply)</label>
                         <div class="checkbox-group">
                             <div class="checkbox-item">
-                                <input type="checkbox" id="no_medical_history" name="medical_history" value="No Medical History">
-                                <label for="no_medical_history">No Medical History</label>
+                                <input type="checkbox" id="history_none" name="medical_history" value="No Medical History">
+                                <label for="history_none">No Medical History</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="tuberculosis" name="medical_history" value="tuberculosis">
@@ -177,8 +175,8 @@
                         <label>Family Medical History (select all that apply)</label>
                         <div class="checkbox-group">
                             <div class="checkbox-item">
-                                <input type="checkbox" id="no_family_history" name="family_history" value="No Family History">
-                                <label for="no_family_history">No Family History</label>
+                                <input type="checkbox" id="family_none" name="family_history" value="No Family History">
+                                <label for="family_none">No Family History</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="family_hypertension" name="family_history" value="hypertension">
@@ -232,8 +230,8 @@
                         <label>Risk Assessment (select all that apply)</label>
                         <div class="checkbox-group">
                             <div class="checkbox-item">
-                                <input type="checkbox" id="no_risk" name="risk_assessment" value="No Risk">
-                                <label for="no_risk">No Risk</label>
+                                <input type="checkbox" id="risk_none" name="risk_assessment" value="No Risk">
+                                <label for="risk_none">No Risk</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="age_above_60" name="risk_assessment" value="age_above_60">
@@ -265,7 +263,7 @@
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" id="pwd" name="risk_assessment" value="pwd">
-                                <label for="pwd">Person with disability</label>
+                                <label for="pwd">Person with Disability (PWD)</label>
                             </div>
                         </div>
     
@@ -284,7 +282,7 @@
 
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Contact Details</h3>
-                <div class="flex gap-2">
+                <div class="flex flex-col md:flex-row gap-2">
                     <div class="flex flex-col w-full">
                         <label for="home_address">Complete Home Address</label>
                         <input type="text" id="home_address" name="home_address" required>
@@ -303,7 +301,7 @@
                         <input type="text" id="country" name="country" value="Philippines" required>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex flex-col md:flex-row gap-2">
                     <div class="flex flex-col w-full">
                         <label for="state_province">Province</label>
                         <input type="text" id="state_province" name="state_province" required>
@@ -321,7 +319,7 @@
 
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Emergency Contact</h3>
-                <div class="flex gap-2">
+                <div class="flex flex-col md:flex-row gap-2">
                     <div class="flex flex-col w-full">
                         <label for="parent_guardian">Parent/Guardian Name</label>
                         <input type="text" id="parent_guardian" name="parent_guardian" required>
@@ -347,112 +345,5 @@
     </div>
     <script src="{% static 'scripts/patient_form.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-    document.querySelector('.patient-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Calculate age from birth date
-        const birthDate = new Date(document.getElementById('birth_date').value);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        
-        if (age < 16) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Age Restriction',
-                text: 'You must be at least 16 years old to register.'
-            });
-            return;
-        }
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: new FormData(this),
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Information Submitted Successfully!',
-                    text: 'Your medical information has been recorded.',
-                    showConfirmButton: true,
-                    confirmButtonText: 'Continue'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Redirect to the appropriate page after success
-                        window.location.href = '/student-dashboard/';  // Adjust this URL as needed
-                    }
-                });
-            } else {
-                throw new Error('Submission failed');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Something went wrong! Please try again.'
-            });
-        });
-    });
-
-    // Set max date to 16 years ago from today
-    const today = new Date();
-    const maxDate = new Date(today.getFullYear() - 16, today.getMonth(), today.getDate());
-    const minDate = new Date(today.getFullYear() - 100, today.getMonth(), today.getDate());
-    document.getElementById('birth_date').max = maxDate.toISOString().split('T')[0];
-    document.getElementById('birth_date').min = minDate.toISOString().split('T')[0];
-
-    // Add form validation alerts
-    document.querySelectorAll('input[required], select[required]').forEach(input => {
-        input.addEventListener('invalid', (e) => {
-            e.preventDefault();
-            Swal.fire({
-                icon: 'warning',
-                title: 'Required Field',
-                text: `Please fill in the ${input.previousElementSibling.textContent} field.`
-            });
-        });
-    });
-
-    // Personal Medical History
-    document.getElementById('other_conditions').addEventListener('change', function() {
-        const otherInput = document.getElementById('other_conditions_input');
-        otherInput.style.display = this.checked ? 'block' : 'none';
-        
-        if (!this.checked) {
-            document.getElementById('other_medical').value = '';
-        }
-    });
-
-    // Family Medical History
-    document.getElementById('other_family_conditions').addEventListener('change', function() {
-        const otherInput = document.getElementById('other_family_conditions_input');
-        otherInput.style.display = this.checked ? 'block' : 'none';
-        
-        if (!this.checked) {
-            document.getElementById('other_family_medical').value = '';
-        }
-    });
-
-    // Risk Assessment - PWD
-    document.getElementById('pwd').addEventListener('change', function() {
-        const pwdInput = document.getElementById('pwd_specification_input');
-        pwdInput.style.display = this.checked ? 'block' : 'none';
-        
-        if (!this.checked) {
-            document.getElementById('pwd_specification').value = '';
-        }
-    });
-    </script>
 </body>
 </html> 

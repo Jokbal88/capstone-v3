@@ -162,10 +162,10 @@
                         <div class="mb-4">
                             <label class="block text-sm font-medium">Year Level</label>
                             <input type="text" class="w-full border rounded px-2 py-1" value="{{ student.year_level }}" />
-                        </div>
+            </div>
                         <button type="button" class="w-full bg-blue-500 text-white rounded py-2 font-semibold">Save Changes</button>
                     </form>
-                </div>
+            </div>
             </div>
         </div>
         <!-- Center: Tabbed Information -->
@@ -327,9 +327,9 @@
                                     {% endif %}
                                     {% if family_history.other_medical_history %}
                                     <p class="text-gray-900">• {{ family_history.other_medical_history }}</p>
-                                    {% endif %}
+                            {% endif %}
                                 </div>
-                                {% endif %}
+                            {% endif %}
                             </div>
                         </div>
                     </div>
@@ -385,9 +385,9 @@
                             <td class="px-3 py-2">
                                 {% if request.approve %}
                                     <span class="inline-block px-2 py-1 rounded bg-green-100 text-green-800">Approved</span>
-                                {% else %}
+                    {% else %}
                                     <span class="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-800">Pending</span>
-                                {% endif %}
+                    {% endif %}
                             </td>
                         </tr>
                         {% empty %}
@@ -416,16 +416,16 @@
                     <div id="calendarDays" class="flex-1 grid grid-cols-7 grid-rows-6 gap-1"></div>
                 </div>
             </div>
-        </div>
+    </div>
     {% else %}
         <div class="bg-white rounded-lg shadow-lg p-6 text-center w-full flex items-center justify-center">
             <div>
                 <p class="text-gray-600 mb-4">No medical records found. Please complete your medical form.</p>
                 <a href="{% url 'main:patient_form' %}" class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Complete Medical Form</a>
             </div>
-        </div>
-    {% endif %}
     </div>
+    {% endif %}
+</div>
 </div>
 
 {% block extra_js %}
