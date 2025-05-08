@@ -10,7 +10,17 @@
 {% block content %}
 <div class="w-1/2 h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
-    
+    <script>
+        {% for message in messages %}
+        Swal.fire({
+            icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+            title: '',
+            text: "{{ message|escapejs }}",
+            timer: 2500,
+            showConfirmButton: false
+        });
+        {% endfor %}
+    </script>
     {% endif %}
     <form class="h-full flex flex-col" action="" method="POST" id="med_cert_form">
         {% csrf_token %}

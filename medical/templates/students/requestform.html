@@ -30,9 +30,17 @@
         </div>
        
         {% if messages %}
-        {% for message in messages %}
-            
-        {% endfor %}
+        <script>
+            {% for message in messages %}
+            Swal.fire({
+                icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+                title: '',
+                text: "{{ message|escapejs }}",
+                timer: 2500,
+                showConfirmButton: false
+            });
+            {% endfor %}
+        </script>
         {% endif %}
         <input class="bg-[#3b82f6] mt-8 text-white text-[14px] py-2 px-4 rounded-md w-[8rem] cursor-pointer" type="submit" value="Submit">
     </form>

@@ -9,18 +9,16 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="container">
-    {% if messages %}
-    
-    {% endif %}
-    <h2>List of PWD</h2>
-    <br><br>
-    <form method="POST" class="search-form">
-        {% csrf_token %}
-        <input type="text" name="student_id" placeholder="Search student">
-        <button type="submit">Search</button>
-    </form>
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    <div class="flex self-center items-center gap-8">
+        <h2>List of PWD</h2>
+        <br><br>
+        <form method="POST" class="search-form">
+            {% csrf_token %}
+            <input type="text" name="student_id" placeholder="Search student">
+            <button type="submit">Search</button>
+        </form>
+    </div>
     <div class="request">
         <table>
             <thead>

@@ -10,9 +10,6 @@
 
 {% block content %}
 <div class="container">
-    {% if messages %}
-    
-    {% endif %}
     <form method="POST" enctype="multipart/form-data" id="physical-exam-form">
         {% csrf_token %}
         <h1>PATIENT'S BASIC INFORMATION</h1>

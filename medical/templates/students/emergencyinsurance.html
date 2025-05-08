@@ -25,4 +25,17 @@
         <button class="btn-claim" type="button" onclick="alert('We are now processing your claim')">Claim Insurance</button>
     {% endif %}
 </div>
+{% if messages %}
+<script>
+    {% for message in messages %}
+    Swal.fire({
+        icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+        title: '',
+        text: "{{ message|escapejs }}",
+        timer: 2500,
+        showConfirmButton: false
+    });
+    {% endfor %}
+</script>
+{% endif %}
 {% endblock %}

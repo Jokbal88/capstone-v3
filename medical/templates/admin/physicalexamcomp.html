@@ -10,7 +10,17 @@
 {% block content %}
 <div class="w-full h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
-    
+    <script>
+        {% for message in messages %}
+        Swal.fire({
+            icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+            title: '',
+            text: "{{ message|escapejs }}",
+            timer: 2500,
+            showConfirmButton: false
+        });
+        {% endfor %}
+    </script>
     {% endif %}
     <form class="flex flex-col gap-4" method="POST" enctype="multipart/form-data" id="physical-exam-form">
         {% csrf_token %}

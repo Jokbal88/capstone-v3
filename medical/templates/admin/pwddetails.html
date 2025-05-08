@@ -16,45 +16,47 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    {% if messages %}
-    
-    {% endif %}
-    <h2>Student Detail</h2><br><br>
-    {% if md.pwd_card.url %}
-        <div class="student-id">
-            <img class="pwd-card" src="{{ md.pwd_card.url }}" alt="PWD ID Card">
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    <div class="flex self-center items-center gap-8">
+        {% if messages %}
+        
+        {% endif %}
+        <h2>Student Detail</h2><br><br>
+        {% if md.pwd_card.url %}
+            <div class="student-id">
+                <img class="pwd-card" src="{{ md.pwd_card.url }}" alt="PWD ID Card">
+            </div>
+        {% else %}
+            <div class="student-id">
+                <img class="pwd-card" src="#" alt="PWD ID Card">
+            </div>
+        {% endif %}
+        <div class="student-detail">
+            <div class="detail-row">
+                <span class="detail-title">Lastname:</span>
+                <span class="detail-content">{{ pwd.patient.student.lastname|title }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-title">Firstname:</span>
+                <span class="detail-content">{{ pwd.patient.student.firstname|title }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-title">Age:</span>
+                <span class="detail-content">{{ pwd.patient.age }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-title">Sex:</span>
+                <span class="detail-content">{{ pwd.patient.student.sex }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-title">Type of Disability:</span>
+                <span class="detail-content">{{ pwd.riskassessment.disability }}</span>
+            </div>
         </div>
-    {% else %}
-        <div class="student-id">
-            <img class="pwd-card" src="#" alt="PWD ID Card">
-        </div>
-    {% endif %}
-    <div class="student-detail">
-        <div class="detail-row">
-            <span class="detail-title">Lastname:</span>
-            <span class="detail-content">{{ pwd.patient.student.lastname|title }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-title">Firstname:</span>
-            <span class="detail-content">{{ pwd.patient.student.firstname|title }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-title">Age:</span>
-            <span class="detail-content">{{ pwd.patient.age }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-title">Sex:</span>
-            <span class="detail-content">{{ pwd.patient.student.sex }}</span>
-        </div>
-        <div class="detail-row">
-            <span class="detail-title">Type of Disability:</span>
-            <span class="detail-content">{{ pwd.riskassessment.disability }}</span>
-        </div>
-    </div>
 
-    <div style="display: flex;">
-        <a class="schedule-button" href="{% url 'medical:pwdlist' %}">Back</a>
+        <div style="display: flex;">
+            <a class="schedule-button" href="{% url 'medical:pwdlist' %}">Back</a>
+        </div>
     </div>
 </div>
 {% endblock %}

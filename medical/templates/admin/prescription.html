@@ -6,8 +6,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="w-full xs:h-fit lg:h-screen xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col items-center gap-4">
-    <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] text-center mb-4">Prescription Issuance</h2>
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    <div class="flex self-center items-center gap-8">
+        <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] text-center mb-4">Prescription Issuance</h2>
+    </div>
     <form method="POST" class="flex flex-col xs:gap-2 md:gap-4 xs:w-full md:w-[60%]">
         {% csrf_token %}
         <div class="flex flex-col">
@@ -37,13 +39,7 @@
             <button type="submit" class="bg-[#FFD700] p-3 w-full rounded-md text-[14px]" name="action" value="issue">Issue Prescription</button>
             <button class="bg-[#FFD700] w-full flex rounded-md text-[14px]"> <a class="p-3 w-full" href="{% url 'medical:prescription_records' %}">View Records</a></button>
         </div>
-        {% if messages %}
-            {% for message in messages %}
-                <p class="message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-            {% endfor %}
-        {% endif %}
     </form>
-
 </div>
 
 <script>
@@ -98,4 +94,18 @@
     });
 }); */
 </script>
+
+{% if messages %}
+<script>
+    {% for message in messages %}
+    Swal.fire({
+        icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
+        title: '',
+        text: "{{ message|escapejs }}",
+        timer: 2500,
+        showConfirmButton: false
+    });
+    {% endfor %}
+</script>
+{% endif %}
 {% endblock %}
