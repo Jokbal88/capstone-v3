@@ -124,18 +124,18 @@
             </a>
           </li>
           {% else %}
-          <li>
-              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'main:student_dashboard' %}">Dashboard</a>
+          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+              <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium  " href="{% url 'main:student_dashboard' %}">Dashboard</a>
           </li>
-          <li>
-              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:request' %}">Documentary Request</a>
+          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+              <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:request' %}">Documentary Request</a>
           </li>
-          <li>
-              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'medtracker' or request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:upload_requirements' %}">Medical Requirements Upload</a>
+          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+              <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:upload_requirements' %}">Medical Requirements Upload</a>
           </li>
-          <li>
-              <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all border-b-[4px] border-transparent {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] bg-[#f0f0f0]{% endif %}" href="{% url 'medical:dentalservice' %}">Dental Services Availment</a>
-            </li>
+          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+              <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:dentalservice' %}">Dental Services Availment</a>
+          </li>
             <li class="flex items-center gap-2 pr-4 ml-auto">
               <span class="font-semibold text-black">{{ user.get_full_name|default:user.username }}</span>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all text-blue-600 border border-blue-200 rounded" href="{% url 'main:logout' %}">Logout</a>
