@@ -85,6 +85,7 @@ Then visit \`http://127.0.0.1:8000/\` in your browser.
 
 ## 🙌 Special Mentions (Thank you for the guidance)
 
+- **hanz Archer** – Full-stack Developer
 - **Topecnz** – Full-stack Developer
 - **RikuRedFox** – Full-Stack Developer
 
