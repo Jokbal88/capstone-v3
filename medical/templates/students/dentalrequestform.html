@@ -29,11 +29,6 @@
             </div>
         </div>
        
-        {% if messages %}
-        {% for message in messages %}
-            <p class="text-red-500 {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-        {% endif %}
         <input class="bg-[#3b82f6] mt-8 text-white text-[14px] py-2 px-4 rounded-md w-[8rem] cursor-pointer" type="submit" value="Submit">
     </form>
 </div>

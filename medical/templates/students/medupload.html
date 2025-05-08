@@ -3,6 +3,49 @@
 {% block title %}HealthHub Connect | Medical Requirements Upload{% endblock %}
 {% block extra_css %}
 {% tailwind_css %}
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 800px;
+        border-radius: 8px;
+        position: relative;
+    }
+    .close-modal {
+        position: absolute;
+        right: 20px;
+        top: 10px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    #previewContainer {
+        width: 100%;
+        height: 80vh;
+        overflow: auto;
+    }
+    #previewContainer img {
+        max-width: 100%;
+        height: auto;
+    }
+    #previewContainer object {
+        width: 100%;
+        height: 100%;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -34,15 +77,15 @@
                         <td class="p-2">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <a class="text-blue-600 underline" href="{{ md.chest_xray.url }}" target="_blank">Preview</a>
+                                    <button onclick="previewFile('{{ md.chest_xray.url }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <a class="text-blue-600 underline" href="{{ md.cbc.url }}" target="_blank">Preview</a>
+                                    <button onclick="previewFile('{{ md.cbc.url }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <a class="text-blue-600 underline" href="{{ md.drug_test.url }}" target="_blank">Preview</a>
+                                    <button onclick="previewFile('{{ md.drug_test.url }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <a class="text-blue-600 underline" href="{{ md.stool_examination.url }}" target="_blank">Preview</a>
+                                    <button onclick="previewFile('{{ md.stool_examination.url }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <a class="text-blue-600 underline" href="{{ md.pwd_card.url }}" target="_blank">Preview</a>
+                                    <button onclick="previewFile('{{ md.pwd_card.url }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
@@ -75,7 +118,7 @@
                                     {% csrf_token %}
                                     <input type="hidden" name="student_id" value="{{ user.username }}">
                                     <input type="hidden" name="requirement_type" value="{{ req.slug }}">
-                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full mb-2" required>
+                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full mb-2" accept=".pdf,.jpg,.jpeg,.png" required>
                                     <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Upload</button>
                                 </form>
                             {% else %}
@@ -93,12 +136,66 @@
             </table>
             </div>
             </div>
-    {% if messages %}
-        <div class="mt-4">
-        {% for message in messages %}
-                <p class="text-[14px] {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
-        {% endfor %}
-        </div>
-    {% endif %}
 </div>
+
+<!-- Add Modal for File Preview -->
+<div id="previewModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <div id="previewContainer">
+            <!-- For PDFs -->
+            <object id="filePreview" 
+                    data="" 
+                    type="application/pdf" 
+                    width="100%" 
+                    height="100%" 
+                    style="display: none;">
+                <p>Unable to display PDF file. <a id="fallbackLink" href="" target="_blank">Download</a> instead.</p>
+            </object>
+            <!-- For Images -->
+            <img id="imagePreview" style="display: none;">
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewFile(fileUrl) {
+        const modal = document.getElementById('previewModal');
+        const objectPreview = document.getElementById('filePreview');
+        const imagePreview = document.getElementById('imagePreview');
+        const fallbackLink = document.getElementById('fallbackLink');
+        
+        // Check file type based on extension
+        const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
+        const isPDF = /\.pdf$/i.test(fileUrl);
+        
+        if (isImage) {
+            // Handle image files
+            imagePreview.src = fileUrl;
+            imagePreview.style.display = 'block';
+            objectPreview.style.display = 'none';
+        } else if (isPDF) {
+            // Handle PDF files
+            objectPreview.data = fileUrl;
+            fallbackLink.href = fileUrl;
+            objectPreview.style.display = 'block';
+            imagePreview.style.display = 'none';
+        }
+        
+        modal.style.display = 'block';
+    }
+
+    // Close modal when clicking the X
+    document.querySelector('.close-modal').onclick = function() {
+        document.getElementById('previewModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('previewModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
 {% endblock %}
