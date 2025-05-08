@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="xs:p-4 lg:p-8 bg-white rounded-[18px] flex flex-col gap-4 {% if user.is_superuser or user.is_staff %} w-full {% else %}xs:w-full md:w-1/2 h-[80%] {% endif %}">
+<div class="xs:p-4 lg:p-8 bg-white rounded-[18px] flex flex-col gap-4 {% if user.is_superuser or user.is_staff %} w-full h-screen {% else %}xs:w-full md:w-1/2 h-[80%] {% endif %}">
     <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] text-black tracking-tight py-4 text-center">Mental Health Services</h2>
     {% if user.is_superuser or user.is_staff %}
         <form method="POST" class="flex gap-4">

@@ -23,7 +23,8 @@
   </head>
   <body>
     <main
-      class="relative overflow-hidden h-screen {% if user.is_superuser or user.is_staff %}xs:flex xs:flex-col lg:flex-row {% else %} flex flex-col{% endif %}"
+      class="relative overflow-hidden h-auto {% if user.is_superuser or user.is_staff %}xs:flex xs:flex-col lg:flex-row {% else %} flex flex-col{% endif %}"
+      style="background-color:#e5f2ff"
     >
       <nav
         id="navbar"
@@ -69,14 +70,14 @@
           </li>
           <li>
             <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] py-4 font-medium hover:border-r-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'medtracker' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-r-[4px] {% endif %}"
+              class="flex justify-center items-center text-center h-full tracking-tight hover:bg-[#f0f0f0] py-4 font-medium hover:border-r-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'medtracker' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-r-[4px] {% endif %}"
               href="{% url 'medical:medtracker' %}"
               >Student Medical Requirements Tracker</a
             >
           </li>
           <li>
             <a
-              class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] py-4 font-medium hover:border-r-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'emergency_asst' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-r-[4px] {% endif %}"
+              class="flex justify-center items-center text-center h-full tracking-tight hover:bg-[#f0f0f0] py-4 font-medium hover:border-r-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'emergency_asst' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-r-[4px] {% endif %}"
               href="{% url 'medical:emergency_asst' %}"
               >Emergency Health Assistance</a
             >
