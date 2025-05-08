@@ -214,7 +214,8 @@
         <!-- Left Column: Upcoming Requests + Transaction Log -->
         <div class="flex flex-col h-full flex-1 gap-3">
             <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Upcoming Documentary Requests</h2>
+
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Pending Documentary Requests</h2>
                 <div class="overflow-x-auto flex-1">
                     <table class="min-w-full dashboard-table text-sm">
         <thead>
@@ -241,7 +242,7 @@
           </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No upcoming requests</td>
+                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
                             </tr>
                             {% endfor %}
                         </tbody>

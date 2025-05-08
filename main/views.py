@@ -288,20 +288,16 @@ def admin_dashboard_view(request):
         approve=True
     ).count()
     
-    # Get upcoming requests with patient and student information
+    # Get all requests with patient and student information
     upcoming_requests = PatientRequest.objects.select_related(
         'patient',
         'patient__student'
-    ).filter(
-        date_requested__gte=today
-    ).order_by('date_requested')[:5]
+    ).order_by('date_requested')
     
-    # Get scheduled appointments for the calendar
+    # Get scheduled appointments for the calendar (include all requests, not just future)
     scheduled_appointments = PatientRequest.objects.select_related(
         'patient',
         'patient__student'
-    ).filter(
-        date_requested__gte=today
     ).values(
         'date_requested',
         'approve',
@@ -325,6 +321,12 @@ def admin_dashboard_view(request):
         'patient',
         'patient__student'
     ).order_by('-transac_date')[:5]
+    
+    # DEBUG: Print all requests and their dates to the server log
+    print('--- All PatientRequest objects ---')
+    for req in PatientRequest.objects.all().order_by('date_requested'):
+        print(f'{req.date_requested} - {req.request_type} - {req.patient.student.firstname}')
+    print('--- End of PatientRequest objects ---')
     
     context = {
         'total_patients': total_patients,
