@@ -34,15 +34,15 @@
                         <td class="p-2">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <a class="text-blue-600 underline" href="{{ md.chest_xray.url }}" target="_blank">{{ md.chest_xray.name|slice:"11:" }}</a>
+                                    <a class="text-blue-600 underline" href="{{ md.chest_xray.url }}" target="_blank">Preview</a>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <a class="text-blue-600 underline" href="{{ md.cbc.url }}" target="_blank">{{ md.cbc.name|slice:"4:" }}</a>
+                                    <a class="text-blue-600 underline" href="{{ md.cbc.url }}" target="_blank">Preview</a>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <a class="text-blue-600 underline" href="{{ md.drug_test.url }}" target="_blank">{{ md.drug_test.name|slice:"11:" }}</a>
+                                    <a class="text-blue-600 underline" href="{{ md.drug_test.url }}" target="_blank">Preview</a>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <a class="text-blue-600 underline" href="{{ md.stool_examination.url }}" target="_blank">{{ md.stool_examination.name|slice:"11:" }}</a>
+                                    <a class="text-blue-600 underline" href="{{ md.stool_examination.url }}" target="_blank">Preview</a>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <a class="text-blue-600 underline" href="{{ md.pwd_card.url }}" target="_blank">{{ md.pwd_card.name|slice:"9:" }}</a>
+                                    <a class="text-blue-600 underline" href="{{ md.pwd_card.url }}" target="_blank">Preview</a>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
