@@ -13,7 +13,8 @@ from medical.models import (
     MentalHealthRecord,
     PatientRequest,
     TransactionRecord,
-    DentalRecords
+    DentalRecords,
+    PrescriptionRecord
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -329,14 +330,63 @@ def admin_dashboard_view(request):
             'status': 'approved' if appointment['approve'] else 'pending'
         })
     
+    # Example: Urgent cases (patients with allergies or chronic conditions)
+    urgent_cases = Patient.objects.filter(allergies__isnull=False).count()
+    
+    # Emergency Assistance Requests (example: filter by request_type containing 'Emergency')
+    emergency_requests = PatientRequest.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(request_type__icontains='emergency').order_by('date_requested')
+    
+    # Mental Health Requests (pending or recently submitted)
+    mental_health_requests = MentalHealthRecord.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-date_submitted')
+    
+    # Get prescription requests
+    prescription_requests = PrescriptionRecord.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-date_prescribed')
+    
+    # Notifications (sample)
+    notifications = []
+    if pending_requests > 0:
+        notifications.append(f"{pending_requests} new documentary requests pending approval.")
+    if urgent_cases > 0:
+        notifications.append(f"{urgent_cases} urgent cases require attention.")
+    if emergency_requests.count() > 0:
+        notifications.append(f"{emergency_requests.count()} emergency assistance requests pending.")
+    
+    # Today's Appointments
+    today_str = timezone.now().strftime('%Y-%m-%d')
+    todays_appointments = []
+    for event in events:
+        if event['date'] == today_str:
+            # If you have time info, add it here; else, use a placeholder
+            appt_time = event.get('time', 'All Day')
+            todays_appointments.append({
+                'student': event['student'],
+                'service': event['service'],
+                'time': appt_time
+            })
+    
     context = {
         'total_patients': total_patients,
         'total_records': total_records,
         'pending_requests': pending_requests,
         'todays_schedule': todays_schedule,
+        'urgent_cases': urgent_cases,
         'upcoming_requests': upcoming_requests,
         'dental_requests': dental_requests,
-        'events': events
+        'emergency_requests': emergency_requests,
+        'mental_health_requests': mental_health_requests,
+        'prescription_requests': prescription_requests,
+        'events': events,
+        'notifications': notifications,
+        'todays_appointments': todays_appointments,
     }
     
     return render(request, 'admin_dashboard.html', context)
