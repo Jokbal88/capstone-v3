@@ -60,7 +60,7 @@
     }
     .calendar-admin {
         width: 100%;
-        max-width: none;
+        max-width: 100%;
         min-width: 0;
         margin: 0 auto;
         display: flex;
@@ -71,6 +71,7 @@
         box-shadow: 0 1px 4px 0 rgba(0,0,0,0.06);
         padding: 0.5rem 0.5rem 0.5rem 0.5rem;
         border: 1px solid #e5e7eb;
+        box-sizing: border-box;
     }
     .calendar-header-admin {
         display: grid;
@@ -237,60 +238,15 @@
             <span class="text-2xl font-bold text-red-600">{{ urgent_cases|default:0 }}</span>
         </div>
         <!-- Move clock/date to far right and make it bigger -->
-        <div class="flex flex-col justify-center items-end flex-[2] bg-white rounded-xl shadow border border-blue-100 ml-auto p-8" style="min-width:320px; min-height:100px;">
-            <div id="adminLiveTime" class="text-5xl font-extrabold text-blue-700 mb-2" style="letter-spacing:1px;"></div>
-            <div id="adminLiveDate" class="text-xl font-semibold text-gray-600"></div>
+        <div class="flex flex-col justify-center items-end flex-[2] bg-white rounded-xl shadow border border-blue-100 ml-auto p-8" style="min-width:320px; min-height:100px; width:340px; height:160px;">
+            <div id="adminLiveTime" class="text-5xl font-extrabold text-blue-700 mb-2 text-center" style="letter-spacing:1px; width:320px; height:70px; display:flex; align-items:left; justify-content:left;"></div>
+            <div id="adminLiveDate" class="text-xl font-semibold text-gray-600 text-center" style="width:320px; text-align:center;"></div>
       </div>
     </div>
     <div class="dashboard-main-grid">
-        <!-- Left Column: Upcoming Requests + Transaction Log -->
+        <!-- Left Column: Requests -->
         <div class="flex flex-col h-full flex-1 gap-3">
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 120px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-search text-blue-400"></i> Patient Search</h2>
-                <form method="get" class="flex flex-col md:flex-row gap-2 mb-2">
-                    <input type="text" name="patient_search" placeholder="Search by name or ID" class="border rounded px-2 py-1 flex-1" value="{{ request.GET.patient_search|default:'' }}">
-                    <select name="patient_filter" class="border rounded px-2 py-1">
-                        <option value="">All Status</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="regular">Regular</option>
-                    </select>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-1 rounded">Search</button>
-                </form>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
-                        <colgroup>
-                            <col style="width: 30%">
-                            <col style="width: 30%">
-                            <col style="width: 20%">
-                            <col style="width: 20%">
-                        </colgroup>
-                        <thead>
-                            <tr style="min-height: 40px;">
-                                <th class="px-2 py-2">Student</th>
-                                <th class="px-2 py-2">ID</th>
-                                <th class="px-2 py-2">Status</th>
-                                <th class="px-2 py-2">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for patient in patient_search_results %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 40px;">
-                                <td class="px-2 py-2">{{ patient.firstname }} {{ patient.lastname }}</td>
-                                <td class="px-2 py-2">{{ patient.student_id }}</td>
-                                <td class="px-2 py-2">{% if patient.urgent %}<span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">Urgent</span>{% else %}<span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Regular</span>{% endif %}</td>
-                                <td class="px-2 py-2"><a href="{% url 'admin:medical_patient_change' patient.id %}" class="bg-blue-500 text-white px-3 py-1 rounded">View Profile</a></td>
-                            </tr>
-                            {% empty %}
-                            <tr style="min-height: 40px;">
-                                <td colspan="4" class="px-2 py-4 text-center text-gray-400">No patients found</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2 w-full" style="min-height: 180px;">
                 <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Pending Documentary Requests</h2>
                 <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
                     <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
@@ -310,7 +266,7 @@
                         </thead>
                         <tbody>
                             {% for request in upcoming_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
+                            <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
                                 <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
                                 <td class="px-2 py-2">{{ request.request_type }}</td>
                                 <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
@@ -331,8 +287,7 @@
                     </table>
                 </div>
             </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2 w-full" style="min-height: 180px;">
                 <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-tooth text-blue-400"></i> Pending Dental Services Request</h2>
                 <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
                     <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
@@ -352,7 +307,7 @@
                         </thead>
                         <tbody>
                             {% for request in dental_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
+                            <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
                                 <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
                                 <td class="px-2 py-2">{{ request.service_type }}</td>
                                 <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
@@ -380,8 +335,69 @@
                     </table>
                 </div>
             </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-ambulance text-red-400"></i> Pending Emergency Assistance Requests</h2>
+        </div>
+        <!-- Right Column: Calendar, Schedules, History -->
+        <div class="flex flex-col h-full flex-1 gap-3">
+            <div class="dashboard-card flex flex-col p-4 mb-2 w-full" style="min-height: 120px;">
+                <div class="calendar-admin w-full flex flex-col justify-end p-1" style="min-height: 120px; height: auto; width: 100%; box-sizing: border-box;">
+                    <div class="flex items-center justify-between mb-2 w-full gap-2" style="margin-bottom: 1rem;">
+                        <span class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+                            <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-base shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
+                            <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+                      </div>
+                    </div>
+                    <div class="calendar-header-admin">
+                        <div class="calendar-header-cell-admin">Sun</div>
+                        <div class="calendar-header-cell-admin">Mon</div>
+                        <div class="calendar-header-cell-admin">Tue</div>
+                        <div class="calendar-header-cell-admin">Wed</div>
+                        <div class="calendar-header-cell-admin">Thu</div>
+                        <div class="calendar-header-cell-admin">Fri</div>
+                        <div class="calendar-header-cell-admin">Sat</div>
+                    </div>
+                    <div id="calendarDaysAdmin" class="flex-1"></div>
+                </div>
+            </div>
+            <div class="dashboard-card flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1.1rem;"><i class="fas fa-calendar-day text-blue-400"></i> Today's Appointments</h2>
+                <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
+                    <table class="min-w-full dashboard-table text-base" style="table-layout: fixed; width: 100%;">
+                        <colgroup>
+                            <col style="width: 35%">
+                            <col style="width: 35%">
+                            <col style="width: 30%">
+                        </colgroup>
+                        <thead>
+                            <tr style="min-height: 56px;">
+                                <th class="px-2 py-3" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Student</th>
+                                <th class="px-2 py-3" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Service</th>
+                                <th class="px-2 py-3" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in todays_appointments %}
+                            <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 56px;">
+                                <td class="px-2 py-3">{{ appt.student }}</td>
+                                <td class="px-2 py-3">{{ appt.service }}</td>
+                                <td class="px-2 py-3">{{ appt.time }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr style="min-height: 56px;">
+                                <td colspan="3" class="px-2 py-6 text-center text-gray-400">No appointments today</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2 w-full" style="min-height: 180px;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-ambulance text-red-400"></i> History of Emergency Assistance</h2>
                 <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
                     <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
                         <colgroup>
@@ -400,7 +416,7 @@
                         </thead>
                         <tbody>
                             {% for request in emergency_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
+                            <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
                                 <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
                                 <td class="px-2 py-2">{{ request.request_type }}</td>
                                 <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
@@ -414,57 +430,15 @@
                             </tr>
                             {% empty %}
                             <tr style="min-height: 48px;">
-                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
+                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No records found</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-brain text-purple-400"></i> Pending Mental Health Requests</h2>
-                <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
-                    <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
-                        <colgroup>
-                            <col style="width: 22%">
-                            <col style="width: 36%">
-                            <col style="width: 22%">
-                            <col style="width: 20%">
-                        </colgroup>
-                        <thead>
-                            <tr style="min-height: 48px;">
-                                <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Student</th>
-                                <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Request Type</th>
-                                <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Date</th>
-                                <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for request in mental_health_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
-                                <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
-                                <td class="px-2 py-2">Mental Health</td>
-                                <td class="px-2 py-2">{{ request.date_submitted|date:"M d, Y" }}</td>
-                                <td class="px-2 py-2">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {% if request.status == 'approved' %}bg-green-100 text-green-800
-                                        {% elif request.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                        {% else %}bg-red-100 text-red-800{% endif %}">
-                                        {{ request.status|title }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr style="min-height: 48px;">
-                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-prescription-bottle-alt text-blue-400"></i> Pending Prescription Requests</h2>
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2 w-full" style="min-height: 180px;">
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-prescription-bottle-alt text-blue-400"></i> History of Prescriptions</h2>
                 <div class="overflow-x-auto flex-1" style="max-height: 260px; overflow-y: auto;">
                     <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
                         <colgroup>
@@ -483,64 +457,21 @@
                         </thead>
                         <tbody>
                             {% for request in prescription_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
+                            <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
                                 <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
                                 <td class="px-2 py-2">Prescription</td>
                                 <td class="px-2 py-2">{{ request.date_prescribed|date:"M d, Y" }}</td>
                                 <td class="px-2 py-2">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Completed</span>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr style="min-height: 48px;">
-                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
+                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No records found</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </div>
-        <!-- Right Column: Calendar (top), Schedule (below) -->
-        <div class="flex flex-col h-full flex-1 gap-1">
-            <div class="calendar-admin w-full flex flex-col justify-end mb-1 p-1" style="min-height: 120px; height: auto; width: 100%;">
-                <div class="flex items-center justify-between mb-2 w-full gap-2">
-                    <span class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-                        <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-base shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
-                        <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      </div>
-                </div>
-                <div class="calendar-header-admin">
-                    <div class="calendar-header-cell-admin">Sun</div>
-                    <div class="calendar-header-cell-admin">Mon</div>
-                    <div class="calendar-header-cell-admin">Tue</div>
-                    <div class="calendar-header-cell-admin">Wed</div>
-                    <div class="calendar-header-cell-admin">Thu</div>
-                    <div class="calendar-header-cell-admin">Fri</div>
-                    <div class="calendar-header-cell-admin">Sat</div>
-                </div>
-                <div id="calendarDaysAdmin" class="flex-1"></div>
-            </div>
-            <div class="dashboard-card flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-calendar-day text-blue-400"></i> Today's Appointments</h2>
-                <div class="space-y-2">
-                    {% for appt in todays_appointments %}
-                    <div class="flex items-start space-x-2">
-                        <div class="w-2 h-2 mt-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                        <div>
-                            <p class="text-xs font-semibold text-gray-800">{{ appt.student }}</p>
-                            <p class="text-xs text-gray-500">{{ appt.service }} - {{ appt.time }}</p>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-xs text-center text-gray-400">No appointments today</p>
-                    {% endfor %}
                 </div>
             </div>
         </div>
