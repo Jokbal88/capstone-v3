@@ -12,7 +12,8 @@ from medical.models import (
     RiskAssessment,
     MentalHealthRecord,
     PatientRequest,
-    TransactionRecord
+    TransactionRecord,
+    DentalRecords
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -294,6 +295,18 @@ def admin_dashboard_view(request):
         'patient__student'
     ).order_by('date_requested')
     
+    # Get dental service requests
+    dental_requests = DentalRecords.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(appointed=False).order_by('date_requested')
+    
+    # DEBUG: Print dental requests
+    print('--- Dental Requests ---')
+    for req in dental_requests:
+        print(f'{req.date_requested} - {req.service_type} - {req.patient.student.firstname}')
+    print('--- End of Dental Requests ---')
+    
     # Get scheduled appointments for the calendar (include all requests, not just future)
     scheduled_appointments = PatientRequest.objects.select_related(
         'patient',
@@ -316,26 +329,14 @@ def admin_dashboard_view(request):
             'status': 'approved' if appointment['approve'] else 'pending'
         })
     
-    # Get recent transactions with patient and student information
-    transaction_log = TransactionRecord.objects.select_related(
-        'patient',
-        'patient__student'
-    ).order_by('-transac_date')[:5]
-    
-    # DEBUG: Print all requests and their dates to the server log
-    print('--- All PatientRequest objects ---')
-    for req in PatientRequest.objects.all().order_by('date_requested'):
-        print(f'{req.date_requested} - {req.request_type} - {req.patient.student.firstname}')
-    print('--- End of PatientRequest objects ---')
-    
     context = {
         'total_patients': total_patients,
         'total_records': total_records,
         'pending_requests': pending_requests,
         'todays_schedule': todays_schedule,
         'upcoming_requests': upcoming_requests,
-        'events': events,
-        'transaction_log': transaction_log
+        'dental_requests': dental_requests,
+        'events': events
     }
     
     return render(request, 'admin_dashboard.html', context)

@@ -217,18 +217,24 @@
 
                 <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-envelope-open-text text-blue-400"></i> Pending Documentary Requests</h2>
                 <div class="overflow-x-auto flex-1">
-                    <table class="min-w-full dashboard-table text-sm">
-        <thead>
-          <tr>
+                    <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
+                        <colgroup>
+                            <col style="width: 22%">
+                            <col style="width: 36%">
+                            <col style="width: 22%">
+                            <col style="width: 20%">
+                        </colgroup>
+                        <thead>
+                            <tr style="min-height: 48px;">
                                 <th class="px-2 py-2">Student</th>
                                 <th class="px-2 py-2">Request Type</th>
                                 <th class="px-2 py-2">Date</th>
                                 <th class="px-2 py-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
+                            </tr>
+                        </thead>
+                        <tbody>
                             {% for request in upcoming_requests %}
-                            <tr class="hover:bg-blue-50 transition-colors">
+                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
                                 <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
                                 <td class="px-2 py-2">{{ request.request_type }}</td>
                                 <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
@@ -238,10 +244,10 @@
                                         {% else %}bg-green-100 text-green-800{% endif %}">
                                         {% if request.approve %}Approved{% else %}Pending{% endif %}
                                     </span>
-            </td>
-          </tr>
+                                </td>
+                            </tr>
                             {% empty %}
-                            <tr>
+                            <tr style="min-height: 48px;">
                                 <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
                             </tr>
                             {% endfor %}
@@ -249,46 +255,57 @@
                     </table>
                 </div>
             </div>
-            <div class="dashboard-card flex-1 flex flex-col p-4" style="min-height: 180px; max-height: 220px; overflow-y: auto;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-file-invoice-dollar text-blue-400"></i> Transaction Log</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full dashboard-table text-sm">
+            <div class="dashboard-card flex-1 flex flex-col p-4 mb-2" style="min-height: 180px;">
+
+                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-tooth text-blue-400"></i> Pending Dental Services Request</h2>
+                <div class="overflow-x-auto flex-1">
+                    <table class="min-w-full dashboard-table text-sm" style="table-layout: fixed; width: 100%;">
+                        <colgroup>
+                            <col style="width: 22%">
+                            <col style="width: 36%">
+                            <col style="width: 22%">
+                            <col style="width: 20%">
+                        </colgroup>
                         <thead>
-                            <tr>
+                            <tr style="min-height: 48px;">
                                 <th class="px-2 py-2">Student</th>
-                                <th class="px-2 py-2">Type</th>
-                                <th class="px-2 py-2">Amount</th>
-                                <th class="px-2 py-2">Status</th>
+                                <th class="px-2 py-2">Request Type</th>
                                 <th class="px-2 py-2">Date</th>
+                                <th class="px-2 py-2">Status</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for tx in transaction_log|slice:":5" %}
-                            <tr class="hover:bg-blue-50 transition-colors">
-                                <td class="px-2 py-2">{{ tx.patient.student.firstname }} {{ tx.patient.student.lastname }}</td>
-                                <td class="px-2 py-2">{{ tx.transac_type }}</td>
-                                <td class="px-2 py-2 font-medium {% if tx.transac_type == 'Payment' %}text-green-600{% else %}text-blue-600{% endif %}">₱{{ tx.transac_amount|floatformat:2 }}</td>
+                            {% for request in dental_requests %}
+                            <tr class="hover:bg-blue-50 transition-colors" style="min-height: 48px;">
+                                <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                <td class="px-2 py-2">{{ request.service_type }}</td>
+                                <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
                                 <td class="px-2 py-2">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full
-                                        {% if tx.transac_status == 'Completed' %}bg-green-100 text-green-800
-                                        {% elif tx.transac_status == 'Pending' %}bg-yellow-100 text-yellow-800
-                                        {% else %}bg-red-100 text-red-800{% endif %}">
-                                        {{ tx.transac_status }}
+                                        {% if not request.appointed %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {% if request.appointed %}Appointed{% else %}Pending{% endif %}
                                     </span>
                                 </td>
-                                <td class="px-2 py-2">{{ tx.transac_date|date:"M d, Y H:i" }}</td>
                             </tr>
                             {% empty %}
-                            <tr>
-                                <td colspan="5" class="px-2 py-6 text-center text-gray-400">No transaction records</td>
-          </tr>
+                            <tr style="min-height: 48px;">
+                                <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
+                            </tr>
                             {% endfor %}
-        </tbody>
-      </table>
-    </div>
+                            <!-- Hidden placeholder row for alignment -->
+                            <tr style="visibility: hidden; height: 0;">
+                                <td>Long Name Example</td>
+                                <td>Medical Certificate for Intramurals</td>
+                                <td>May 09, 2025</td>
+                                <td>Pending</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        <!-- Right Column: Calendar (top), Schedule (below), Recent Transactions (bottom) -->
+        <!-- Right Column: Calendar (top), Schedule (below) -->
         <div class="flex flex-col h-full flex-1 gap-1">
             <div class="calendar-admin w-full flex flex-col justify-end mb-1 p-1" style="min-height: 120px; height: auto; width: 100%;">
                 <div class="flex items-center justify-between mb-2 w-full gap-2">
@@ -304,13 +321,13 @@
       </div>
                 </div>
                 <div class="calendar-header-admin">
-                    <div class="calendar-header-cell-admin">Su</div>
-                    <div class="calendar-header-cell-admin">Mo</div>
-                    <div class="calendar-header-cell-admin">Tu</div>
-                    <div class="calendar-header-cell-admin">We</div>
-                    <div class="calendar-header-cell-admin">Th</div>
-                    <div class="calendar-header-cell-admin">Fr</div>
-                    <div class="calendar-header-cell-admin">Sa</div>
+                    <div class="calendar-header-cell-admin">Sun</div>
+                    <div class="calendar-header-cell-admin">Mon</div>
+                    <div class="calendar-header-cell-admin">Tue</div>
+                    <div class="calendar-header-cell-admin">Wed</div>
+                    <div class="calendar-header-cell-admin">Thu</div>
+                    <div class="calendar-header-cell-admin">Fri</div>
+                    <div class="calendar-header-cell-admin">Sat</div>
                 </div>
                 <div id="calendarDaysAdmin" class="flex-1"></div>
             </div>
@@ -328,33 +345,6 @@
                     {% empty %}
                     <p class="text-xs text-center text-gray-400">No scheduled events</p>
                     {% endfor %}
-                </div>
-            </div>
-            <div class="dashboard-card flex flex-col p-2" style="min-height: 40px; height: auto;">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2" style="font-size:1rem;"><i class="fas fa-exchange-alt text-blue-400"></i> Recent Transactions</h2>
-                <div class="overflow-x-auto" style="max-height: 90px; overflow-y: auto;">
-                    <table class="min-w-full dashboard-table text-sm">
-                        <thead>
-                            <tr>
-                                <th class="px-2 py-2">Student</th>
-                                <th class="px-2 py-2">Type</th>
-                                <th class="px-2 py-2">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tx in recent_transactions|slice:":5" %}
-                            <tr class="hover:bg-blue-50 transition-colors">
-                                <td class="px-2 py-2">{{ tx.patient.student.firstname }} {{ tx.patient.student.lastname }}</td>
-                                <td class="px-2 py-2">{{ tx.transac_type }}</td>
-                                <td class="px-2 py-2">{{ tx.transac_date|date:"M d, Y H:i" }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="px-2 py-6 text-center text-gray-400">No recent transactions</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
         </div>
       </div>
     </div>
