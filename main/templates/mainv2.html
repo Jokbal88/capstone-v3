@@ -23,12 +23,12 @@
   </head>
   <body>
     <main
-      class="relative overflow-hidden h-auto {% if user.is_superuser or user.is_staff %}xs:flex xs:flex-col lg:flex-row {% else %} flex flex-col{% endif %}"
+      class="relative overflow-hidden min-h-screen {% if user.is_superuser or user.is_staff %}xs:flex xs:flex-col lg:flex-row {% else %} flex flex-col{% endif %}"
       style="background-color:#e5f2ff"
     >
       <nav
         id="navbar"
-        class="bg-[#fff] {% if user.is_superuser or user.is_staff %}flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[30%]{% else %}flex justify-between h-[5rem]{% endif %}"
+        class="bg-[#fff] {% if user.is_superuser or user.is_staff %}flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[25%] min-h-screen fixed{% else %}flex justify-between h-[5rem]{% endif %}"
       >
         <div
           class="flex gap-2 p-4 items-stretch bg-[#3b82f6] {% if user.is_superuser or user.is_staff %} justify-center {% else %} justify-normal {% endif %}"
@@ -159,7 +159,7 @@
         </svg>
       </nav>
       <section
-        class="bg-[#E5F2FF] h-full w-full flex xs:p-4 lg:p-[1.5rem]{% if user.is_superuser or user.is_staff %} overflow-auto{% else %} justify-center items-center overflow-hidden{% endif %}"
+        class="bg-[#E5F2FF] h-full ml-[25%] w-full flex xs:p-4 lg:p-[1.5rem]{% if user.is_superuser or user.is_staff %} overflow-auto{% else %} justify-center items-center overflow-hidden{% endif %}"
       >
         {% block content %} {% endblock %}
       </section>
