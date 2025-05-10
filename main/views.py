@@ -12,7 +12,9 @@ from medical.models import (
     RiskAssessment,
     MentalHealthRecord,
     PatientRequest,
-    TransactionRecord
+    TransactionRecord,
+    DentalRecords,
+    PrescriptionRecord
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -288,20 +290,28 @@ def admin_dashboard_view(request):
         approve=True
     ).count()
     
-    # Get upcoming requests with patient and student information
+    # Get all requests with patient and student information
     upcoming_requests = PatientRequest.objects.select_related(
         'patient',
         'patient__student'
-    ).filter(
-        date_requested__gte=today
-    ).order_by('date_requested')[:5]
+    ).order_by('date_requested')
     
-    # Get scheduled appointments for the calendar
+    # Get dental service requests
+    dental_requests = DentalRecords.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(appointed=False).order_by('date_requested')
+    
+    # DEBUG: Print dental requests
+    print('--- Dental Requests ---')
+    for req in dental_requests:
+        print(f'{req.date_requested} - {req.service_type} - {req.patient.student.firstname}')
+    print('--- End of Dental Requests ---')
+    
+    # Get scheduled appointments for the calendar (include all requests, not just future)
     scheduled_appointments = PatientRequest.objects.select_related(
         'patient',
         'patient__student'
-    ).filter(
-        date_requested__gte=today
     ).values(
         'date_requested',
         'approve',
@@ -320,20 +330,63 @@ def admin_dashboard_view(request):
             'status': 'approved' if appointment['approve'] else 'pending'
         })
     
-    # Get recent transactions with patient and student information
-    transaction_log = TransactionRecord.objects.select_related(
+    # Example: Urgent cases (patients with allergies or chronic conditions)
+    urgent_cases = Patient.objects.filter(allergies__isnull=False).count()
+    
+    # Emergency Assistance Requests (example: filter by request_type containing 'Emergency')
+    emergency_requests = PatientRequest.objects.select_related(
         'patient',
         'patient__student'
-    ).order_by('-transac_date')[:5]
+    ).filter(request_type__icontains='emergency').order_by('date_requested')
+    
+    # Mental Health Requests (pending or recently submitted)
+    mental_health_requests = MentalHealthRecord.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-date_submitted')
+    
+    # Get prescription requests
+    prescription_requests = PrescriptionRecord.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-date_prescribed')
+    
+    # Notifications (sample)
+    notifications = []
+    if pending_requests > 0:
+        notifications.append(f"{pending_requests} new documentary requests pending approval.")
+    if urgent_cases > 0:
+        notifications.append(f"{urgent_cases} urgent cases require attention.")
+    if emergency_requests.count() > 0:
+        notifications.append(f"{emergency_requests.count()} emergency assistance requests pending.")
+    
+    # Today's Appointments
+    today_str = timezone.now().strftime('%Y-%m-%d')
+    todays_appointments = []
+    for event in events:
+        if event['date'] == today_str:
+            # If you have time info, add it here; else, use a placeholder
+            appt_time = event.get('time', 'All Day')
+            todays_appointments.append({
+                'student': event['student'],
+                'service': event['service'],
+                'time': appt_time
+            })
     
     context = {
         'total_patients': total_patients,
         'total_records': total_records,
         'pending_requests': pending_requests,
         'todays_schedule': todays_schedule,
+        'urgent_cases': urgent_cases,
         'upcoming_requests': upcoming_requests,
+        'dental_requests': dental_requests,
+        'emergency_requests': emergency_requests,
+        'mental_health_requests': mental_health_requests,
+        'prescription_requests': prescription_requests,
         'events': events,
-        'transaction_log': transaction_log
+        'notifications': notifications,
+        'todays_appointments': todays_appointments,
     }
     
     return render(request, 'admin_dashboard.html', context)
