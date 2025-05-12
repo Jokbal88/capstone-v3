@@ -1121,24 +1121,24 @@ def dental_schedule(request):
 # List pwd
 def pwd_list(request):
     if request.user.is_superuser or request.user.is_staff:
-        pwd = MedicalClearance.objects.filter(riskassessment__pwd = True)
+        pwd_patients = Patient.objects.filter(riskassessment__pwd=True)
         if request.method == "POST":
             student_id = request.POST.get("student_id")
-            if MedicalClearance.objects.filter(patient__student__student_id = student_id, riskassessment__pwd = True).exists():
-                pwd_patient = MedicalClearance.objects.filter(patient__student__student_id = student_id, riskassessment__pwd = True)
-                return render(request, "admin/pwdlist.html", {"pwds":pwd_patient})
+            if Patient.objects.filter(student__student_id=student_id, riskassessment__pwd=True).exists():
+                pwd_patient = Patient.objects.filter(student__student_id=student_id, riskassessment__pwd=True)
+                return render(request, "admin/pwdlist.html", {"pwds": pwd_patient})
             else:
                 messages.error(request, "PWD Student not found")
                 return render(request, "admin/pwdlist.html", {})
-        return render(request, "admin/pwdlist.html", {"pwds":pwd})
+        return render(request, "admin/pwdlist.html", {"pwds": pwd_patients})
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
 
 # View pwd in details
 def pwd_detail(request, student_id):
-    pwd = MedicalClearance.objects.get(patient__student__student_id = student_id)
-    md = MedicalRequirement.objects.get(patient__student__student_id = student_id)
-    return render(request, 'admin/pwddetails.html', {'pwd': pwd, "md": md})
+    patient = Patient.objects.get(student__student_id=student_id)
+    md = MedicalRequirement.objects.get(patient__student__student_id=student_id)
+    return render(request, 'admin/pwddetails.html', {'patient': patient, "md": md})
 
 # List all record of prescriptions
 def view_prescription_records(request):
@@ -1453,3 +1453,41 @@ def dashboard_view(request):
         return redirect('main:login')
 
     return render(request, 'student_dashboard.html', context)
+
+@login_required
+def verify_pwd(request, student_id):
+    if request.user.is_superuser or request.user.is_staff:
+        if request.method == 'POST':
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
+                risk_assessment = RiskAssessment.objects.get(clearance=patient)
+                risk_assessment.pwd_verified = True
+                risk_assessment.pwd_verification_date = timezone.now()
+                risk_assessment.pwd_verified_by = request.user
+                risk_assessment.save()
+                messages.success(request, f"PWD status verified for student {student_id}")
+            except Patient.DoesNotExist:
+                messages.error(request, "Student not found")
+            except RiskAssessment.DoesNotExist:
+                messages.error(request, "Risk assessment not found")
+        return redirect('medical:pwdlist')
+    return HttpResponseForbidden("You don't have permission to access this page.")
+
+@login_required
+def unverify_pwd(request, student_id):
+    if request.user.is_superuser or request.user.is_staff:
+        if request.method == 'POST':
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
+                risk_assessment = RiskAssessment.objects.get(clearance=patient)
+                risk_assessment.pwd_verified = False
+                risk_assessment.pwd_verification_date = None
+                risk_assessment.pwd_verified_by = None
+                risk_assessment.save()
+                messages.success(request, f"PWD status unverified for student {student_id}")
+            except Patient.DoesNotExist:
+                messages.error(request, "Student not found")
+            except RiskAssessment.DoesNotExist:
+                messages.error(request, "Risk assessment not found")
+        return redirect('medical:pwdlist')
+    return HttpResponseForbidden("You don't have permission to access this page.")

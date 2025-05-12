@@ -40,36 +40,36 @@
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Personal Information</h3>
                 <div class="flex flex-col md:flex-row gap-2">
-                    <div class="flex flex-col w-full">
-                        <label for="birth_date">Birth Date</label>
-                        <input type="date" id="birth_date" name="birth_date" required>
+                        <div class="flex flex-col w-full">
+                            <label for="birth_date">Birth Date</label>
+                            <input type="date" id="birth_date" name="birth_date" required>
+                        </div>
+                        <div class="flex flex-col w-full">
+                            <label for="bloodtype">Blood Type</label>
+                            <select id="bloodtype" name="bloodtype" required>
+                                <option value="">Select Blood Type</option>
+                                <option value="Unknown">Unknown</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="flex flex-col w-full">
-                        <label for="bloodtype">Blood Type</label>
-                        <select id="bloodtype" name="bloodtype" required>
-                            <option value="">Select Blood Type</option>
-                            <option value="Unknown">Unknown</option>
-                            <option value="A+">A+</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B-">B-</option>
-                            <option value="AB+">AB+</option>
-                            <option value="AB-">AB-</option>
-                            <option value="O+">O+</option>
-                            <option value="O-">O-</option>
-                        </select>
-                    </div>
-                </div>
                 <div class="flex flex-col md:flex-row gap-2">
-                    <div class="flex flex-col w-full">
-                        <label for="height">Height (cm)</label>
+                        <div class="flex flex-col w-full">
+                            <label for="height">Height (cm)</label>
                         <input type="number" step="0.01" id="height" name="height" min="0" required>
-                    </div>
-                    <div class="flex flex-col w-full">
-                        <label for="weight">Weight (kg)</label>
+                        </div>
+                        <div class="flex flex-col w-full">
+                            <label for="weight">Weight (kg)</label>
                         <input type="number" step="0.01" id="weight" name="weight" min="0" required>
                     </div>
-                </div>
+                </div>                
             </div>
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Medical Information</h3>

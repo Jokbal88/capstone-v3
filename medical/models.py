@@ -125,6 +125,9 @@ class RiskAssessment(models.Model):
     autoimmune_disease = models.BooleanField(default=False)
     pwd = models.BooleanField(default=False)
     disability = models.CharField(max_length=255, blank=True)
+    pwd_verified = models.BooleanField(default=False)
+    pwd_verification_date = models.DateTimeField(null=True, blank=True)
+    pwd_verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_pwd')
 
     def __str__(self):
         return f"Risk Assessment for {self.clearance}"

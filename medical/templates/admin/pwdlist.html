@@ -10,49 +10,78 @@
 
 {% block content %}
 <div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
-    <div class="flex self-center items-center gap-8">
-        <h2>List of PWD</h2>
-        <br><br>
-        <form method="POST" class="search-form">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-[1.5rem] text-black tracking-tight">List of PWD</h2>
+        <form method="POST" class="flex gap-4">
             {% csrf_token %}
-            <input type="text" name="student_id" placeholder="Search student">
-            <button type="submit">Search</button>
+            <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
+            <button type="submit" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
+                Search
+            </button>
         </form>
     </div>
-    <div class="request">
-        <table>
-            <thead>
-                <tr class="tr-header">
-                    <th>Student ID</th>
-                    <th>Lastname</th>
-                    <th>Firstname</th>
-                    <th>Age</th>
-                    <th>Sex</th>
-                    <th>Type of Disability</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pwd in pwds %}
-                    <tr class="tr-td">
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.patient.student.student_id }}</a></td>
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.patient.student.lastname|title }}</a></td>
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.patient.student.firstname|title }}</a></td>
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.patient.age }}</a></td>
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.patient.student.sex }}</a></td>
-                        <td><a href="{% url 'medical:pwd_detail' pwd.patient.student.student_id %}">{{ pwd.riskassessment.disability }}</a></td>
+    <div class="bg-[#f8fafc] rounded-lg p-4 border border-gray-200">
+        <div class="overflow-x-auto">
+            <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow text-base">
+                <thead class="bg-[#e6e6e6]">
+                    <tr>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Student ID</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Lastname</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Firstname</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Age</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Sex</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Type of Disability</th>
+                        <th class="p-2 text-center text-lg font-semibold text-gray-700">Verification Status</th>
+                        <th class="p-2 text-center text-lg font-semibold text-gray-700">Actions</th>
                     </tr>
-                {% empty %}
-                    <tr class="tr-td">
-                        <td colspan="6">No patients found</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for patient in pwds %}
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.student_id }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.lastname|title }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.firstname|title }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.age }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.sex }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.riskassessment.disability }}</a></td>
+                            <td class="p-2 text-center">
+                                {% if patient.riskassessment.pwd_verified %}
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verified</span>
+                                {% else %}
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center">
+                                {% if not patient.riskassessment.pwd_verified %}
+                                    <form method="POST" action="{% url 'medical:verify_pwd' patient.student.student_id %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                            Verify
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{% url 'medical:unverify_pwd' patient.student.student_id %}" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                            Unverify
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td colspan="8" class="p-2 text-center text-gray-500">No patients found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-
 </script>
 {% endblock %}

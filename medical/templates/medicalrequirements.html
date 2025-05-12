@@ -6,10 +6,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="xs:p-4 lg:p-8 bg-white rounded-[18px] flex flex-col gap-4 {% if user.is_superuser or user.is_staff %} w-full h-screen {% else %}xs:w-full md:w-1/2 h-[80%] {% endif %}">
-    <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] text-black tracking-tight py-4 text-center">Medical Requirements Tracker</h2>
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Medical Requirements Tracker</h2>
     {% if user.is_superuser or user.is_staff %}
-        <form method="POST" class="flex gap-4">
+        <form method="POST" class="flex gap-4 mb-4">
             {% csrf_token %}
             <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
             <button type="submit" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
@@ -17,137 +17,107 @@
             </button>
         </form>
     {% endif %}
-    <div class="flex flex-col gap-2 h-fit max-h-full">
-        <h3 class="font-medium xs:text-base md:text-[1.3rem] text-center">List of Requirements</h3>
-        <table class="w-full table-auto border-separate border-spacing-0">
-            <thead class="bg-[#e6e6e6] w-full">
-                <tr class="tr-header">
-                    {% if user.is_superuser or user.is_staff %}
-                        <th class="text-center p-2 xs:text-[14px] md:text-base">Remarks</th>
-                    {% endif %}
-                    <th class="text-center p-2 xs:text-[14px] md:text-base">Requirement</th>
-                    <th class="text-center p-2 xs:text-[14px] md:text-base">Status</th>
-                    <th class="text-center p-2 xs:text-[14px] md:text-base">File</th>
-                    <th class="text-center p-2 xs:text-[14px] md:text-base">Preview</th>
+    <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200">
+        <h3 class="font-semibold text-blue-700 mb-2">Required Medical Documents</h3>
+        <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+            <p class="text-sm text-blue-800">Please review and update all required medical documents for students. These are essential for ensuring the health and safety of all students.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow text-base">
+                <thead class="bg-[#e6e6e6]">
+                    <tr>
+                        <th class="p-2 text-left w-1/3">Remarks</th>
+                        <th class="p-2 text-left">Requirement</th>
+                        <th class="p-2 text-center">Status</th>
+                        <th class="p-2 text-center">File</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    {% if user.is_superuser or user.is_staff %}
-                        <td class="flex gap-2 items-center">
-                            <input type="text" name="x-ray-remark" value="{{ med_requirements.x_ray_remarks }}" class="w-full p-1 border rounded">
-                            <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
-                                Save
-                            </button>
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            <form method="POST" class="flex gap-2 items-center">
+                                {% csrf_token %}
+                                <input type="text" name="x-ray-remark" value="{{ med_requirements.x_ray_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                            </form>
                         </td>
-                    {% endif %}
-                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
-                        <td class="text-center">Chest X-Ray</td>
-                        {% if med_requirements.chest_xray.url %}
-                            <td class="text-center">Submitted</td>
-                            <td class="text-center"><a href="{{ med_requirements.chest_xray.url }}">Chest X-Ray</a></td>
-                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.chest_xray.url }}')">View</button></td>
+                        <td class="p-2 font-medium">Chest X-ray</td>
+                        {% if med_requirements.chest_xray %}
+                            <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>
+                            <td class="p-2 text-center"><a href="{{ med_requirements.chest_xray.url }}" class="text-blue-600 hover:underline">Preview</a></td>
                         {% else %}
-                            <td class="text-center">Not Submitted</td>
-                            <td>-</td>
-                            <td>-</td>
-                        {% endif %}
+                            <td class="p-2 text-center text-red-600 font-bold">&#10007;</td>
+                            <td class="p-2 text-center text-gray-400">None</td>
                     {% endif %}
                 </tr>
-                <tr>
-                    {% if user.is_superuser or user.is_staff %}
-                        <td class="flex gap-2 items-center">
-                            <input type="text" name="cbc-remark" value="{{ med_requirements.cbc_remarks }}" class="w-full p-1 border rounded">
-                            <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
-                                Save
-                            </button>
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            <form method="POST" class="flex gap-2 items-center">
+                                {% csrf_token %}
+                                <input type="text" name="cbc-remark" value="{{ med_requirements.cbc_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                            </form>
                         </td>
-                    {% endif %}
-                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
-                        <td class="text-center">Complete Blood Count</td>
-                        {% if med_requirements.cbc.url %}
-                            <td class="text-center">Submitted</td>
-                            <td class="text-center"><a href="{{ med_requirements.cbc.url }}">Complete Blood Count</a></td>
-                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.cbc.url }}')">View</button></td>
+                        <td class="p-2 font-medium">Complete Blood Count (CBC)</td>
+                        {% if med_requirements.cbc %}
+                            <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>
+                            <td class="p-2 text-center"><a href="{{ med_requirements.cbc.url }}" class="text-blue-600 hover:underline">Preview</a></td>
                         {% else %}
-                            <td class="text-center">Not Submitted</td>
-                            <td>-</td>
-                            <td>-</td>
-                        {% endif %}
+                            <td class="p-2 text-center text-red-600 font-bold">&#10007;</td>
+                            <td class="p-2 text-center text-gray-400">None</td>
                     {% endif %}
                 </tr>
-                <tr>
-                    {% if user.is_superuser or user.is_staff %}
-                        <td class="flex gap-2 items-center">
-                            <input type="text" name="drug-test-remark" value="{{ med_requirements.drug_test_remarks }}" class="w-full p-1 border rounded">
-                            <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
-                                Save
-                            </button>
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            <form method="POST" class="flex gap-2 items-center">
+                                {% csrf_token %}
+                                <input type="text" name="drug-test-remark" value="{{ med_requirements.drug_test_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                            </form>
                         </td>
-                    {% endif %}
-                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
-                        <td class="text-center">Drug Test</td>
-                        {% if med_requirements.drug_test.url %}
-                            <td class="text-center">Submitted</td>
-                            <td class="text-center"><a href="{{ med_requirements.drug_test.url }}">Drug Test</a></td>
-                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.drug_test.url }}')">View</button></td>
+                        <td class="p-2 font-medium">Drug Test</td>
+                        {% if med_requirements.drug_test %}
+                            <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>
+                            <td class="p-2 text-center"><a href="{{ med_requirements.drug_test.url }}" class="text-blue-600 hover:underline">Preview</a></td>
                         {% else %}
-                            <td class="text-center">Not Submitted</td>
-                            <td>-</td>
-                            <td>-</td>
-                        {% endif %}
+                            <td class="p-2 text-center text-red-600 font-bold">&#10007;</td>
+                            <td class="p-2 text-center text-gray-400">None</td>
                     {% endif %}
                 </tr>
-                <tr>
-                    {% if user.is_superuser or user.is_staff %}
-                        <td class="flex gap-2 items-center">
-                            <input type="text" name="stool-examination-remark" value="{{ med_requirements.stool_examination_remarks }}" class="w-full p-1 border rounded">
-                            <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
-                                Save
-                            </button>
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            <form method="POST" class="flex gap-2 items-center">
+                                {% csrf_token %}
+                                <input type="text" name="stool-examination-remark" value="{{ med_requirements.stool_examination_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                            </form>
                         </td>
-                    {% endif %}
-                    {% if med_requirements.chest_xray or med_requirements.cbc or med_requirements.drug_test or med_requirements.stool_examination %}
-                        <td class="text-center">Stool Examination</td>
-                        {% if med_requirements.stool_examination.url %}
-                            <td class="text-center">Submitted</td>
-                            <td class="text-center"><a href="{{ med_requirements.stool_examination.url }}">Stool Examination</a></td>
-                            <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.stool_examination.url }}')">View</button></td>
+                        <td class="p-2 font-medium">Stool Examination</td>
+                        {% if med_requirements.stool_examination %}
+                            <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>
+                            <td class="p-2 text-center"><a href="{{ med_requirements.stool_examination.url }}" class="text-blue-600 hover:underline">Preview</a></td>
                         {% else %}
-                            <td class="text-center">Not Submitted</td>
-                            <td>-</td>
-                            <td>-</td>
-                        {% endif %}
+                            <td class="p-2 text-center text-red-600 font-bold">&#10007;</td>
+                            <td class="p-2 text-center text-gray-400">None</td>
                     {% endif %}
                 </tr>
                 {% if med_requirements.pwd_card %}
-                    <tr>
-                        {% if user.is_superuser or user.is_staff %}
-                            <td class="flex gap-2 items-center">
-                                <input type="text" name="pwd-card-remark" value="{{ med_requirements.pwd_card_remarks }}" class="w-full p-1 border rounded">
-                                <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600">
-                                    Save
-                                </button>
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            <form method="POST" class="flex gap-2 items-center">
+                                {% csrf_token %}
+                                <input type="text" name="pwd-card-remark" value="{{ med_requirements.pwd_card_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                            </form>
                             </td>
-                        {% endif %}
-                        <td class="text-center">PWD Card</td>
-                        <td class="text-center">Submitted</td>
-                        <td class="text-center"><a href="{{ med_requirements.pwd_card.url }}">PWD Card</a></td>
-                        <td class="text-center"><button class="preview-btn" onclick="previewFile('{{ med_requirements.pwd_card.url }}')">View</button></td>
+                        <td class="p-2 font-medium">PWD Card</td>
+                        <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>
+                        <td class="p-2 text-center"><a href="{{ med_requirements.pwd_card.url }}" class="text-blue-600 hover:underline">Preview</a></td>
                     </tr>
                 {% endif %}
-                <!-- {% for requirement in medical_requirements %}
-                    <tr class="tr-td">
-                        <td></td>
-                        <td></td>
-                    </tr>
-                {% empty %}
-                    <tr class="tr-td">
-                        <td colspan="2">No medical requirements found</td>
-                    </tr>
-                {% endfor %} -->
             </tbody>
         </table>
+    </div>
     </div>
     {% if not user.is_superuser and not user.is_staff %}
         <button class="bg-[#3b82f6] mt-8 text-white text-[14px] py-2 px-4 rounded-md w-full cursor-pointer">

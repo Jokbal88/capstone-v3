@@ -52,6 +52,26 @@
                 <span class="detail-title">Type of Disability:</span>
                 <span class="detail-content">{{ pwd.riskassessment.disability }}</span>
             </div>
+            <div class="detail-row">
+                <span class="detail-title">Verification Status:</span>
+                <span class="detail-content">
+                    {% if pwd.riskassessment.pwd_verified %}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verified</span>
+                    {% else %}
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Pending</span>
+                    {% endif %}
+                </span>
+            </div>
+            {% if pwd.riskassessment.pwd_verified %}
+            <div class="detail-row">
+                <span class="detail-title">Verified By:</span>
+                <span class="detail-content">{{ pwd.riskassessment.pwd_verified_by.get_full_name|default:pwd.riskassessment.pwd_verified_by.username }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-title">Verification Date:</span>
+                <span class="detail-content">{{ pwd.riskassessment.pwd_verification_date|date:"F d, Y" }}</span>
+            </div>
+            {% endif %}
         </div>
 
         <div style="display: flex;">

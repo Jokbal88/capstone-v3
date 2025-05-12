@@ -185,18 +185,18 @@
 <div class="flex flex-col bg-white rounded-[14px] h-min">
     <!-- Notifications Bar -->
     <div class="w-full flex items-center justify-between bg-yellow-50 border-b border-yellow-200 p-4 rounded-t-xl">
-        <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2">
             <i class="fas fa-bell text-yellow-500 text-lg"></i>
             <span class="font-semibold text-yellow-800">Notifications</span>
             <span class="ml-2 bg-yellow-400 text-white rounded-full px-2 py-0.5 text-xs font-bold">{{ notifications|length }}</span>
-        </div>
+      </div>
         <div class="flex gap-4 text-sm text-yellow-900">
             {% for note in notifications %}
                 <span>{{ note }}</span>
             {% empty %}
                 <span>No new notifications</span>
             {% endfor %}
-        </div>
+      </div>
     </div>
     <div class="flex flex-col gap-4 h-auto p-4">
         <div class="flex flex-row gap-4 p-4 w-full">
@@ -216,7 +216,7 @@
             <div class="calendar-admin w-full flex flex-col justify-end p-1">
                         <div class="flex items-center justify-between mb-2 w-full gap-2" style="margin-bottom: 1rem;">
                             <span class="text-base font-bold text-gray-800 flex items-center gap-2"><i class="fas fa-calendar-alt text-blue-400"></i> Calendar</span>
-                            <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2">
                                 <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
                 <i class="fas fa-chevron-left"></i>
                 </button>
@@ -263,7 +263,7 @@
                 <i class="fas fa-exclamation-triangle text-red-500 text-xl mb-1"></i>
                 <span class="text-xs text-gray-500 mb-1">Urgent Cases</span>
                 <span class="text-2xl font-bold text-red-600">{{ urgent_cases|default:0 }}</span>
-            </div>
+      </div>
             <!-- Move clock/date to far right and make it bigger -->
             
         </div>
@@ -357,9 +357,9 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
+      </div>
+    </div>
+  </div>
             <!-- Right Column: Calendar, Schedules, History -->
             <div class="flex flex-col h-full flex-1 gap-3">
                 <div class="dashboard-card border border-gray-200 flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
@@ -445,15 +445,15 @@
                                 <col style="width: 22%">
                                 <col style="width: 20%">
                             </colgroup>
-                            <thead>
+        <thead>
                                 <tr style="min-height: 48px;">
                                     <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Student</th>
                                     <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Request Type</th>
                                     <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Date</th>
                                     <th class="px-2 py-2" style="position: sticky; top: 0; z-index: 2; background: #f9fafb;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+          </tr>
+        </thead>
+        <tbody>
                                 {% for request in prescription_requests %}
                                 <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
                                     <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
@@ -461,18 +461,18 @@
                                     <td class="px-2 py-2">{{ request.date_prescribed|date:"M d, Y" }}</td>
                                     <td class="px-2 py-2">
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Completed</span>
-                                    </td>
-                                </tr>
+            </td>
+          </tr>
                                 {% empty %}
                                 <tr style="min-height: 48px;">
                                     <td colspan="4" class="px-2 py-6 text-center text-gray-400">No records found</td>
-                                </tr>
+          </tr>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+        </tbody>
+      </table>
+    </div>
                 </div>
-            </div>
+      </div>
         </div>
     </div>
     <!-- Quick Actions Card -->
