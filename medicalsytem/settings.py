@@ -10,9 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-import os
 from pathlib import Path
-import dj_database_url
+import secrets
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,15 +20,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+SECRET_KEY = secrets.token_urlsafe(64)
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+isProduction = False
+if isProduction:
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    DEBUG = False
+else:
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = False
+    # SECURITY WARNING: don't run with debug turned on in production!
+    DEBUG = True
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Email requirements
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "ctuargaoclinic@gmail.com"
+EMAIL_HOST_PASSWORD = "ttaokfbrkovxfhjn"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+ALLOWED_HOSTS = ["capstone-v2-pqik.onrender.com", "localhost", "127.0.0.1"]
 
 # Application definition
 
@@ -54,7 +73,6 @@ NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -69,7 +87,7 @@ ROOT_URLCONF = "medicalsytem.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "main", BASE_DIR / "medical"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -94,11 +112,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-DATABASES['default'] = dj_database_url.config(
-    default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
-    conn_max_age=600
-)
 
 
 # Password validation
@@ -125,7 +138,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "Asia/Manila"
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -135,87 +148,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    # BASE_DIR / "static",
+    BASE_DIR / "main/static",
+    BASE_DIR / "medical/static",
+]
+
+# Add this setting - it specifies where collectstatic will collect files to
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
-
-# Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-
-# Tailwind settings
-INTERNAL_IPS = [
-    "127.0.0.1",
-]
-
-# Jazzmin settings
-JAZZMIN_SETTINGS = {
-    "site_title": "Medical System",
-    "site_header": "Medical System",
-    "site_brand": "Medical System",
-    "welcome_sign": "Welcome to Medical System",
-    "copyright": "Medical System",
-    "search_model": ["auth.User", "medical.Patient"],
-    "user_avatar": None,
-    "topmenu_links": [
-        {"name": "Home", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "Support", "url": "https://github.com/yourusername/your-repo", "new_window": True},
-    ],
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "medical.patient": "fas fa-user-injured",
-        "medical.medicalclearance": "fas fa-file-medical",
-        "medical.physicalexamination": "fas fa-stethoscope",
-        "medical.riskassessment": "fas fa-heartbeat",
-        "medical.medicalrequirement": "fas fa-file-medical-alt",
-        "medical.patientrequest": "fas fa-clipboard-list",
-        "medical.transactionrecord": "fas fa-receipt",
-        "medical.medicalhistory": "fas fa-history",
-        "medical.familymedicalhistory": "fas fa-users",
-        "medical.obgynehistory": "fas fa-female",
-        "medical.dentalrecords": "fas fa-tooth",
-        "medical.eligibilityform": "fas fa-file-alt",
-        "medical.emergencyhealthassistancerecord": "fas fa-ambulance",
-        "medical.prescriptionrecord": "fas fa-prescription",
-        "medical.medicalcertificate": "fas fa-certificate",
-        "medical.mentalhealthrecord": "fas fa-brain",
-    },
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-circle",
-    "related_modal_active": True,
-    "custom_css": None,
-    "custom_js": None,
-    "show_ui_builder": False,
-    "changeform_format": "horizontal_tabs",
-    "changeform_format_overrides": {
-        "auth.user": "collapsible",
-        "auth.group": "vertical_tabs",
-    },
-}
-
-# Security settings for production
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True

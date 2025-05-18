@@ -23,7 +23,6 @@ from django.conf import settings
 from django.urls import reverse
 from medical import models as medical_models
 from django.http import JsonResponse
-from medical import forms as medical_forms
 
 def is_admin(user):
     return user.is_staff
@@ -144,31 +143,121 @@ def main_view(request):
 
 @login_required
 def patient_form(request):
-    if request.method == 'POST':
-        try:
+    try:
+        # Get the medical student instance
+        medical_student = medical_models.Student.objects.get(student_id=request.user.username)
+        
+        if request.method == 'GET':
+            try:
             patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            messages.error(request, "You have already submitted your patient information.")
-            return redirect('main:main')
-        except medical_models.Patient.DoesNotExist:
-            # Process the form submission
-            form = medical_forms.PatientForm(request.POST)
-            if form.is_valid():
-                patient = form.save(commit=False)
-                patient.student = request.user
-                patient.save()
-                messages.success(request, "Patient information submitted successfully.")
-                return redirect('main:main')
-            else:
-                messages.error(request, "Please correct the errors below.")
-    else:
-        try:
-            patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            messages.error(request, "You have already submitted your patient information.")
-            return redirect('main:main')
-        except medical_models.Patient.DoesNotExist:
-            form = medical_forms.PatientForm()
-    
-    return render(request, 'patient_form.html', {'form': form})
+            return redirect('main:student_dashboard') if patient else None
+            except medical_models.Patient.DoesNotExist:
+                pass
+        
+        if request.method == 'POST':
+            # Create PhysicalExamination first
+            physical_exam = medical_models.PhysicalExamination.objects.create(
+                student=medical_student,
+                date_of_physical_examination=timezone.now().strftime('%Y-%m-%d')
+            )
+            
+            # Create Patient record
+            patient = medical_models.Patient.objects.create(
+                student=medical_student,
+                birth_date=request.POST.get('birth_date'),
+                age=calculate_age(request.POST.get('birth_date')),
+                weight=float(request.POST.get('weight')),
+                height=float(request.POST.get('height')),
+                bloodtype=request.POST.get('bloodtype'),
+                allergies=process_checkboxes(request.POST.getlist('allergies'), request.POST.get('other_allergies')),
+                medications=request.POST.get('medications', 'None'),
+                home_address=request.POST.get('home_address'),
+                city='Cebu City',
+                state_province=request.POST.get('state_province'),
+                postal_zipcode=request.POST.get('postal_zipcode'),
+                country=request.POST.get('country'),
+                nationality=request.POST.get('nationality'),
+                civil_status=request.POST.get('civil_status'),
+                number_of_children=0,
+                academic_year=f"{timezone.now().year}-{timezone.now().year + 1}",
+                section=request.POST.get('section', 'TBA'),
+                parent_guardian=request.POST.get('parent_guardian'),
+                parent_guardian_contact_number=request.POST.get('parent_guardian_contact'),
+                examination=physical_exam
+            )
+            
+            # --- Medical History logic ---
+            med_hist_list = request.POST.getlist('medical_history')
+            if 'No Medical History' in med_hist_list:
+                med_hist_list = ['No Medical History']
+            # --- Family Medical History logic ---
+            fam_hist_list = request.POST.getlist('family_history')
+            if 'No Family History' in fam_hist_list:
+                fam_hist_list = ['No Family History']
+            # --- Risk Assessment logic ---
+            risk_list = request.POST.getlist('risk_assessment')
+            if 'No Risk' in risk_list:
+                risk_list = ['No Risk']
+
+            # Create MedicalHistory record
+            medical_history = medical_models.MedicalHistory.objects.create(
+                examination=physical_exam,
+                tuberculosis='tuberculosis' in med_hist_list,
+                hypertension='hypertension' in med_hist_list,
+                heart_disease='heart_disease' in med_hist_list,
+                hernia='hernia' in med_hist_list,
+                epilepsy='epilepsy' in med_hist_list,
+                peptic_ulcer='peptic_ulcer' in med_hist_list,
+                kidney_disease='kidney_disease' in med_hist_list,
+                asthma='asthma' in med_hist_list,
+                insomnia='insomnia' in med_hist_list,
+                malaria='malaria' in med_hist_list,
+                venereal_disease='venereal_disease' in med_hist_list,
+                nervous_breakdown='nervous_breakdown' in med_hist_list,
+                jaundice='jaundice' in med_hist_list,
+                others=request.POST.get('other_medical', ''),
+                no_history='No Medical History' in med_hist_list
+            )
+            
+            # Create FamilyMedicalHistory record
+            family_history = medical_models.FamilyMedicalHistory.objects.create(
+                examination=physical_exam,
+                hypertension='hypertension' in fam_hist_list,
+                asthma='asthma' in fam_hist_list,
+                cancer='cancer' in fam_hist_list,
+                tuberculosis='tuberculosis' in fam_hist_list,
+                diabetes='diabetes' in fam_hist_list,
+                bleeding_disorder='bleeding_disorder' in fam_hist_list,
+                epilepsy='epilepsy' in fam_hist_list,
+                mental_disorder='mental_disorder' in fam_hist_list,
+                no_history='No Family History' in fam_hist_list,
+                other_medical_history=request.POST.get('other_family_medical', '')
+            )
+            
+            # Create RiskAssessment record
+            risk_assessment = medical_models.RiskAssessment.objects.create(
+                clearance=patient,
+                cardiovascular_disease='cardiovascular' in risk_list,
+                chronic_lung_disease='chronic_lung' in risk_list,
+                chronic_renal_disease='chronic_kidney' in risk_list,
+                chronic_liver_disease='chronic_liver' in risk_list,
+                cancer='cancer' in risk_list,
+                autoimmune_disease='autoimmune' in risk_list,
+                pwd='pwd' in risk_list,
+                disability=request.POST.get('disability', '')
+            )
+            
+            messages.success(request, 'Medical information submitted successfully!')
+            return redirect('main:student_dashboard')
+            
+    except medical_models.Student.DoesNotExist:
+        messages.error(request, 'Student profile not found.')
+        return redirect('main:login')
+    except Exception as e:
+        print(e)
+        messages.error(request, f'Error saving patient information: {str(e)}')
+        
+    return render(request, 'patient_form.html')
 
 def calculate_age(birthdate):
     born = datetime.strptime(birthdate, '%Y-%m-%d').date()
