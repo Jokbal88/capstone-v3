@@ -1,4 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+import uuid
 
 class Student(models.Model):
     GENDER_CHOICES = [
@@ -22,3 +25,16 @@ class Student(models.Model):
 
     def __str__(self):
         return f"{self.student_id} - {self.lastname}, {self.firstname}"
+
+class EmailVerification(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_verified = models.BooleanField(default=False)
+    
+    def is_token_expired(self):
+        # Token expires after 24 hours
+        return (timezone.now() - self.created_at).total_seconds() > 86400
+    
+    def __str__(self):
+        return f"Verification for {self.user.email}"

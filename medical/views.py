@@ -868,15 +868,16 @@ def submit_request(request):
 def student_medical_requirements_tracker(request):
     if not (request.user.is_superuser or request.user.is_staff):
         return redirect('medical:upload_requirements')
+    student = None
+    patient = None
+    med_requirements = None
     if request.method == "POST":
         student_id = request.POST.get("student_id")
-        
         # Handle individual remark saves
         if 'save_remark' in request.POST and (request.user.is_superuser or request.user.is_staff):
             try:
                 med_requirements = MedicalRequirement.objects.get(patient__student__student_id=student_id)
                 remark_type = request.POST.get("save_remark")
-                
                 # Update specific remark based on type
                 if remark_type == "x-ray":
                     med_requirements.x_ray_remarks = request.POST.get("x-ray-remark", "")
@@ -888,23 +889,28 @@ def student_medical_requirements_tracker(request):
                     med_requirements.stool_examination_remarks = request.POST.get("stool-examination-remark", "")
                 elif remark_type == "pwd-card":
                     med_requirements.pwd_card_remarks = request.POST.get("pwd-card-remark", "")
-                
                 med_requirements.save()
                 messages.success(request, f"Remark updated successfully")
-                return render(request, "medicalrequirements.html", {"med_requirements": med_requirements})
+                return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient})
             except MedicalRequirement.DoesNotExist:
                 messages.error(request, "Medical requirements not found")
-                return render(request, "medicalrequirements.html", {})
-        
+                return render(request, "medicalrequirements.html", {"student": student, "patient": patient})
         # Handle student search (existing code)
         try:
             med_requirements = MedicalRequirement.objects.get(patient__student__student_id=student_id)
-            return render(request, "medicalrequirements.html", {"med_requirements": med_requirements})
+            patient = med_requirements.patient
+            student = patient.student
+            return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient})
         except MedicalRequirement.DoesNotExist:
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
+                student = patient.student
+            except Patient.DoesNotExist:
+                student = None
+                patient = None
             messages.error(request, "Medical requirements not found")
-            return render(request, "medicalrequirements.html", {})
-
-    return render(request, "medicalrequirements.html", {})
+            return render(request, "medicalrequirements.html", {"student": student, "patient": patient})
+    return render(request, "medicalrequirements.html", {"student": student, "patient": patient})
 
 # Views for handling the medical requirements uploaded file
 def upload_requirements(request):

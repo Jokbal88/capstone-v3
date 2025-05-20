@@ -17,6 +17,17 @@
             </button>
         </form>
     {% endif %}
+    {% if student %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex flex-col gap-2">
+        <div class="flex flex-wrap gap-6">
+            <div><span class="font-semibold">Student ID:</span> {{ student.student_id }}</div>
+            <div><span class="font-semibold">Name:</span> {{ student.firstname }} {{ student.lastname }}</div>
+            <div><span class="font-semibold">Degree:</span> {{ student.degree }}</div>
+            <div><span class="font-semibold">Year Level:</span> {{ student.year_level }}</div>
+            <div><span class="font-semibold">Email:</span> {{ student.email }}</div>
+        </div>
+    </div>
+                    {% endif %}
     <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200">
         <h3 class="font-semibold text-blue-700 mb-2">Required Medical Documents</h3>
         <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
@@ -35,11 +46,16 @@
             <tbody>
                     <tr class="bg-white border-b hover:bg-gray-50">
                         <td class="p-2">
-                            <form method="POST" class="flex gap-2 items-center">
-                                {% csrf_token %}
-                                <input type="text" name="x-ray-remark" value="{{ med_requirements.x_ray_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
-                                <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                            </form>
+                    {% if user.is_superuser or user.is_staff %}
+                                <form method="POST" class="flex gap-2 items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                    <input type="text" name="x-ray-remark" value="{{ med_requirements.x_ray_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                    <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                                </form>
+                            {% else %}
+                                <span>{{ med_requirements.x_ray_remarks|default:'None' }}</span>
+                            {% endif %}
                         </td>
                         <td class="p-2 font-medium">Chest X-ray</td>
                         {% if med_requirements.chest_xray %}
@@ -52,11 +68,16 @@
                 </tr>
                     <tr class="bg-white border-b hover:bg-gray-50">
                         <td class="p-2">
-                            <form method="POST" class="flex gap-2 items-center">
-                                {% csrf_token %}
-                                <input type="text" name="cbc-remark" value="{{ med_requirements.cbc_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
-                                <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                            </form>
+                    {% if user.is_superuser or user.is_staff %}
+                                <form method="POST" class="flex gap-2 items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                    <input type="text" name="cbc-remark" value="{{ med_requirements.cbc_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                    <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                                </form>
+                            {% else %}
+                                <span>{{ med_requirements.cbc_remarks|default:'None' }}</span>
+                            {% endif %}
                         </td>
                         <td class="p-2 font-medium">Complete Blood Count (CBC)</td>
                         {% if med_requirements.cbc %}
@@ -69,11 +90,16 @@
                 </tr>
                     <tr class="bg-white border-b hover:bg-gray-50">
                         <td class="p-2">
-                            <form method="POST" class="flex gap-2 items-center">
-                                {% csrf_token %}
-                                <input type="text" name="drug-test-remark" value="{{ med_requirements.drug_test_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
-                                <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                            </form>
+                    {% if user.is_superuser or user.is_staff %}
+                                <form method="POST" class="flex gap-2 items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                    <input type="text" name="drug-test-remark" value="{{ med_requirements.drug_test_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                    <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                                </form>
+                            {% else %}
+                                <span>{{ med_requirements.drug_test_remarks|default:'None' }}</span>
+                            {% endif %}
                         </td>
                         <td class="p-2 font-medium">Drug Test</td>
                         {% if med_requirements.drug_test %}
@@ -86,11 +112,16 @@
                 </tr>
                     <tr class="bg-white border-b hover:bg-gray-50">
                         <td class="p-2">
-                            <form method="POST" class="flex gap-2 items-center">
-                                {% csrf_token %}
-                                <input type="text" name="stool-examination-remark" value="{{ med_requirements.stool_examination_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
-                                <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                            </form>
+                    {% if user.is_superuser or user.is_staff %}
+                                <form method="POST" class="flex gap-2 items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                    <input type="text" name="stool-examination-remark" value="{{ med_requirements.stool_examination_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                    <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                                </form>
+                            {% else %}
+                                <span>{{ med_requirements.stool_examination_remarks|default:'None' }}</span>
+                            {% endif %}
                         </td>
                         <td class="p-2 font-medium">Stool Examination</td>
                         {% if med_requirements.stool_examination %}
@@ -104,11 +135,16 @@
                 {% if med_requirements.pwd_card %}
                     <tr class="bg-white border-b hover:bg-gray-50">
                         <td class="p-2">
-                            <form method="POST" class="flex gap-2 items-center">
-                                {% csrf_token %}
-                                <input type="text" name="pwd-card-remark" value="{{ med_requirements.pwd_card_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
-                                <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                            </form>
+                        {% if user.is_superuser or user.is_staff %}
+                                <form method="POST" class="flex gap-2 items-center">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                                    <input type="text" name="pwd-card-remark" value="{{ med_requirements.pwd_card_remarks }}" class="w-full p-2 border rounded-md text-base" placeholder="Enter remarks here...">
+                                    <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
+                                </form>
+                            {% else %}
+                                <span>{{ med_requirements.pwd_card_remarks|default:'None' }}</span>
+                            {% endif %}
                             </td>
                         <td class="p-2 font-medium">PWD Card</td>
                         <td class="p-2 text-center text-green-600 font-bold">&#10003;</td>

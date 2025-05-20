@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
-from main.models import Student
+from main.models import Student, EmailVerification
 from medical.models import (
     PhysicalExamination,
     Patient,
@@ -23,6 +23,9 @@ from django.conf import settings
 from django.urls import reverse
 from medical import models as medical_models
 from django.http import JsonResponse
+from .utils import send_verification_email, send_password_reset_email
+import uuid
+from django.utils.crypto import get_random_string
 
 def is_admin(user):
     return user.is_staff
@@ -42,11 +45,26 @@ def login_view(request):
                 user = None
 
         if user is not None:
+            # Check if email is verified
+            try:
+                verification = EmailVerification.objects.get(user=user)
+                if not verification.is_verified:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Please verify your email address before logging in.'
+                    })
+            except EmailVerification.DoesNotExist:
+                # Create verification if it doesn't exist
+                verification = EmailVerification.objects.create(user=user)
+                send_verification_email(user, verification)
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Please verify your email address before logging in. A new verification email has been sent.'
+                })
+
             login(request, user)
             
-            #kani nga condition siguro ang issue
             redirect_url = 'main:main' if user.is_staff or user.is_superuser else 'main:patient_form'
-            
             
             return JsonResponse({
                 'status': 'success',
@@ -98,7 +116,13 @@ def register(request):
                 contact_number=''
             )
 
-            messages.success(request, 'Registration successful! Please complete your medical profile.')
+            # Create email verification
+            verification = EmailVerification.objects.create(user=user)
+            
+            # Send verification email
+            send_verification_email(user, verification)
+
+            messages.success(request, 'Registration successful! Please check your email to verify your account.')
             return redirect('main:login')
 
         except Exception as e:
@@ -107,11 +131,106 @@ def register(request):
 
     return render(request, 'register.html')
 
+def verify_email(request, token):
+    try:
+        verification = EmailVerification.objects.get(token=token)
+        
+        if verification.is_token_expired():
+            messages.error(request, 'Verification link has expired. Please request a new one.')
+            return redirect('main:login')
+        
+        verification.is_verified = True
+        verification.save()
+        
+        messages.success(request, 'Email verified successfully! You can now log in.')
+        return redirect('main:login')
+        
+    except EmailVerification.DoesNotExist:
+        messages.error(request, 'Invalid verification link.')
+        return redirect('main:login')
+
+def resend_verification(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            verification, created = EmailVerification.objects.get_or_create(user=user)
+            
+            if not created and verification.is_verified:
+                messages.info(request, 'Email is already verified.')
+                return redirect('main:login')
+            
+            # Update token and timestamp
+            verification.token = uuid.uuid4()
+            verification.created_at = timezone.now()
+            verification.save()
+            
+            # Send new verification email
+            send_verification_email(user, verification)
+            
+            messages.success(request, 'A new verification email has been sent.')
+            return redirect('main:login')
+            
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with this email address.')
+            return redirect('main:login')
+    
+    return render(request, 'resend_verification.html')
+
 def recovery(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+            # Generate a unique token
+            token = str(uuid.uuid4())
+            # Store the token in the session
+            request.session['reset_token'] = token
+            request.session['reset_email'] = email
+            
+            # Send password reset email
+            send_password_reset_email(user, token)
+            
+            messages.success(request, 'Password reset instructions have been sent to your email.')
+            return redirect('main:login')
+            
+        except User.DoesNotExist:
+            messages.error(request, 'No account found with this email address.')
+            return redirect('main:recovery')
+            
     return render(request, 'recovery.html')
 
-def password_reset(request):
-    return render(request, 'password-reset.html')
+def password_reset(request, token):
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if new_password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return render(request, 'password-reset.html', {'token': token})
+            
+        try:
+            # Find the user with this token in their session
+            for user in User.objects.all():
+                if request.session.get('reset_token') == token and request.session.get('reset_email') == user.email:
+                    user.set_password(new_password)
+                    user.save()
+                    
+                    # Clear the session
+                    del request.session['reset_token']
+                    del request.session['reset_email']
+                    
+                    messages.success(request, 'Your password has been reset successfully.')
+                    return redirect('main:login')
+            
+            messages.error(request, 'Invalid or expired reset link.')
+            return redirect('main:recovery')
+            
+        except Exception as e:
+            messages.error(request, 'An error occurred while resetting your password.')
+            return redirect('main:recovery')
+            
+    return render(request, 'password-reset.html', {'token': token})
 
 
 @login_required
@@ -149,8 +268,8 @@ def patient_form(request):
         
         if request.method == 'GET':
             try:
-            patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            return redirect('main:student_dashboard') if patient else None
+                patient = medical_models.Patient.objects.get(student_id=request.user.username)
+                return redirect('main:student_dashboard') if patient else None
             except medical_models.Patient.DoesNotExist:
                 pass
         

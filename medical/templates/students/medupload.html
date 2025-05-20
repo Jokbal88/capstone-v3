@@ -64,6 +64,7 @@
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
                 <thead class="bg-[#e6e6e6]">
                     <tr>
+                        <th class="p-2 text-left">Remarks</th>
                         <th class="p-2 text-left">Requirement Type</th>
                         <th class="p-2 text-left">File</th>
                         <th class="p-2 text-center">Status</th>
@@ -73,6 +74,16 @@
                 <tbody>
                     {% for req in requirements %}
                     <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="p-2">
+                            {% if md %}
+                                {% if req.slug == 'chest_xray' %}{{ md.x_ray_remarks|default:'None' }}
+                                {% elif req.slug == 'cbc' %}{{ md.cbc_remarks|default:'None' }}
+                                {% elif req.slug == 'drug_test' %}{{ md.drug_test_remarks|default:'None' }}
+                                {% elif req.slug == 'stool_examination' %}{{ md.stool_examination_remarks|default:'None' }}
+                                {% elif req.slug == 'pwd_card' %}{{ md.pwd_card_remarks|default:'None' }}
+                                {% else %}None{% endif %}
+                            {% else %}None{% endif %}
+                        </td>
                         <td class="p-2 font-medium">{{ req.name }}</td>
                         <td class="p-2">
                             {% if md %}

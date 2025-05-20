@@ -40,13 +40,15 @@ else:
     DEBUG = True
 
 
-# Email requirements
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_HOST_USER = "ctuargaoclinic@gmail.com"
-EMAIL_HOST_PASSWORD = "ttaokfbrkovxfhjn"
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST_USER = 'ctuargaoclinic@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'ttaokfbrkovxfhjn'  # Your Gmail app password
+DEFAULT_FROM_EMAIL = 'ctuargaoclinic@gmail.com'
+SITE_URL = 'http://localhost:8000'  # Change this to your domain in production
 
 ALLOWED_HOSTS = ["capstone-v2-pqik.onrender.com", "localhost", "127.0.0.1"]
 

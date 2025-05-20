@@ -35,19 +35,30 @@
               Please enter your email to change your password
             </p>
           </div>
-          <form class="flex flex-col gap-2">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="p-4 mb-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+          <form method="POST" class="flex flex-col gap-2">
+            {% csrf_token %}
             <label for="email">Email</label>
             <input
               id="email"
               name="email"
-              class="w-full"
+              class="w-full p-2 border rounded-md"
               type="email"
               required
               placeholder="Enter your email"
             />
             <div id="error-message" class="error-message"></div>
-            <input class="bg-[#3b82f6] text-white text-[14px] p-2 rounded-md w-[30%] cursor-pointer" type="submit" value="Submit" />
+            <input class="bg-[#3b82f6] text-white text-[14px] p-2 rounded-md w-[30%] cursor-pointer hover:bg-blue-600" type="submit" value="Submit" />
           </form>
+          <div class="text-center mt-3">
+            <p>Remember your password? <a href="{% url 'main:login' %}" class="text-blue-500 hover:text-blue-700">Login here</a></p>
+          </div>
         </div>
       </div>
     </div>
