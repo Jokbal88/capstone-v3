@@ -191,12 +191,24 @@ def recovery(request):
             # Send password reset email
             send_password_reset_email(user, token)
             
-            messages.success(request, 'Password reset instructions have been sent to your email.')
-            return redirect('main:login')
+            # Return JSON response for success
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Password reset instructions have been sent to your email.'
+            })
             
         except User.DoesNotExist:
-            messages.error(request, 'No account found with this email address.')
-            return redirect('main:recovery')
+            # Return JSON response for error (user not found)
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No account found with this email address.'
+            })
+        except Exception as e:
+             # Return JSON response for other errors
+            return JsonResponse({
+                'status': 'error',
+                'message': f'An error occurred: {str(e)}'
+            })
             
     return render(request, 'recovery.html')
 
