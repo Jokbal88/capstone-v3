@@ -5,28 +5,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HealthHub Connect | Login</title>
-	<link rel="shortcut icon" href="../static/images/CTU_logo.png" type="image/x-icon">
+	<link rel="shortcut icon" href="{% static 'images/CTU_logo.png' %}" type="image/x-icon">
 	{% tailwind_css %}
 	<link rel="stylesheet" href="{% static 'styles/base.css' %}" />
 </head>
 <body>
     <div class="flex w-full h-screen">
 		<div class="w-1/2 xs:hidden lg:flex">
-			<img class="h-full" src="../static/images/auth-image.webp" alt="Consultation image">
+			<img class="h-full" src="{% static 'images/auth-image.webp' %}" alt="Consultation image">
 		</div>
 		<div class="xs:w-full lg:w-1/2 flex items-center justify-center xs:p-4 md:p-14 lg:p-[8rem]">
 			<div class="flex flex-col w-full gap-4">
 				<div class="flex flex-col gap-2">
 					<div class="self-center">
-						<img class="size-[7rem]" src="../static/images/CTU_logo.png" alt="CTU Logo">
+						<img class="size-[7rem]" src="{% static 'images/CTU_logo.png' %}" alt="CTU Logo">
 					</div>
 					<div class="flex flex-col items-center">
 						<h1 class="text-[1.5rem] font-bold">HealthHub Connect</h1>
 						<p class="font-normal w-[70%] text-center">An Integrated Kahimsug Clinic Management System in CTU Argao</p>
 					</div>
 				</div>
-				<form action="#" method="POST" class="flex flex-col gap-1">
+
+				<form action="{% url 'main:login' %}" method="POST" class="flex flex-col gap-1">
 					{% csrf_token %}
+					{% if next %}
+					<input type="hidden" name="next" value="{{ next }}">
+					{% endif %}
 					<label for="email" class="text-base">Email or Student ID</label>
 					<input type="text" id="email" name="email" placeholder="Enter your email or student ID" required>
 					<span class="error-message" id="emailError"></span>
@@ -42,8 +46,7 @@
                             <svg id="hideIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5" style="display: none;">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                             </svg>
-                         
-                          </button>
+                        </button>
                     </div>
 					<span class="error-message" id="passwordError"></span>
 		
@@ -56,7 +59,27 @@
 			</div>
 		</div>
     </div>
-    <script src="../static/scripts/login.js"></script>
+    <script src="{% static 'scripts/login.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    {{ messages|json_script:"messages-data" }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesElement = document.getElementById('messages-data');
+            if (messagesElement) {
+                const messages = JSON.parse(messagesElement.textContent);
+
+                messages.forEach(function(message) {
+                    Swal.fire({
+                        title: message.tags.charAt(0).toUpperCase() + message.tags.slice(1) + '!',
+                        text: message.message,
+                        icon: message.tags,
+                        confirmButtonText: 'OK'
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

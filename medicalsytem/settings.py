@@ -45,10 +45,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'ctuargaoclinic@gmail.com'  
-EMAIL_HOST_PASSWORD = 'ttaokfbrkovxfhjn'  
-DEFAULT_FROM_EMAIL = 'ctuargaoclinic@gmail.com'
-SITE_URL = 'http://localhost:8000'  # Change this to your domain in production
+EMAIL_HOST_USER = 'ctuhealthhubconnect@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'tmuk uohv hopc jgqs'  # Your Gmail app password
+DEFAULT_FROM_EMAIL = 'ctuhealthhubconnect@gmail.com'
+SITE_URL = 'https://capstone-v2-pqik.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
 
 ALLOWED_HOSTS = ["capstone-v2-pqik.onrender.com", "localhost", "127.0.0.1"]
 

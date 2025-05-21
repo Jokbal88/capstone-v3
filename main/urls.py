@@ -20,6 +20,7 @@ urlpatterns = [
     path('mental-health/review/<int:record_id>/', views.mental_health_review, name='mental_health_review'),
     path('logout/', views.logout_view, name='logout'),
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('email-verification/', views.email_verification, name='email_verification'),
     path('resend-verification/', views.resend_verification, name='resend_verification'),
 ]
 
