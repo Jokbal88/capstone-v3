@@ -45,8 +45,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'ctuargaoclinic@gmail.com'  # Your Gmail address
-EMAIL_HOST_PASSWORD = 'ttaokfbrkovxfhjn'  # Your Gmail app password
+EMAIL_HOST_USER = 'ctuargaoclinic@gmail.com'  
+EMAIL_HOST_PASSWORD = 'ttaokfbrkovxfhjn'  
 DEFAULT_FROM_EMAIL = 'ctuargaoclinic@gmail.com'
 SITE_URL = 'http://localhost:8000'  # Change this to your domain in production
 
