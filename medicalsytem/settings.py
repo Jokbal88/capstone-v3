@@ -41,7 +41,7 @@ DEFAULT_FROM_EMAIL = 'ctuhealthhubconnect@gmail.com'
 
 SITE_URL = 'https://capstone-v3.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
 
-ALLOWED_HOSTS = ["capstone-v3.onrender.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.localhost,127.0.0.1').split(',')
 
 # Application definition
 
