@@ -232,6 +232,7 @@ class PatientRequest(models.Model):
     approve = models.BooleanField(default=False)
     date_requested = models.DateTimeField()
     date_approved = models.DateTimeField(max_length=100, blank=True, null=True)
+    is_completed = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.request_type} request for {self.patient.student.firstname})"
