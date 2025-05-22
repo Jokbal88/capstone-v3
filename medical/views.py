@@ -2133,18 +2133,18 @@ def mental_health_view(request):
     </html>
     """
 
-                   try:
-                       send_mail(
-                           subject,
-                           '', # Empty plain text message
-                           settings.DEFAULT_FROM_EMAIL,
-                           [student_email],
-                           html_message=html_message,
-                           fail_silently=False,
-                       )
-                       messages.info(request, f"Email notification sent to {student.email}.")
-                   except Exception as e:
-                       messages.error(request, f"Failed to send email notification to {student.email}: {e}")
+                try:
+                    send_mail(
+                        subject,
+                        '', # Empty plain text message
+                        settings.DEFAULT_FROM_EMAIL,
+                        [student_email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    messages.info(request, f"Email notification sent to {student.email}.")
+                except Exception as e:
+                    messages.error(request, f"Failed to send email notification to {student.email}: {e}")
 
                 # Redirect back to the same page with the student ID
                 return redirect(f'{request.path}?student_id={student_id}')
