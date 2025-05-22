@@ -19,7 +19,8 @@ python manage.py collectstatic --no-input
 # Run migrations
 python manage.py migrate
 
-if [[ $CREATE_SUPERUSER ]];
+# Create initial superuser if environment variables are set
+if [[ $INITIAL_SUPERUSER_USERNAME && $INITIAL_SUPERUSER_PASSWORD ]];
 then
-  python manage.py createsuperuser --no-input --username "$DJANGO_SUPERUSER_USERNAME" --email "$DJANGO_SUPERUSER_EMAIL"
+  python manage.py create_initial_superuser
 fi
