@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: medical-system
+    env: python
+    buildCommand: "chmod +x build.sh && ./build.sh"
+    startCommand: "gunicorn medicalsytem.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medical-system-db
+          property: connectionString
+      - key: PORT
+        value: 10000
+
+databases:
+  - name: medical-system-db
+    databaseName: medical_system
+    user: medical_system_user 

@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import secrets
+import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,25 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = secrets.token_urlsafe(64)
+SECRET_KEY = os.environ.get('SECRET_KEY', secrets.token_urlsafe(64))
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-isProduction = False
-if isProduction:
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_SSL_REDIRECT = True
-    DEBUG = False
-else:
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
-    SECURE_HSTS_PRELOAD = True
-    SECURE_SSL_REDIRECT = False
-    # SECURITY WARNING: don't run with debug turned on in production!
-    DEBUG = True
-
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -49,9 +39,9 @@ EMAIL_HOST_USER = 'ctuhealthhubconnect@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'tmuk uohv hopc jgqs'  # Your Gmail app password
 DEFAULT_FROM_EMAIL = 'ctuhealthhubconnect@gmail.com'
 
-SITE_URL = 'https://capstone-v2-pqik.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
+SITE_URL = 'https://capstone-v3.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
 
-ALLOWED_HOSTS = ["capstone-v2-pqik.onrender.com", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["capstone-v3.onrender.com", "localhost", "127.0.0.1"]
 
 # Application definition
 
@@ -76,6 +66,7 @@ NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add whitenoise middleware
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -110,10 +101,10 @@ WSGI_APPLICATION = "medicalsytem.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
 
@@ -140,13 +131,12 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [
-    # BASE_DIR / "static",
     BASE_DIR / "main/static",
     BASE_DIR / "medical/static",
 ]
 
-# Add this setting - it specifies where collectstatic will collect files to
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
@@ -155,3 +145,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
+
+# Security Settings
+if not DEBUG:
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
