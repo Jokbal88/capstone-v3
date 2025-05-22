@@ -26,14 +26,18 @@ from django.http import JsonResponse
 from .utils import send_verification_email, send_password_reset_email
 import uuid
 from django.utils.crypto import get_random_string
+from django.contrib.messages import get_messages
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 def is_admin(user):
     return user.is_staff
 
+@ensure_csrf_cookie
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('email')
         password = request.POST.get('password')
+        next_url = request.POST.get('next', '')
 
         user = authenticate(request, username=username, password=password)
         
@@ -64,7 +68,15 @@ def login_view(request):
 
             login(request, user)
             
-            redirect_url = 'main:main' if user.is_staff or user.is_superuser else 'main:patient_form'
+            # Handle admin login
+            if next_url and (user.is_staff or user.is_superuser):
+                return redirect(next_url)
+            
+            # Redirect based on user type
+            if user.is_staff or user.is_superuser:
+                redirect_url = 'main:admin_dashboard'
+            else:
+                redirect_url = 'main:patient_form'
             
             return JsonResponse({
                 'status': 'success',
@@ -76,7 +88,18 @@ def login_view(request):
                 'message': 'Invalid ID number/Email or password'
             })
 
-    return render(request, 'login.html')
+    # Get messages and convert them to a list of dictionaries
+    messages_list = []
+    for message in get_messages(request):
+        messages_list.append({
+            'message': message.message,
+            'tags': message.tags
+        })
+
+    return render(request, 'login.html', {
+        'messages': messages_list,
+        'next': request.GET.get('next', '')
+    })
 
 def register(request):
     if request.method == 'POST':
@@ -280,8 +303,8 @@ def patient_form(request):
         
         if request.method == 'GET':
             try:
-                patient = medical_models.Patient.objects.get(student_id=request.user.username)
-                return redirect('main:student_dashboard') if patient else None
+            patient = medical_models.Patient.objects.get(student_id=request.user.username)
+            return redirect('main:student_dashboard') if patient else None
             except medical_models.Patient.DoesNotExist:
                 pass
         
@@ -387,6 +410,7 @@ def patient_form(request):
     except Exception as e:
         print(e)
         messages.error(request, f'Error saving patient information: {str(e)}')
+        return render(request, 'patient_form.html')
         
     return render(request, 'patient_form.html')
 
@@ -654,3 +678,6 @@ def mental_health_review(request, record_id):
 def logout_view(request):
     logout(request)
     return redirect('main:login')
+
+def email_verification(request):
+    return render(request, 'email_verification.html')

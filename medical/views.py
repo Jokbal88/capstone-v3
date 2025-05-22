@@ -374,14 +374,59 @@ def view_request(request):
                 approval_email_subject = 'Your Document Request Has Been Approved'
                 approval_email_body = f"""
                     <html>
-                    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                        <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;'>
-                            <h2 style='text-align: center; color: #0056b3;'>REQUEST APPROVAL</h2>
+                    <head>
+                        <style>
+                            body {{
+                                font-family: Arial, sans-serif;
+                                line-height: 1.6;
+                                color: #333;
+                                margin: 0;
+                                padding: 20px;
+                                background-color: #f4f4f4;
+                                text-align: center;
+                            }}
+                            .container {{
+                                max-width: 600px;
+                                margin: 0 auto;
+                                background-color: #fff;
+                                padding: 30px;
+                                border-radius: 8px;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                text-align: left;
+                            }}
+                            .title {{
+                                text-align: center;
+                                font-size: 24px;
+                                color: #0056b3;
+                                margin-bottom: 20px;
+                                padding-bottom: 15px;
+                                border-bottom: 1px solid #eee;
+                            }}
+                             p {{
+                                margin-bottom: 15px;
+                            }}
+                             .footer {{
+                                margin-top: 30px;
+                                padding-top: 20px;
+                                font-size: 12px;
+                                color: #999;
+                                text-align: center;
+                                border-top: 1px solid #eee;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="title">REQUEST APPROVAL</div>
                             <p>Dear <strong>{patient_name}</strong>,</p>
                             <p>We're pleased to inform you that your document request for <strong>'{request_type}'</strong> has been <strong style='color:green;'>APPROVED</strong>.</p>
                             <p>Please proceed to the Kahimsug Clinic for the necessary examination and to claim the printed copy of your document.</p>
                             <p>Best Regards,</p>
                             <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                        </div>
+                         <div class="footer">
+                            <p>This is an automated message, please do not reply to this email.</p>
+                            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
                         </div>
                     </body>
                     </html>
@@ -409,14 +454,59 @@ def view_request(request):
                 rejection_email_subject = 'Your Document Request Has Been Rejected'
                 rejection_email_body = f"""
                     <html>
-                    <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                        <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;'>
-                            <h2 style='text-align: center; color: #d9534f;'>REQUEST REJECTION</h2>
+                    <head>
+                        <style>
+                            body {{
+                                font-family: Arial, sans-serif;
+                                line-height: 1.6;
+                                color: #333;
+                                margin: 0;
+                                padding: 20px;
+                                background-color: #f4f4f4;
+                                text-align: center;
+                            }}
+                            .container {{
+                                max-width: 600px;
+                                margin: 0 auto;
+                                background-color: #fff;
+                                padding: 30px;
+                                border-radius: 8px;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                text-align: left;
+                            }}
+                            .title {{
+                                text-align: center;
+                                font-size: 24px;
+                                color: #d9534f;
+                                margin-bottom: 20px;
+                                padding-bottom: 15px;
+                                border-bottom: 1px solid #eee;
+                            }}
+                            p {{
+                                margin-bottom: 15px;
+                            }}
+                            .footer {{
+                                margin-top: 30px;
+                                padding-top: 20px;
+                                font-size: 12px;
+                                color: #999;
+                                text-align: center;
+                                border-top: 1px solid #eee;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="title">REQUEST REJECTION</div>
                             <p>Dear <strong>{patient_name}</strong>,</p>
                             <p>We regret to inform you that your document request for <strong>'{request_type}'</strong> has been <strong style='color:red;'>REJECTED</strong>.</p>
                             <p>Please review the requirements and resubmit your request if necessary.</p>
                             <p>Best Regards,</p>
                             <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                        </div>
+                        <div class="footer">
+                            <p>This is an automated message, please do not reply to this email.</p>
+                            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
                         </div>
                     </body>
                     </html>
