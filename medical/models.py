@@ -2,6 +2,7 @@ from django.db import models
 import os
 from django.contrib.auth.models import User
 from main.models import Student
+from django.utils import timezone
 
 # Create your models here.
 class Student(models.Model):
@@ -145,6 +146,11 @@ class RiskAssessment(models.Model):
     # pwd_id_card = models.FileField(upload_to=pwd_path, null=True, blank=True)
     
 class MedicalRequirement(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
 
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE)
     #clearance = models.OneToOneField(MedicalClearance, on_delete=models.CASCADE)
@@ -181,6 +187,9 @@ class MedicalRequirement(models.Model):
     drug_test = models.FileField(upload_to=drug_test_path)
     stool_examination = models.FileField(upload_to=stool_examination_path)
     pwd_card = models.FileField(upload_to=pwd_id_card_path, null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    reviewed_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Medical Requirements for {self.patient.student.firstname} {self.patient.student.lastname}"

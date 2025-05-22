@@ -127,254 +127,205 @@
         <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
             <p class="text-sm text-blue-800">Please review and update all required medical documents for students. These are essential for ensuring the health and safety of all students.</p>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
-                <thead class="bg-[#e6e6e6]">
-                    <tr>
-                        <th class="p-2 text-left">Remarks</th>
-                        <th class="p-2 text-left">Requirement</th>
-                        <th class="p-2 text-center">Status</th>
-                        <th class="p-2 text-center">File</th>
-                        <th class="p-2 text-center">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                    {% if med_requirements %}
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
-                    {% if user.is_superuser or user.is_staff %}
-                                <form method="POST" class="flex gap-2 items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
-                                    <textarea name="x-ray-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.x_ray_remarks|default:'' }}</textarea>
-                                    <button type="submit" name="save_remark" value="x-ray" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                                </form>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="student_id" value="{{ student.student_id|default:'' }}">
+            <div class="table-container">
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
+                        <thead class="bg-[#e6e6e6]">
+                            <tr>
+                                <th class="p-2 text-left">Remarks</th>
+                                <th class="p-2 text-left">Requirement</th>
+                                <th class="p-2 text-center">Status</th>
+                                <th class="p-2 text-center">File</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if med_requirements %}
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <textarea name="x-ray-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.x_ray_remarks|default:'' }}</textarea>
+                                    {% else %}
+                                        <span>{{ med_requirements.x_ray_remarks|default:'None' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-2 font-medium">Chest X-ray</td>
+                                <td class="p-2 text-center">{% if med_requirements.chest_xray %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
+                                <td class="p-2 text-center">{% if med_requirements.chest_xray %}<button type="button" onclick="previewFile('{{ med_requirements.chest_xray.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Chest X-ray')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <textarea name="cbc-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.cbc_remarks|default:'' }}</textarea>
+                                    {% else %}
+                                        <span>{{ med_requirements.cbc_remarks|default:'None' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-2 font-medium">Complete Blood Count (CBC)</td>
+                                <td class="p-2 text-center">{% if med_requirements.cbc %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
+                                <td class="p-2 text-center">{% if med_requirements.cbc %}<button type="button" onclick="previewFile('{{ med_requirements.cbc.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Complete Blood Count (CBC)')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <textarea name="drug-test-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.drug_test_remarks|default:'' }}</textarea>
+                                    {% else %}
+                                        <span>{{ med_requirements.drug_test_remarks|default:'None' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-2 font-medium">Drug Test</td>
+                                <td class="p-2 text-center">{% if med_requirements.drug_test %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
+                                <td class="p-2 text-center">{% if med_requirements.drug_test %}<button type="button" onclick="previewFile('{{ med_requirements.drug_test.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Drug Test')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <textarea name="stool-examination-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.stool_examination_remarks|default:'' }}</textarea>
+                                    {% else %}
+                                        <span>{{ med_requirements.stool_examination_remarks|default:'None' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-2 font-medium">Stool Examination</td>
+                                <td class="p-2 text-center">{% if med_requirements.stool_examination %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
+                                <td class="p-2 text-center">{% if med_requirements.stool_examination %}<button type="button" onclick="previewFile('{{ med_requirements.stool_examination.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Stool Examination')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
+                            </tr>
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="p-2">
+                                    {% if user.is_superuser or user.is_staff %}
+                                        <textarea name="pwd-card-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.pwd_card_remarks|default:'' }}</textarea>
+                                    {% else %}
+                                        <span>{{ med_requirements.pwd_card_remarks|default:'None' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="p-2 font-medium">PWD Card</td>
+                                <td class="p-2 text-center">{% if med_requirements.pwd_card %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
+                                <td class="p-2 text-center">
+                                    {% if med_requirements.pwd_card %}
+                                        <button type="button" onclick="previewFile('{{ med_requirements.pwd_card.url }}', '{{ student.firstname }} {{ student.lastname }}', 'PWD Card')" class="text-blue-600 hover:underline">Preview</button>
+                                    {% else %}
+                                        <span class="text-gray-400">None</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% else %}
-                                <span>{{ med_requirements.x_ray_remarks|default:'None' }}</span>
+                            <tr>
+                                <td colspan="4" class="text-center p-4">Please search for a student using the search bar above to view their medical requirements.</td>
+                            </tr>
                             {% endif %}
-                        </td>
-                        <td class="p-2 font-medium">Chest X-ray</td>
-                        <td class="p-2 text-center">{% if med_requirements.chest_xray %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
-                        <td class="p-2 text-center">{% if med_requirements.chest_xray %}<button onclick="previewFile('{{ med_requirements.chest_xray.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Chest X-ray')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                        <td class="p-2 text-center"><button class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Upload</button></td>
-                    </tr>
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
-                            {% if user.is_superuser or user.is_staff %}
-                                <form method="POST" class="flex gap-2 items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
-                                    <textarea name="cbc-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.cbc_remarks|default:'' }}</textarea>
-                                    <button type="submit" name="save_remark" value="cbc" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                                </form>
-                        {% else %}
-                                <span>{{ med_requirements.cbc_remarks|default:'None' }}</span>
-                    {% endif %}
-                        </td>
-                        <td class="p-2 font-medium">Complete Blood Count (CBC)</td>
-                        <td class="p-2 text-center">{% if med_requirements.cbc %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
-                        <td class="p-2 text-center">{% if med_requirements.cbc %}<button onclick="previewFile('{{ med_requirements.cbc.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Complete Blood Count (CBC)')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                        <td class="p-2 text-center"><button class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Upload</button></td>
-                    </tr>
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
-                            {% if user.is_superuser or user.is_staff %}
-                                <form method="POST" class="flex gap-2 items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
-                                    <textarea name="drug-test-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.drug_test_remarks|default:'' }}</textarea>
-                                    <button type="submit" name="save_remark" value="drug-test" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                                </form>
-                        {% else %}
-                                <span>{{ med_requirements.drug_test_remarks|default:'None' }}</span>
-                    {% endif %}
-                        </td>
-                        <td class="p-2 font-medium">Drug Test</td>
-                        <td class="p-2 text-center">{% if med_requirements.drug_test %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
-                        <td class="p-2 text-center">{% if med_requirements.drug_test %}<button onclick="previewFile('{{ med_requirements.drug_test.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Drug Test')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                        <td class="p-2 text-center"><button class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Upload</button></td>
-                    </tr>
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
-                            {% if user.is_superuser or user.is_staff %}
-                                <form method="POST" class="flex gap-2 items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
-                                    <textarea name="stool-examination-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.stool_examination_remarks|default:'' }}</textarea>
-                                    <button type="submit" name="save_remark" value="stool-examination" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                                </form>
-                        {% else %}
-                                <span>{{ med_requirements.stool_examination_remarks|default:'None' }}</span>
-                    {% endif %}
-                        </td>
-                        <td class="p-2 font-medium">Stool Examination</td>
-                        <td class="p-2 text-center">{% if med_requirements.stool_examination %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
-                        <td class="p-2 text-center">{% if med_requirements.stool_examination %}<button onclick="previewFile('{{ med_requirements.stool_examination.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Stool Examination')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                        <td class="p-2 text-center"><button class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Upload</button></td>
-                    </tr>
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
-                            {% if user.is_superuser or user.is_staff %}
-                                <form method="POST" class="flex gap-2 items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ student.student_id }}">
-                                    <textarea name="pwd-card-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.pwd_card_remarks|default:'' }}</textarea>
-                                    <button type="submit" name="save_remark" value="pwd-card" class="bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-600 whitespace-nowrap">Save</button>
-                                </form>
-                            {% else %}
-                                <span>{{ med_requirements.pwd_card_remarks|default:'None' }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="p-2 font-medium">PWD Card</td>
-                        <td class="p-2 text-center">{% if med_requirements.pwd_card %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
-                        <td class="p-2 text-center">
-                            {% if med_requirements.pwd_card %}
-                                <button onclick="previewFile('{{ med_requirements.pwd_card.url }}', '{{ student.firstname }} {{ student.lastname }}', 'PWD Card')" class="text-blue-600 hover:underline">Preview</button>
-                            {% else %}
-                                <span class="text-gray-400">None</span>
-                            {% endif %}
-                        </td>
-                        <td class="p-2 text-center">
-                            {% if student.riskassessment.pwd_verified %}
-                                <button class="bg-green-500 text-white px-3 py-1 rounded text-sm" disabled>Approved</button>
-                            {% else %}
-                                <button class="bg-blue-500 text-white px-3 py-1 rounded text-sm">Upload</button>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center p-4">Please search for a student using the search bar above to view their medical requirements.</td>
-                    </tr>
-                    {% endif %}
-            </tbody>
-        </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if med_requirements %}
+            <div class="flex gap-4 mt-4 justify-center">
+                <button type="submit" name="action" value="save_all_remarks" class="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-colors">Save</button>
+                <button type="submit" name="action" value="approve_requirements" class="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors">Approve</button>
+                <button type="submit" name="action" value="reject_requirements" class="bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600 transition-colors" style="background-color: #dc2626;">Reject</button>
+            </div>
+            {% endif %}
+        </form>
     </div>
-    </div>
-
 </div>
 
-<!-- Add Modal for File Preview -->
+<!-- Modal Structure -->
 <div id="previewModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h3 id="modalTitle" class="modal-title"></h3>
-        <span class="close-modal">&times;</span>
+            <h5 class="modal-title" id="modalTitle">File Preview</h5>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
         </div>
-        <div id="previewContainer">
-            <!-- For PDFs -->
-            <object id="filePreview" 
-                    data="" 
-                    type="application/pdf" 
-                    width="100%" 
-                    height="100%" 
-                    style="display: none;">
-                <p>Unable to display PDF file. <a id="fallbackLink" href="" target="_blank">Download</a> instead.</p>
-            </object>
-            <!-- For Images -->
-            <img id="imagePreview" style="display: none;">
-        </div>
-            <div class="zoom-controls" id="zoomControls" style="display: none;">
-                <button id="zoomOut">-</button>
-                <button id="zoomIn">+</button>
+        <div id="previewContainer"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomOut()">-</button>
+            <button onclick="zoomIn()">+</button>
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-    let currentZoom = 1;
-    const zoomStep = 0.1; // Amount to zoom in/out
-    const minZoom = 0.1; // Minimum zoom level
-    const maxZoom = 5; // Maximum zoom level (e.g., 500%)
+    // Modal JavaScript
+    var modal = document.getElementById("previewModal");
+    var previewContainer = document.getElementById("previewContainer");
+    var modalTitle = document.getElementById("modalTitle");
+    var currentZoom = 1;
+    var zoomStep = 0.1;
+    var minZoom = 0.5;
+    var maxZoom = 3;
 
-    function previewFile(fileUrl, patientName, requirementType) {
-        const modal = document.getElementById('previewModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const objectPreview = document.getElementById('filePreview');
-        const imagePreview = document.getElementById('imagePreview');
-        const fallbackLink = document.getElementById('fallbackLink');
-        const zoomControls = document.getElementById('zoomControls');
-        
-        // Set modal title
-        modalTitle.textContent = `${patientName} - ${requirementType}`;
+    function previewFile(fileUrl, studentName, requirementType) {
+        modalTitle.textContent = `${studentName} - ${requirementType}`;
+        previewContainer.innerHTML = ''; // Clear previous content
+        currentZoom = 1; // Reset zoom level
 
-        // Reset zoom level and hide controls initially
-        currentZoom = 1;
-        imagePreview.style.transform = `scale(${currentZoom})`;
-        imagePreview.style.transformOrigin = 'top left'; // Set transform origin for consistent zooming
-        zoomControls.style.display = 'none';
-        
-        // Check file type based on extension
-        const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
-        const isPDF = /\.pdf$/i.test(fileUrl);
-        
-        if (isImage) {
-            // Handle image files
-            imagePreview.src = fileUrl;
-            imagePreview.style.display = 'block';
-            objectPreview.style.display = 'none';
-            zoomControls.style.display = 'block'; // Show zoom controls for images
-        } else if (isPDF) {
-            // Handle PDF files
-            objectPreview.data = fileUrl;
-            fallbackLink.href = fileUrl;
-            objectPreview.style.display = 'block';
-            imagePreview.style.display = 'none';
+        // Determine file type
+        var fileExtension = fileUrl.split('.').pop().toLowerCase();
+
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+            var img = document.createElement('img');
+            img.src = fileUrl;
+            img.style.transform = `scale(${currentZoom})`;
+            img.style.transformOrigin = 'top left'; // Set transform origin
+            previewContainer.appendChild(img);
+        } else if (fileExtension === 'pdf') {
+            var obj = document.createElement('object');
+            obj.data = fileUrl;
+            obj.type = 'application/pdf';
+            // Use an iframe for better PDF support if object tag fails
+            var iframe = document.createElement('iframe');
+            iframe.src = fileUrl;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            previewContainer.appendChild(iframe);
+             // Hide zoom controls for PDF
+            document.querySelector('.zoom-controls').style.display = 'none';
         } else {
-             // Hide everything if file type is not supported for preview
-            imagePreview.style.display = 'none';
-            objectPreview.style.display = 'none';
-            zoomControls.style.display = 'none';
-            // Optionally, display a message to the user
-             console.error("Unsupported file type for preview");
-             return;
+            previewContainer.innerHTML = '<p>Preview not available for this file type.</p>';
+             // Hide zoom controls for unsupported types
+            document.querySelector('.zoom-controls').style.display = 'none';
         }
-        
-        modal.style.display = 'block';
-    }
 
-    // Zoom functionality for images
-    document.getElementById('zoomIn').onclick = function() {
-        currentZoom += zoomStep;
-        if (currentZoom > maxZoom) {
-            currentZoom = maxZoom;
+        modal.style.display = "block";
+
+         // Show zoom controls only if it's an image
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+            document.querySelector('.zoom-controls').style.display = 'flex';
+        } else {
+            document.querySelector('.zoom-controls').style.display = 'none';
         }
-        document.getElementById('imagePreview').style.transform = `scale(${currentZoom})`;
     }
 
-    document.getElementById('zoomOut').onclick = function() {
-        currentZoom -= zoomStep;
-        // Prevent zooming out too much
-        if (currentZoom < minZoom) {
-            currentZoom = minZoom;
+    function closeModal() {
+        modal.style.display = "none";
+        previewContainer.innerHTML = ''; // Clear content when closing
+         document.querySelector('.zoom-controls').style.display = 'none'; // Hide controls on close
+    }
+
+    function zoomIn() {
+        currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+        applyZoom();
+    }
+
+    function zoomOut() {
+        currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+        applyZoom();
+    }
+
+    function applyZoom() {
+        var img = previewContainer.querySelector('img');
+        if (img) {
+            img.style.transform = `scale(${currentZoom})`;
         }
-        document.getElementById('imagePreview').style.transform = `scale(${currentZoom})`;
     }
 
-
-    // Close modal when clicking the X
-    document.querySelector('.close-modal').onclick = function() {
-        document.getElementById('previewModal').style.display = 'none';
-         // Clear the sources when closing and reset zoom
-        document.getElementById('filePreview').data = '';
-        document.getElementById('imagePreview').src = '';
-        document.getElementById('imagePreview').style.transform = 'scale(1)';
-        currentZoom = 1;
-    }
-
-    // Close modal when clicking outside
+    // Close the modal if the user clicks outside of it
     window.onclick = function(event) {
-        const modal = document.getElementById('previewModal');
         if (event.target == modal) {
-            modal.style.display = 'none';
-            // Clear the sources when closing and reset zoom
-            document.getElementById('filePreview').data = '';
-            document.getElementById('imagePreview').src = '';
-            document.getElementById('imagePreview').style.transform = 'scale(1)';
-            currentZoom = 1;
+            closeModal();
         }
     }
 </script>
 {% endblock %}
-
-{% block messages %}{% endblock %}
