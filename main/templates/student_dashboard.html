@@ -77,13 +77,11 @@
     .calendar-grid {
         background-color: white;
         border-radius: 0.5rem;
-        padding: 1rem;
     }
     .calendar-header {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
     }
     .calendar-header-cell {
         text-align: center;
@@ -95,7 +93,7 @@
     #calendarDays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
+        max-width: 100%;
     }
     .calendar-day {
         aspect-ratio: 1;
@@ -398,20 +396,20 @@
                     </tbody>
                 </table>
             </div>
-            <div class="bg-white rounded-lg p-8 shadow-sm w-full max-w-[420px] h-[420px] mx-auto flex flex-col">
+            <div class="bg-white rounded-lg p-4 shadow-sm w-full max-w-[420px] h-[420px] mx-auto flex flex-col overflow-hidden">
                 <div class="text-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800" id="currentMonthYear"></h3>
                     <p class="text-sm text-blue-600 font-medium" id="currentDate"></p>
                 </div>
-                <div class="calendar-grid h-full flex-1 flex flex-col justify-between">
+                <div class="calendar-grid overflow-auto h-full p-0 flex flex-col justify-between">
                     <div class="calendar-header">
-                        <div class="calendar-header-cell">Su</div>
-                        <div class="calendar-header-cell">Mo</div>
-                        <div class="calendar-header-cell">Tu</div>
-                        <div class="calendar-header-cell">We</div>
-                        <div class="calendar-header-cell">Th</div>
-                        <div class="calendar-header-cell">Fr</div>
-                        <div class="calendar-header-cell">Sa</div>
+                        <div class="calendar-header-cell">Sun</div>
+                        <div class="calendar-header-cell">Mon</div>
+                        <div class="calendar-header-cell">Tue</div>
+                        <div class="calendar-header-cell">Wed</div>
+                        <div class="calendar-header-cell">Thu</div>
+                        <div class="calendar-header-cell">Fri</div>
+                        <div class="calendar-header-cell">Sat</div>
                     </div>
                     <div id="calendarDays" class="flex-1 grid grid-cols-7 grid-rows-6 gap-1"></div>
                 </div>
