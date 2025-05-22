@@ -32,8 +32,8 @@ urlpatterns = [
     # path('yearly/', views.yearly_transactions, name='yearly_transactions'),
     path('upload/', views.upload_file, name='upload'),
     path('mental-health/', views.mental_health_view, name='mental_health'),
-    path('mental-health/submit/', views.mental_health_submit, name='mental_health_submit'),
     # PWD verification URLs
     path('pwd/verify/<str:student_id>/', views.verify_pwd, name='verify_pwd'),
     path('pwd/unverify/<str:student_id>/', views.unverify_pwd, name='unverify_pwd'),
+    path('mental-health/update-status/<int:pk>/', views.update_mental_health_status, name='update_mental_health_status'),
 ]

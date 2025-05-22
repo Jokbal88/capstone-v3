@@ -1,131 +1,308 @@
 {% extends 'mainv2.html' %}
 {% load static tailwind_tags %}
-{% block title %}HealthHub Connect | Mental Health Services{% endblock %}
+
+{% block title %}HealthHub Connect | Mental Health Records{% endblock %}
+
 {% block extra_css %}
 {% tailwind_css %}
+<style>
+    /* Add any specific styles for the admin mental health view here */
+    /* Keep the modal styles from medupload.html for consistency */
+
+    /* Modal styles copied from medupload.html */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        overflow: auto; /* Allow scrolling for modal itself if content is large */
+        padding: 20px; /* Adjust padding for better spacing */
+        box-sizing: border-box; /* Include padding in element's total width and height */
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 20px auto; /* Adjust margin for centering and spacing */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 95%; /* Increase width slightly */
+        max-width: 1000px; /* Increase max-width */
+        border-radius: 8px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 40px); /* Limit modal content height, considering modal padding */
+        box-sizing: border-box; /* Include padding in element's total width and height */
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 10px; /* Add padding below header */
+        border-bottom: 1px solid #eee; /* Add a subtle separator */
+    }
+    .modal-title {
+        font-size: 1.5rem; /* Larger title font size */
+        font-weight: bold;
+    }
+    .close-modal {
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    #previewContainer {
+        flex-grow: 1;
+        width: 100%;
+        overflow: auto; /* Allow scrolling within preview area */
+        text-align: center;
+        /* Max height relative to the modal content height, considering header/footer */
+        max-height: calc(100% - 70px); /* Approximation based on header+footer height */
+        padding-top: 10px; /* Add some space above preview content */
+    }
+    #previewContainer img,
+    #previewContainer object {
+        display: block; /* Prevent extra space below inline elements */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        margin: auto; /* Center image/object */
+        transform-origin: top left; /* Set transform origin for zooming */
+    }
+     #previewContainer object {
+        width: 100%; /* Allow object to take full width of container if needed */
+        height: 100%; /* Allow object to take full height of container if needed */
+     }
+    .zoom-controls {
+        margin-top: 10px;
+        padding-top: 10px; /* Add padding above controls */
+        border-top: 1px solid #eee; /* Add a subtle separator */
+        text-align: center;
+        flex-shrink: 0; /* Prevent controls from shrinking */
+    }
+    .zoom-controls button {
+        padding: 8px 16px;
+        margin: 0 5px;
+        cursor: pointer;
+        background-color: #3b82f6; /* Blue background */
+        color: white; /* White text */
+        border: none;
+        border-radius: 4px; /* Rounded corners */
+        font-size: 1rem; /* Readable font size */
+        transition: background-color 0.3s ease; /* Smooth hover effect */
+    }
+    .zoom-controls button:hover {
+        background-color: #2563eb; /* Darker blue on hover */
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="xs:p-4 lg:p-8 bg-white rounded-[18px] flex flex-col gap-4 {% if user.is_superuser or user.is_staff %} w-full h-screen {% else %}xs:w-full md:w-1/2 h-[80%] {% endif %}">
-    <h2 class="font-bold xs:text-[1.3rem] md:text-[1.5rem] text-black tracking-tight py-4 text-center">Mental Health Services</h2>
-    {% if user.is_superuser or user.is_staff %}
-        <form method="POST" class="flex gap-4">
-            {% csrf_token %}
-            <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
-            <button type="submit" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
-                Search
-            </button>
-        </form>
-    {% endif %}
-    <div class="flex flex-col gap-2 h-fit max-h-full">
-        <h3 class="font-medium xs:text-base md:text-[1.3rem] text-center">List of Requirements</h3>
-        <div class="overflow-x-auto">
-            <table class="w-full table-auto border-separate border-spacing-0">
-                <thead class="bg-[#e6e6e6]">
-                    <tr>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Remarks</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Requirement</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Status</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">File</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Preview</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if records %}
-                        {% for record in records %}
-                            <tr class="tr-td">
-                                <td class="text-center">
-                                    <form method="POST" class="flex gap-2">
-                                        {% csrf_token %}
-                                        <input type="text" name="notes" value="{{ record.notes|default:'' }}" class="w-full p-2 border rounded">
-                                        <button type="submit" name="save_remark" value="notes" class="bg-blue-500 text-white px-3 py-1 rounded">Save</button>
-                                    </form>
-                                </td>
-                                <td class="text-center">{{ record.patient.student.get_full_name }}</td>
-                                <td class="text-center">
-                                    <span class="px-2 py-1 rounded-full text-sm 
-                                        {% if record.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                        {% elif record.status == 'approved' %}bg-green-100 text-green-800
-                                        {% else %}bg-red-100 text-red-800{% endif %}">
-                                        {{ record.status|title }}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <a href="{{ record.prescription.url }}" class="text-blue-600 hover:underline">Prescription</a><br>
-                                    <a href="{{ record.certification.url }}" class="text-blue-600 hover:underline">Certification</a>
-                                </td>
-                                <td class="text-center">
-                                    <button class="preview-btn" onclick="previewFile('{{ record.prescription.url }}')">View Prescription</button><br>
-                                    <button class="preview-btn" onclick="previewFile('{{ record.certification.url }}')">View Certification</button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5" class="text-center p-4">No records found</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% if messages %}
+<div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
+    <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Mental Health Records</h2>
     
-    {% endif %}
+    <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200 w-full">
+        <h3 class="font-semibold text-blue-700 mb-2">Submitted Records</h3>
+        <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+            <p class="text-sm text-blue-800">Search for a student by ID to review and manage their mental health record. There are <span class="font-bold">{{ pending_count }}</span> pending records overall.</p>
+        </div>
+        
+        <!-- Student ID Search Form -->
+        <form method="GET" action="{% url 'medical:mental_health' %}" class="mb-4">
+            <div class="flex items-center">
+                <input type="text" name="student_id" placeholder="Enter Student ID" class="border border-gray-300 rounded-l-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 flex-grow" value="{{ request.GET.student_id|default:'' }}">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 transition-colors">Search</button>
+            </div>
+        </form>
+
+        {% if student %}
+            <h4 class="font-semibold text-lg text-gray-800 mb-4">Record for: {{ student.firstname }} {{ student.lastname }} ({{ student.student_id }})</h4>
+
+            <form method="POST" action="{% url 'medical:mental_health' %}">
+                {% csrf_token %}
+                <input type="hidden" name="student_id" value="{{ student.student_id }}">
+
+                <div class="table-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
+                            <thead class="bg-[#e6e6e6]">
+                                <tr>
+                                    <th class="p-2 text-left">Document Type</th>
+                                    <th class="p-2 text-center">File</th>
+                                    <th class="p-2 text-left">Remarks</th>
+                                    <th class="p-2 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Prescription Row -->
+                                <tr class="bg-white border-b hover:bg-gray-50">
+                                    <td class="p-2 font-medium">Prescription</td>
+                                    <td class="p-2 text-center">
+                                        {% if mental_health_record.prescription %}
+                                            <button type="button" onclick="previewFile('{{ mental_health_record.prescription.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Prescription')" class="text-blue-600 hover:underline">Preview</button>
+                                        {% else %}
+                                            <span class="text-gray-400">No file uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-2">
+                                        <textarea name="prescription_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.prescription_remarks|default:'' }}</textarea>
+                                    </td>
+                                    <td class="p-2 text-center" rowspan="2">{{ mental_health_record.status|title }}</td>
+                                </tr>
+                                <!-- Certification Row -->
+                                <tr class="bg-white hover:bg-gray-50">
+                                    <td class="p-2 font-medium">Certification</td>
+                                    <td class="p-2 text-center">
+                                        {% if mental_health_record.certification %}
+                                            <button type="button" onclick="previewFile('{{ mental_health_record.certification.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Certification')" class="text-blue-600 hover:underline">Preview</button>
+                                        {% else %}
+                                            <span class="text-gray-400">No file uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-2">
+                                        <textarea name="certification_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.certification_remarks|default:'' }}</textarea>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-center space-x-4">
+                    <button type="submit" name="status_action" value="save_remarks" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Remarks</button>
+                    <button type="submit" name="status_action" value="approved" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">Approve Record</button>
+                    <button type="submit" name="status_action" value="rejected" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">Reject Record</button>
+                </div>
+            </form>
+
+        {% elif request.GET.student_id %}
+            <p class="text-center text-gray-600">No patient found with student ID: {{ request.GET.student_id }}</p>
+        {% else %}
+            <p class="text-center text-gray-600">Please enter a student ID to search for a mental health record.</p>
+        {% endif %}
+
+    </div>
 </div>
 
-<!-- File Preview Modal -->
-<div id="previewModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-    <div class="modal-content bg-white p-4 rounded-lg max-w-4xl mx-auto mt-20">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">File Preview</h3>
-            <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+<!-- Modal Structure (copied from medupload.html) -->
+<div id="previewModal" class="modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">File Preview</h5>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
         </div>
-        <div id="previewContent" class="max-h-[70vh] overflow-auto">
-            <!-- Preview content will be inserted here -->
+        <div id="previewContainer"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomOut()">-</button>
+            <button onclick="zoomIn()">+</button>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function previewFile(url) {
-    const modal = document.getElementById('previewModal');
-    const previewContent = document.getElementById('previewContent');
-    
-    // Clear previous content
-    previewContent.innerHTML = '';
-    
-    // Check file type
-    if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
-        // Image file
-        const img = document.createElement('img');
-        img.src = url;
-        img.className = 'max-w-full';
-        previewContent.appendChild(img);
-    } else if (url.match(/\.pdf$/i)) {
-        // PDF file
-        const embed = document.createElement('embed');
-        embed.src = url;
-        embed.type = 'application/pdf';
-        embed.style.width = '100%';
-        embed.style.height = '70vh';
-        previewContent.appendChild(embed);
-    } else {
-        previewContent.innerHTML = '<p class="text-center">Preview not available for this file type.</p>';
-    }
-    
-    modal.classList.remove('hidden');
-}
+    // JavaScript for modal and zoom functionality (copied from medupload.html, adapted)
 
-function closePreviewModal() {
-    const modal = document.getElementById('previewModal');
-    modal.classList.add('hidden');
-}
+    let currentZoom = 1.0; // Initial zoom level
+    const zoomStep = 0.1; // How much to zoom in/out by
+
+    function previewFile(fileUrl, studentName, documentType) {
+        const modal = document.getElementById('previewModal');
+        const previewContainer = document.getElementById('previewContainer');
+        const modalTitle = document.getElementById('modalTitle');
+        
+        // Clear previous content
+        previewContainer.innerHTML = '';
+        
+        modalTitle.textContent = `Preview: ${studentName} - ${documentType}`;
+
+        const isImage = /\.(jpg|jpeg|png|gif)$/i.test(fileUrl);
+        const isPDF = /\.pdf$/i.test(fileUrl);
+        
+        if (isImage) {
+            const img = document.createElement('img');
+            img.id = 'imagePreview';
+            img.src = fileUrl;
+            img.style.maxWidth = '100%'; // Ensure image doesn't overflow initially
+            img.style.height = 'auto';
+            previewContainer.appendChild(img);
+             currentZoom = 1.0; // Reset zoom for new image
+             img.style.transform = `scale(${currentZoom})`;
+
+        } else if (isPDF) {
+            const obj = document.createElement('object');
+            obj.id = 'filePreview';
+            obj.data = fileUrl;
+            obj.type = 'application/pdf';
+            obj.style.width = '100%'; // PDF object can take full width
+            obj.style.height = '100%'; // PDF object can take full height
+             // For PDFs, embedding might not support direct CSS zoom. Fallback to link or iframe.
+             // For simplicity and consistency with admin, let's use an iframe if object fails or for better control
+             // Or keep object and note zoom might not work depending on browser/PDF viewer
+            const fallbackLink = document.createElement('p');
+            fallbackLink.innerHTML = `Unable to display PDF file. <a href="${fileUrl}" target="_blank">Download</a> instead.`;
+            obj.appendChild(fallbackLink);
+
+             previewContainer.appendChild(obj);
+            currentZoom = 1.0; // Reset zoom for new PDF
+            // Note: CSS transform might not work reliably on <object> or <iframe> for PDFs
+            // If true PDF zoom is needed, consider a library or server-side rendering approach.
+            // For now, the zoom buttons will be added but might not affect the PDF object depending on the browser.
+             obj.style.transform = `scale(${currentZoom})`; // Apply transform, but manage expectations for PDFs
+        }
+        
+        modal.style.display = 'block';
+        // Hide body scrollbars when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('previewModal');
+        modal.style.display = 'none';
+        // Show scrollbars again
+        document.body.style.overflow = 'auto';
+         currentZoom = 1.0; // Reset zoom when closing modal
+    }
+
+    // Close modal when clicking outside the modal-content
+    window.onclick = function(event) {
+        const modal = document.getElementById('previewModal');
+        const modalContent = document.querySelector('.modal-content');
+        // Check if the clicked area is outside the modal-content but inside the modal
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+
+    function zoomIn() {
+        currentZoom += zoomStep;
+        applyZoom();
+    }
+
+    function zoomOut() {
+        currentZoom = Math.max(zoomStep, currentZoom - zoomStep); // Prevent zooming out to zero or negative
+        applyZoom();
+    }
+
+    function applyZoom() {
+        const imageElement = document.getElementById('imagePreview');
+        const objectElement = document.getElementById('filePreview');
+
+        if (imageElement) {
+            imageElement.style.transform = `scale(${currentZoom})`;
+             // Adjust transform origin if needed, currently set to top left in CSS
+        } else if (objectElement) {
+            // Applying transform to object element (for PDFs) - behavior may vary across browsers
+             // Consider alternative PDF viewers for reliable zoom
+            objectElement.style.transform = `scale(${currentZoom})`;
+             // You might need to adjust the container's overflow and dimensions if zooming causes content to exceed boundaries
+        }
+         // You might also want to update a visual indicator of the current zoom level
+    }
+
 </script>
 {% endblock %}

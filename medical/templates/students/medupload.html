@@ -4,6 +4,11 @@
 {% block extra_css %}
 {% tailwind_css %}
 <style>
+    /* Disable textarea resizing */
+    textarea {
+        resize: none;
+    }
+    /* Modal styles */
     .modal {
         display: none;
         position: fixed;
@@ -13,37 +18,82 @@
         width: 100%;
         height: 100%;
         background-color: rgba(0,0,0,0.5);
+        overflow: auto; /* Allow scrolling for modal itself if content is large */
+        padding: 20px; /* Adjust padding for better spacing */
+        box-sizing: border-box; /* Include padding in element's total width and height */
     }
     .modal-content {
         background-color: #fefefe;
-        margin: 5% auto;
+        margin: 20px auto; /* Adjust margin for centering and spacing */
         padding: 20px;
         border: 1px solid #888;
-        width: 80%;
-        max-width: 800px;
+        width: 95%; /* Increase width slightly */
+        max-width: 1000px; /* Increase max-width */
         border-radius: 8px;
         position: relative;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 40px); /* Limit modal content height, considering modal padding */
+        box-sizing: border-box; /* Include padding in element's total width and height */
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 10px; /* Add padding below header */
+        border-bottom: 1px solid #eee; /* Add a subtle separator */
+    }
+    .modal-title {
+        font-size: 1.5rem; /* Larger title font size */
+        font-weight: bold;
     }
     .close-modal {
-        position: absolute;
-        right: 20px;
-        top: 10px;
         font-size: 28px;
         font-weight: bold;
         cursor: pointer;
     }
     #previewContainer {
+        flex-grow: 1;
         width: 100%;
-        height: 80vh;
-        overflow: auto;
+        overflow: auto; /* Allow scrolling within preview area */
+        text-align: center;
+        /* Max height relative to the modal content height, considering header/footer */
+        max-height: calc(100% - 70px); /* Approximation based on header+footer height */
+        padding-top: 10px; /* Add some space above preview content */
     }
-    #previewContainer img {
-        max-width: 100%;
-        height: auto;
-    }
+    #previewContainer img,
     #previewContainer object {
-        width: 100%;
-        height: 100%;
+        display: block; /* Prevent extra space below inline elements */
+        max-width: 100%;
+        height: auto; /* Maintain aspect ratio */
+        margin: auto; /* Center image/object */
+        transform-origin: top left; /* Set transform origin for zooming */
+    }
+     #previewContainer object {
+        width: 100%; /* Allow object to take full width of container if needed */
+        height: 100%; /* Allow object to take full height of container if needed */
+     }
+    .zoom-controls {
+        margin-top: 10px;
+        padding-top: 10px; /* Add padding above controls */
+        border-top: 1px solid #eee; /* Add a subtle separator */
+        text-align: center;
+        flex-shrink: 0; /* Prevent controls from shrinking */
+    }
+    .zoom-controls button {
+        padding: 8px 16px;
+        margin: 0 5px;
+        cursor: pointer;
+        background-color: #3b82f6; /* Blue background */
+        color: white; /* White text */
+        border: none;
+        border-radius: 4px; /* Rounded corners */
+        font-size: 1rem; /* Readable font size */
+        transition: background-color 0.3s ease; /* Smooth hover effect */
+    }
+    .zoom-controls button:hover {
+        background-color: #2563eb; /* Darker blue on hover */
     }
 </style>
 {% endblock %}
@@ -51,12 +101,14 @@
 {% block content %}
 <div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Upload Medical Requirements</h2>
-    <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
-            <label for="student_id" class="font-semibold text-gray-700">Student ID</label>
-            <input class="w-full xs:text-[14px] md:text-base bg-gray-100 rounded-md px-3 py-2" type="text" id="student_id" name="student_id" value="{{ user.username }}" readonly>
-        </div>
-        <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200">
+    
+    <!-- Single form for all uploads -->
+    <form method="POST" enctype="multipart/form-data" id="upload-all-form" class="flex flex-col gap-4 w-full">
+        {% csrf_token %}
+        <input type="hidden" name="student_id" value="{{ user.username }}">
+        
+        <!-- Required Medical Documents Section (with table) -->
+        <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200 w-full">
             <h3 class="font-semibold text-blue-700 mb-2">Required Medical Documents</h3>
             <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
                 <p class="text-sm text-blue-800">Please submit all required medical documents. These are essential for ensuring the health and safety of all students.</p>
@@ -68,7 +120,7 @@
                         <th class="p-2 text-center">Requirement Type</th>
                         <th class="p-2 text-center">File</th>
                         <th class="p-2 text-center">Status</th>
-                        <th class="p-2 text-center">Upload</th>
+                        <th class="p-2 text-center">Choose File</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,15 +140,15 @@
                         <td class="p-2 text-center">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <button onclick="previewFile('{{ md.chest_xray.url }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.chest_xray.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.chest_xray.name }}</button>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <button onclick="previewFile('{{ md.cbc.url }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.cbc.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.cbc.name }}</button>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <button onclick="previewFile('{{ md.drug_test.url }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.drug_test.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.drug_test.name }}</button>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <button onclick="previewFile('{{ md.stool_examination.url }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.stool_examination.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.stool_examination.name }}</button>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <button onclick="previewFile('{{ md.pwd_card.url }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.pwd_card.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.pwd_card.name }}</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
@@ -123,90 +175,240 @@
                                 <span class="text-gray-400">None</span>
         {% endif %}
                         </td>
-                        <td class="p-2 flex justify-center">
-                            {% if md %}
-                                <form method="POST" enctype="multipart/form-data" class="flex items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ user.username }}">
-                                    <input type="hidden" name="requirement_type" value="{{ req.slug }}">
-                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full" accept=".pdf,.jpg,.jpeg,.png" required>
-                                    <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Upload</button>
-                                </form>
-                            {% else %}
-                                <form method="POST">
-            {% csrf_token %}
-                                    <input type="hidden" name="student_id" value="{{ user.username }}">
-                                    <input type="hidden" name="requirement_type" value="{{ req.slug }}">
-                                    <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Submit</button>
-                                </form>
-                            {% endif %}
+                        <td class="p-2 text-center">
+                            <input type="file" name="file_{{ req.slug }}" id="file_{{ req.slug }}" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+                            <label for="file_{{ req.slug }}" class="cursor-pointer bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors font-semibold">Choose File</label>
+                            <span id="file_{{ req.slug }}_filename" class="ml-2 text-gray-600">No file chosen</span>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             </div>
+            
+            <!-- Mental Health Documents Section (Integrated) -->
+            <div class="bg-[#f8fafc] rounded-lg p-4 mt-6 mb-2 border border-gray-200 w-full">
+                <h3 class="font-semibold text-blue-700 mb-2">Required Documents for Mental Health</h3>
+                <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                    <p class="text-sm text-blue-800">Please upload your mental health prescription and certification documents here.</p>
+                </div>
+                <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
+                    <thead class="bg-[#e6e6e6]">
+                        <tr>
+                            <th class="p-2 text-center">Remarks</th>
+                            <th class="p-2 text-center">Document Type</th>
+                            <th class="p-2 text-center">File</th>
+                            <th class="p-2 text-center">Status</th>
+                            <th class="p-2 text-center">Choose File</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="p-2 text-center">
+                                {% if mental_health_record %}
+                                    {{ mental_health_record.prescription_remarks|default:'None' }}
+                                {% else %}None{% endif %}
+                            </td>
+                            <td class="p-2 font-medium text-center">Prescription</td>
+                            <td class="p-2 text-center">
+                                {% if mental_health_record and mental_health_record.prescription %}
+                                    <button type="button" onclick="previewFile('{{ mental_health_record.prescription.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', 'Mental Health Prescription')" class="text-blue-600 hover:underline">Preview</button>
+                                {% else %}
+                                    <span class="text-gray-400">None</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center">
+                                {% if mental_health_record and mental_health_record.prescription %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% else %}
+                                    <span class="text-red-500 text-xl">&#10007;</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center">
+                                <input type="file" name="file_prescription" id="file_prescription" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+                                <label for="file_prescription" class="cursor-pointer bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors font-semibold">Choose File</label>
+                                <span id="file_prescription_filename" class="ml-2 text-gray-600">No file chosen</span>
+                            </td>
+                        </tr>
+                        <tr class="bg-white hover:bg-gray-50">
+                            <td class="p-2 text-center">
+                                {% if mental_health_record %}
+                                    {{ mental_health_record.certification_remarks|default:'None' }}
+                                {% else %}None{% endif %}
+                            </td>
+                            <td class="p-2 font-medium text-center">Certification</td>
+                            <td class="p-2 text-center">
+                                {% if mental_health_record and mental_health_record.certification %}
+                                    <button type="button" onclick="previewFile('{{ mental_health_record.certification.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', 'Mental Health Certification')" class="text-blue-600 hover:underline">Preview</button>
+                                {% else %}
+                                    <span class="text-gray-400">None</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center">
+                                {% if mental_health_record and mental_health_record.certification %}
+                                    <span class="text-green-600 text-xl">&#10003;</span>
+                                {% else %}
+                                    <span class="text-red-500 text-xl">&#10007;</span>
+                                {% endif %}
+                            </td>
+                            <td class="p-2 text-center">
+                                <input type="file" name="file_certification" id="file_certification" class="hidden" accept=".pdf,.jpg,.jpeg,.png">
+                                <label for="file_certification" class="cursor-pointer bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors font-semibold">Choose File</label>
+                                <span id="file_certification_filename" class="ml-2 text-gray-600">No file chosen</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
+            
+            <!-- Upload Documents Section (with single button) -->
+            <div class="mt-6 p-4 bg-[#f8fafc] rounded-lg border border-gray-200 w-full">
+                <h3 class="font-semibold text-blue-700 mb-2">Upload Documents</h3>
+                <p class="text-sm text-blue-800 mb-4">Select 'Choose File' for each document type you wish to upload, then click the button below to submit all selected files.</p>
+                <div class="flex justify-center">
+                    <button type="submit" class="bg-[#3b82f6] text-white px-6 py-2 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">
+                        Upload Documents
+                    </button>
+                </div>
             </div>
+
+    </form>
+</div>
 
 <!-- Add Modal for File Preview -->
 <div id="previewModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal">&times;</span>
-        <div id="previewContainer">
-            <!-- For PDFs -->
-            <object id="filePreview" 
-                    data="" 
-                    type="application/pdf" 
-                    width="100%" 
-                    height="100%" 
-                    style="display: none;">
-                <p>Unable to display PDF file. <a id="fallbackLink" href="" target="_blank">Download</a> instead.</p>
-            </object>
-            <!-- For Images -->
-            <img id="imagePreview" style="display: none;">
-            </div>
-            </div>
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">File Preview</h5>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="previewContainer"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomOut()">-</button>
+            <button onclick="zoomIn()">+</button>
+        </div>
+    </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-    function previewFile(fileUrl) {
+    // Script to display chosen filename next to Choose File button
+    document.addEventListener('change', function(event) {
+        if (event.target.type === 'file') {
+            const fileNameSpan = document.getElementById(event.target.id + '_filename');
+            if (fileNameSpan) {
+                fileNameSpan.textContent = event.target.files.length > 0 ? event.target.files[0].name : 'No file chosen';
+            }
+        }
+    });
+
+    let currentZoom = 1.0; // Initial zoom level
+    const zoomStep = 0.1; // How much to zoom in/out by
+
+    function previewFile(fileUrl, studentName, requirementName) {
         const modal = document.getElementById('previewModal');
-        const objectPreview = document.getElementById('filePreview');
-        const imagePreview = document.getElementById('imagePreview');
-        const fallbackLink = document.getElementById('fallbackLink');
+        const previewContainer = document.getElementById('previewContainer');
+        const modalTitle = document.getElementById('modalTitle');
         
-        // Check file type based on extension
-        const isImage = /\.(jpg|jpeg|png)$/i.test(fileUrl);
+        // Clear previous content
+        previewContainer.innerHTML = '';
+        
+        modalTitle.textContent = `Preview: ${studentName} - ${requirementName}`;
+
+        const isImage = /\.(jpg|jpeg|png|gif)$/i.test(fileUrl);
         const isPDF = /\.pdf$/i.test(fileUrl);
         
         if (isImage) {
-            // Handle image files
-            imagePreview.src = fileUrl;
-            imagePreview.style.display = 'block';
-            objectPreview.style.display = 'none';
+            const img = document.createElement('img');
+            img.id = 'imagePreview';
+            img.src = fileUrl;
+            img.style.maxWidth = '100%'; // Ensure image doesn't overflow initially
+            img.style.height = 'auto';
+            previewContainer.appendChild(img);
+             currentZoom = 1.0; // Reset zoom for new image
+             img.style.transform = `scale(${currentZoom})`;
+
         } else if (isPDF) {
-            // Handle PDF files
-            objectPreview.data = fileUrl;
-            fallbackLink.href = fileUrl;
-            objectPreview.style.display = 'block';
-            imagePreview.style.display = 'none';
+            const obj = document.createElement('object');
+            obj.id = 'filePreview';
+            obj.data = fileUrl;
+            obj.type = 'application/pdf';
+            obj.style.width = '100%'; // PDF object can take full width
+            obj.style.height = '100%'; // PDF object can take full height
+             // For PDFs, embedding might not support direct CSS zoom. Fallback to link or iframe.
+             // For simplicity and consistency with admin, let's use an iframe if object fails or for better control
+             // Or keep object and note zoom might not work depending on browser/PDF viewer
+            const fallbackLink = document.createElement('p');
+            fallbackLink.innerHTML = `Unable to display PDF file. <a href="${fileUrl}" target="_blank">Download</a> instead.`;
+            obj.appendChild(fallbackLink);
+
+             previewContainer.appendChild(obj);
+            currentZoom = 1.0; // Reset zoom for new PDF
+            // Note: CSS transform might not work reliably on <object> or <iframe> for PDFs
+            // If true PDF zoom is needed, consider a library or server-side rendering approach.
+            // For now, the zoom buttons will be added but might not affect the PDF object depending on the browser.
+             obj.style.transform = `scale(${currentZoom})`; // Apply transform, but manage expectations for PDFs
         }
         
         modal.style.display = 'block';
+        // Hide body scrollbars when modal is open
+        document.body.style.overflow = 'hidden';
     }
 
-    // Close modal when clicking the X
-    document.querySelector('.close-modal').onclick = function() {
-        document.getElementById('previewModal').style.display = 'none';
+    function closeModal() {
+        const modal = document.getElementById('previewModal');
+        modal.style.display = 'none';
+        // Show scrollbars again
+        document.body.style.overflow = 'auto';
+         currentZoom = 1.0; // Reset zoom when closing modal
     }
 
-    // Close modal when clicking outside
+    // Close modal when clicking outside the modal-content
     window.onclick = function(event) {
         const modal = document.getElementById('previewModal');
-        if (event.target == modal) {
-            modal.style.display = 'none';
+        const modalContent = document.querySelector('.modal-content');
+        // Check if the clicked area is outside the modal-content but inside the modal
+        if (event.target === modal) {
+            closeModal();
         }
     }
+
+    function zoomIn() {
+        currentZoom += zoomStep;
+        applyZoom();
+    }
+
+    function zoomOut() {
+        currentZoom = Math.max(zoomStep, currentZoom - zoomStep); // Prevent zooming out to zero or negative
+        applyZoom();
+    }
+
+    function applyZoom() {
+        const imageElement = document.getElementById('imagePreview');
+        const objectElement = document.getElementById('filePreview');
+
+        if (imageElement) {
+            imageElement.style.transform = `scale(${currentZoom})`;
+             // Adjust transform origin if needed, currently set to top left in CSS
+        } else if (objectElement) {
+            // Applying transform to object element (for PDFs) - behavior may vary across browsers
+             // Consider alternative PDF viewers for reliable zoom
+            objectElement.style.transform = `scale(${currentZoom})`;
+             // You might need to adjust the container's overflow and dimensions if zooming causes content to exceed boundaries
+        }
+         // You might also want to update a visual indicator of the current zoom level
+    }
+
+     // Event listeners for file input change to display filename
+     document.addEventListener('change', function(event) {
+         if (event.target.type === 'file') {
+             const fileNameSpan = document.getElementById(event.target.id + '_filename');
+             if (fileNameSpan) {
+                 fileNameSpan.textContent = event.target.files.length > 0 ? event.target.files[0].name : 'No file chosen';
+             }
+         }
+     });
+
 </script>
 {% endblock %}

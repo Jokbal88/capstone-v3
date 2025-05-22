@@ -283,19 +283,24 @@ class TransactionRecord(models.Model):
     #     return f"{self.student.firstname} {self.student.lastname}"
     
 class MentalHealthRecord(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
-    
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    prescription = models.FileField(upload_to='mental_health/prescriptions/')
-    certification = models.FileField(upload_to='mental_health/certifications/')
+    
+    def mental_health_path(instance, filename, field_name):
+        return os.path.join('medical', f'{instance.patient.student.lastname}_{instance.patient.student.firstname}', 'mental_health', field_name, filename)
+    
+    def prescription_path(instance, filename):
+        return MentalHealthRecord.mental_health_path(instance, filename, 'prescriptions')
+    
+    def certification_path(instance, filename):
+        return MentalHealthRecord.mental_health_path(instance, filename, 'certifications')
+    
+    prescription = models.FileField(upload_to=prescription_path, null=True, blank=True)
+    certification = models.FileField(upload_to=certification_path, null=True, blank=True)
     date_submitted = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    notes = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')], default='pending')
+    prescription_remarks = models.TextField(blank=True, null=True)
+    certification_remarks = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Mental Health Record - {self.patient.student.student_id}"
+        return f'Mental Health Record for {self.patient.student.get_full_name()}'
     
