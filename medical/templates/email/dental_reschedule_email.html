@@ -1,0 +1,57 @@
+{% extends 'medical/templates/email/dental_request_confirmation.html' %}
+{% load tz %}
+{% block title %}Dental Appointment Rescheduled{% endblock %}
+
+{% block content %}
+<div class="top-logo">
+    <img src="https://i.ibb.co/0jZQZ9L/CTU-logo.png" alt="CTU Logo" style="max-width: 100px;">
+</div>
+
+<div class="container">
+    <div class="title">Dental Appointment Rescheduled</div>
+
+    <p>Dear {{ patient_name }},</p>
+
+    <p>Your dental appointment for <strong>{{ service_type }}</strong> has been rescheduled.</p>
+
+    <p>The new appointment date and time is: <strong>{{ new_appointment_datetime|timezone:request.COOKIES.django_timezone|date:"F d, Y" }} at {{ new_appointment_datetime|timezone:request.COOKIES.django_timezone|date:"h:i A" }}</strong></p>
+
+    <p>Please make sure to attend the rescheduled appointment on time.</p>
+
+    <p>Best Regards,</p>
+    <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+</div>
+
+<div class="footer">
+    <p>This is an automated message, please do not reply to this email.</p>
+    <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+</div>
+{% endblock %} 
+{% load tz %}
+{% block title %}Dental Appointment Rescheduled{% endblock %}
+
+{% block content %}
+<div class="top-logo">
+    <img src="https://i.ibb.co/0jZQZ9L/CTU-logo.png" alt="CTU Logo" style="max-width: 100px;">
+</div>
+
+<div class="container">
+    <div class="title">Dental Appointment Rescheduled</div>
+
+    <p>Dear {{ patient_name }},</p>
+
+    <p>Your dental appointment for <strong>{{ service_type }}</strong> has been rescheduled.</p>
+
+    <p>The new appointment date and time is: <strong>{{ new_appointment_datetime|timezone:request.COOKIES.django_timezone|date:"F d, Y" }} at {{ new_appointment_datetime|timezone:request.COOKIES.django_timezone|date:"h:i A" }}</strong></p>
+
+    <p>Please make sure to attend the rescheduled appointment on time.</p>
+
+    <p>Best Regards,</p>
+    <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+</div>
+
+<div class="footer">
+    <p>This is an automated message, please do not reply to this email.</p>
+    <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+</div>
+{% endblock %} 

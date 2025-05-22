@@ -48,6 +48,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'ctuhealthhubconnect@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'tmuk uohv hopc jgqs'  # Your Gmail app password
 DEFAULT_FROM_EMAIL = 'ctuhealthhubconnect@gmail.com'
+
 SITE_URL = 'https://capstone-v2-pqik.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
 
 ALLOWED_HOSTS = ["capstone-v2-pqik.onrender.com", "localhost", "127.0.0.1"]
@@ -119,20 +120,7 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
+AUTH_PASSWORD_VALIDATORS = []  # Remove password validation for development
 
 
 # Internationalization

@@ -35,6 +35,7 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 import os
 
 from .forms import UploadFileForm
+from django.template.loader import render_to_string
 
 # Add this function at the top of the file
 def is_admin(user):
@@ -932,15 +933,74 @@ def submit_request(request):
         email_subject = 'Request Confirmation'
         email_body = f"""
         <html>
-        <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-            <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;'>
-                <h2 style='text-align: center; color: #0056b3;'>REQUEST CONFIRMATION</h2>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f4f4f4;
+                    text-align: center;
+                }}
+                .top-logo {{
+                    margin-bottom: 20px;
+                }}
+                .top-logo img {{
+                    max-width: 50px;
+                }}
+                .container {{
+                    max-width: 500px;
+                    margin: 0 auto;
+                    background-color: #fff;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    text-align: left;
+                }}
+                .title {{
+                    text-align: center;
+                    font-size: 24px;
+                    color: #0056b3;
+                    margin-bottom: 20px;
+                    padding-bottom: 15px;
+                    border-bottom: 1px solid #eee;
+                }}
+                p {{
+                    margin-bottom: 15px;
+                }}
+                .footer {{
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    font-size: 12px;
+                    color: #999;
+                    text-align: center;
+                    border-top: 1px solid #eee;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="top-logo">
+                <img src="https://i.ibb.co/0jZQZ9L/CTU-logo.png" alt="CTU Logo" style="max-width: 100px;">
+            </div>
+
+            <div class="container">
+                <div class="title">REQUEST CONFIRMATION</div>
+
                 <p>Dear <strong>{patient_name}</strong>,</p>
+
                 <p>Thank you for submitting your request for the document <strong>'{request_type}'</strong>. We have received it and our team is now processing it with utmost care and attention.</p>
+
                 <p>Your request is currently being evaluated by our clinic nurse. You will receive another email once your document is approved.</p>
-                <p>If you have any questions or need further assistance, feel free to reply to this email or contact our support team at support@example.com.</p>
+
                 <p>Best Regards,</p>
                 <p><strong>CTU - Argao Campus Kahimsug Clinic Team</strong></p>
+            </div>
+
+            <div class="footer">
+                <p>This is an automated message, please do not reply to this email.</p>
+                <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
             </div>
         </body>
         </html>
@@ -1238,11 +1298,11 @@ def upload_requirements(request):
     md = None
     patient = None
 
-    if student_id:
-        try:
-            patient = Patient.objects.get(student__student_id=student_id)
+        if student_id:
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
             md, _ = MedicalRequirement.objects.get_or_create(patient=patient)
-        except Patient.DoesNotExist:
+            except Patient.DoesNotExist:
             patient = None
             md = None
 
@@ -1312,27 +1372,19 @@ def dental_services(request):
         patient_name = f"{patient.student.firstname} {patient.student.lastname}"
         patient_email = patient.student.email
         email_subject = 'Dental Services Request Submitted'
-        email_body = f"""
-        <html>
-        <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-            <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;'>
-                <h2 style='text-align: center; color: #0056b3;'>Dental Services Request Submitted</h2>
-                <p>Dear <strong>{patient_name}</strong>,</p>
-                <p>Your request for dental service <strong>{service_type}</strong> has been successfully submitted.</p>
-                <p>Please wait for another email with the appointment schedule.</p>
-                <p>Best Regards,</p>
-                <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
-            </div>
-        </body>
-        </html>
-        """
+
+        # Render email template
+        html_message = render_to_string('email/dental_request_confirmation.html', {
+            'patient_name': patient_name,
+            'service_type': service_type,
+        })
 
         send_mail(
             email_subject,
-            '',
+            '', # Plain text message is empty as we send HTML
             settings.EMAIL_HOST_USER,
             [patient_email],
-            html_message=email_body,
+            html_message=html_message,
             fail_silently=False,
         )
 
@@ -1415,6 +1467,9 @@ def dental_schedule(request):
     if request.user.is_superuser or request.user.is_staff:
         schedules = DentalRecords.objects.filter(appointed=True)
         if request.method == "POST":
+            action = request.POST.get("action")
+
+            if action == "done":
             student_id = request.POST.get("student_id")
             service_type = request.POST.get("service_type")
             
@@ -1433,6 +1488,61 @@ def dental_schedule(request):
             
             messages.success(request, "Marked As Done")
             return render(request, "admin/dentalschedule.html", {"schedules": schedules})
+
+            elif action == "reschedule":
+                request_id = request.POST.get("request_id")
+                str_appointment_date = request.POST.get("new_appointment_date")
+                str_appointment_time = request.POST.get("new_appointment_time")
+
+                try:
+                    dental_record = DentalRecords.objects.get(id=request_id)
+
+                    if not str_appointment_date or not str_appointment_time:
+                        raise ValueError("New appointment date and time are required")
+
+                    # Combine date and time strings into a datetime object
+                    new_appointment_datetime = datetime.strptime(f"{str_appointment_date} {str_appointment_time}", "%Y-%m-%d %H:%M")
+
+                    # Convert new appointment datetime to the current timezone
+                    new_appointment_datetime = timezone.make_aware(new_appointment_datetime)
+
+                    dental_record.date_appointed = new_appointment_datetime
+                    dental_record.save()
+
+                    # Send rescheduling email to the student
+                    patient = dental_record.patient
+                    patient_name = f"{patient.student.firstname} {patient.student.lastname}"
+                    patient_email = patient.student.email
+                    service_type = dental_record.service_type
+
+                    email_subject = 'Dental Appointment Rescheduled'
+
+                    # Render email template
+                    html_message = render_to_string('email/dental_reschedule_email.html', {
+                        'patient_name': patient_name,
+                        'service_type': service_type,
+                        'new_appointment_datetime': new_appointment_datetime,
+                    })
+
+                    send_mail(
+                        email_subject,
+                        '', # Plain text message is empty as we send HTML
+                        settings.EMAIL_HOST_USER,
+                        [patient_email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+
+                    messages.success(request, "Appointment rescheduled successfully. Email sent.")
+                    return render(request, "admin/dentalschedule.html", {"schedules": schedules})
+
+                except DentalRecords.DoesNotExist:
+                    messages.error(request, "Dental record not found.")
+                except ValueError as e:
+                    messages.error(request, str(e))
+                except Exception as e:
+                    messages.error(request, f"An error occurred: {str(e)}")
+
         return render(request, "admin/dentalschedule.html", {"schedules": schedules})
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
@@ -1769,6 +1879,64 @@ def dashboard_view(request):
             
     except Student.DoesNotExist:
         messages.error(request, 'Student profile not found.')
+        return redirect('main:login')
+
+    return render(request, 'student_dashboard.html', context)
+
+@login_required
+def verify_pwd(request, student_id):
+    if request.user.is_superuser or request.user.is_staff:
+        if request.method == 'POST':
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
+                risk_assessment = RiskAssessment.objects.get(clearance=patient)
+                risk_assessment.pwd_verified = True
+                risk_assessment.pwd_verification_date = timezone.now()
+                risk_assessment.pwd_verified_by = request.user
+                risk_assessment.save()
+
+                # Send email notification
+                subject = 'PWD Status Verified'
+                message = f'Dear {patient.student.firstname} {patient.student.lastname},\n\n'
+                message += 'Your PWD status has been verified by the medical staff. '
+                message += 'You can now access PWD-related services and benefits.\n\n'
+                message += 'Best regards,\nHealthHub Connect Team'
+                
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [patient.student.email],
+                    fail_silently=False,
+                )
+
+                messages.success(request, f"PWD status verified for student {student_id}")
+            except Patient.DoesNotExist:
+                messages.error(request, "Student not found")
+            except RiskAssessment.DoesNotExist:
+                messages.error(request, "Risk assessment not found")
+        return redirect('medical:pwdlist')
+    return HttpResponseForbidden("You don't have permission to access this page.")
+
+@login_required
+def unverify_pwd(request, student_id):
+    if request.user.is_superuser or request.user.is_staff:
+        if request.method == 'POST':
+            try:
+                patient = Patient.objects.get(student__student_id=student_id)
+                risk_assessment = RiskAssessment.objects.get(clearance=patient)
+                risk_assessment.pwd_verified = False
+                risk_assessment.pwd_verification_date = None
+                risk_assessment.pwd_verified_by = None
+                risk_assessment.save()
+                messages.success(request, f"PWD status unverified for student {student_id}")
+            except Patient.DoesNotExist:
+                messages.error(request, "Student not found")
+            except RiskAssessment.DoesNotExist:
+                messages.error(request, "Risk assessment not found")
+        return redirect('medical:pwdlist')
+    return HttpResponseForbidden("You don't have permission to access this page.")
+
         return redirect('main:login')
 
     return render(request, 'student_dashboard.html', context)

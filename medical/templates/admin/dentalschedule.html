@@ -8,13 +8,17 @@
 
 {% block content %}
 
-<div class="w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-[18px] flex flex-col xs:gap-2 md:gap-4">
+<div class="w-full xs:h-fit lg:h-full xs:p-4 md:p-8 bg-white rounded-lg shadow-md flex flex-col gap-4">
     {% if messages %}
     
     {% endif %}
-    <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4">Appointment Schedule</h2>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
+        <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem]">Appointment Schedule</h2>
+        <div class="self-start">
+            <a href="{% url 'medical:dentalrequest' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Request</a>
+        </div>
+    </div>
     <div class="flex flex-col h-fit max-h-full">
-        <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Scheduled Appointments</h3>
         <table class="w-full table-auto border-separate border-spacing-0">
             <thead class="bg-[#e6e6e6] w-full">
                 <tr class="tr-header">
@@ -26,35 +30,59 @@
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Action</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="bg-white divide-y divide-gray-200">
                 {% for appointment in schedules %}
                     {% if appointment.date_appointed %}
-                    <tr class="tr-td">
+                    <tr>
                         <form method="POST" action="">
                             {% csrf_token %}
                             <input type="hidden" name="student_id" value="{{ appointment.patient.student.student_id }}">
                             <input type="hidden" name="service_type" value="{{ appointment.service_type }}">
-                            <td class="text-center">{{ appointment.patient.student.student_id }}</td>
-                            <td class="text-center">{{ appointment.patient.student.lastname|title }}</td>
-                            <td class="text-center">{{ appointment.patient.student.firstname|title }}</td>
-                            <td class="text-center">{{ appointment.service_type }}</td>
-                            <td class="text-center">{{ appointment.date_appointed }}</td>
-                            <td class="text-center">
-                                <button type="submit" class="approve">Mark As Done</button>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ appointment.patient.student.student_id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.patient.student.lastname|title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.patient.student.firstname|title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.service_type }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.date_appointed }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">Mark As Done</button>
+                                <button type="button" class="ml-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-400" data-request-id="{{ appointment.id }}" onclick="openRescheduleModal(this)">Reschedule</button>
                             </td>
                         </form>
                     </tr>
                     {% endif %}
                 {% empty %}
-                    <tr class="tr-td">
-                        <td colspan="6">No scheduled appointments</td>
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No scheduled appointments.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="bg-[#3b82f6] w-fit p-2 rounded-md">
-        <a class="text-white" href="{% url 'medical:dentalrequest' %}">Request</a>
+</div>
+
+<!-- Reschedule Modal -->
+<div id="rescheduleModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center" style="display: none;">
+    <div class="relative bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-auto">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Reschedule Appointment</h3>
+            <div class="mt-2 px-7 py-3">
+                <form method="POST" action=".">
+                    {% csrf_token %}
+                    <input type="hidden" id="modal_reschedule_request_id" name="request_id" value="">
+                    <div class="mb-4">
+                        <label for="new_appointment_date" class="block text-sm font-medium text-gray-700">New Appointment Date:</label>
+                        <input type="date" id="new_appointment_date" name="new_appointment_date" required class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    </div>
+                    <div class="mb-4">
+                        <label for="new_appointment_time" class="block text-sm font-medium text-gray-700">New Appointment Time:</label>
+                        <input type="time" id="new_appointment_time" name="new_appointment_time" required class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" name="action" value="reschedule">Reschedule Appointment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -62,5 +90,14 @@
 
 {% block extra_js %}
 <script>
+    function openRescheduleModal(button) {
+        const requestId = button.getAttribute('data-request-id');
+        document.getElementById('modal_reschedule_request_id').value = requestId;
+        document.getElementById('rescheduleModal').style.display = 'block';
+    }
+
+    function closeRescheduleModal() {
+        document.getElementById('rescheduleModal').style.display = 'none';
+    }
 </script>
 {% endblock %}

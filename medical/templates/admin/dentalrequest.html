@@ -12,9 +12,14 @@
     {% if messages %}
     
     {% endif %}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
+        <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem]">Dental Services Request</h2>
+        <div class="self-start md:self-center">
+            <a href="{% url 'medical:dentalschedule' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">View Schedules</a>
+        </div>
+    </div>
     <form action="" method="POST" class="flex flex-col h-full">
         {% csrf_token %}
-        <h2 class="font-bold xs:text-[1.3rem] sm:text-[1.5rem] mb-4 self-start w-fit">Dental Services Request</h2>
        
         <div class="request h-fit max-h-full">
             <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Request</h3>
@@ -52,9 +57,6 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        <div class="bg-[#3b82f6] w-fit p-2 rounded-md">
-            <a class="text-white" href="{% url 'medical:dentalschedule' %}">Schedule</a>
         </div>
         <!-- </div> -->
         <!-- Appointment Modal -->

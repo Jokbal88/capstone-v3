@@ -66,32 +66,32 @@
         .footer a:hover {
              text-decoration: underline;
         }
-        p {
+         p {
             margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
     <div class="top-logo">
-        <img src="https://i.ibb.co/0jZQZ9L/CTU-logo.png" alt="CTU Logo">
+        <img src="https://i.ibb.co/0jZQZ9L/CTU-logo.png" alt="CTU Logo" style="max-width: 100px;">
     </div>
-    
+
     <div class="container">
-        <div class="title">Password Reset</div>
+        <div class="title">Dental Services Request Submitted</div>
 
-        <p>Hello {{ user.first_name }},</p>
+        <p>Dear {{ patient_name }},</p>
 
-        <p>Seems like you forgot your password for your HealthHub Connect account. If this is true, click below to reset your password.</p>
+        <p>Your request for dental service <strong>{{ service_type }}</strong> has been successfully submitted.</p>
 
-        <a href="{{ reset_url }}" class="button">Reset My Password</a>
+        <p>Please wait for another email with the appointment schedule.</p>
 
-        <p>If you did not forget your password you can safely ignore this email.</p>
+        <p>Best Regards,</p>
+        <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
     </div>
 
     <div class="footer">
         <p>This is an automated message, please do not reply to this email.</p>
         <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-        <p>Don't like these emails? <a href="#">Unsubscribe</a></p> <!-- Placeholder for unsubscribe -->
     </div>
 </body>
 </html> 

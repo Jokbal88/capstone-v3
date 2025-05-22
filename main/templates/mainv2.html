@@ -28,7 +28,13 @@
     >
       <nav
         id="navbar"
-        class="bg-[#fff] {% if user.is_superuser or user.is_staff %}flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[25%] sticky {% else %}flex justify-between h-[5rem]{% endif %}"
+        class="bg-[#fff] sticky top-0 z-10
+          {% if user.is_superuser or user.is_staff %}
+            flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[25%]
+          {% else %}
+            flex justify-between h-[5rem]
+          {% endif %}
+        "
       >
         <div
           class="flex gap-2 p-4 items-stretch bg-[#3b82f6] {% if user.is_superuser or user.is_staff %} justify-center {% else %} justify-normal {% endif %}"
@@ -328,16 +334,18 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% if messages %}
     <script>
+      document.addEventListener('DOMContentLoaded', function() {
         {% for message in messages %}
-        Swal.fire({
+          Swal.fire({
             icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% elif "info" in message.tags %}info{% else %}info{% endif %}',
             title: '',
             text: "{{ message|escapejs }}",
             timer: 2500,
             showConfirmButton: false
-        });
-                                    {% endfor %}
+          });
+        {% endfor %}
+      });
     </script>
-{% endif %}
+    {% endif %}
   </body>
 </html>

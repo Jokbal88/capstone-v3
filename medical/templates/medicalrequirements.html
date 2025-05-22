@@ -139,18 +139,18 @@
                                 <th class="p-2 text-left">Requirement</th>
                                 <th class="p-2 text-center">Status</th>
                                 <th class="p-2 text-center">File</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                </tr>
+            </thead>
+            <tbody>
                             {% if med_requirements %}
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="p-2">
-                                    {% if user.is_superuser or user.is_staff %}
+                    {% if user.is_superuser or user.is_staff %}
                                         <textarea name="x-ray-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.x_ray_remarks|default:'' }}</textarea>
                                     {% else %}
                                         <span>{{ med_requirements.x_ray_remarks|default:'None' }}</span>
                                     {% endif %}
-                                </td>
+                        </td>
                                 <td class="p-2 font-medium">Chest X-ray</td>
                                 <td class="p-2 text-center">{% if med_requirements.chest_xray %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
                                 <td class="p-2 text-center">{% if med_requirements.chest_xray %}<button type="button" onclick="previewFile('{{ med_requirements.chest_xray.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Chest X-ray')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
@@ -159,64 +159,64 @@
                                 <td class="p-2">
                                     {% if user.is_superuser or user.is_staff %}
                                         <textarea name="cbc-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.cbc_remarks|default:'' }}</textarea>
-                                    {% else %}
+                        {% else %}
                                         <span>{{ med_requirements.cbc_remarks|default:'None' }}</span>
-                                    {% endif %}
+                        {% endif %}
                                 </td>
                                 <td class="p-2 font-medium">Complete Blood Count (CBC)</td>
                                 <td class="p-2 text-center">{% if med_requirements.cbc %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
                                 <td class="p-2 text-center">{% if med_requirements.cbc %}<button type="button" onclick="previewFile('{{ med_requirements.cbc.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Complete Blood Count (CBC)')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                            </tr>
+                </tr>
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="p-2">
-                                    {% if user.is_superuser or user.is_staff %}
+                    {% if user.is_superuser or user.is_staff %}
                                         <textarea name="drug-test-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.drug_test_remarks|default:'' }}</textarea>
-                                    {% else %}
+                        {% else %}
                                         <span>{{ med_requirements.drug_test_remarks|default:'None' }}</span>
-                                    {% endif %}
+                        {% endif %}
                                 </td>
                                 <td class="p-2 font-medium">Drug Test</td>
                                 <td class="p-2 text-center">{% if med_requirements.drug_test %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
                                 <td class="p-2 text-center">{% if med_requirements.drug_test %}<button type="button" onclick="previewFile('{{ med_requirements.drug_test.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Drug Test')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                            </tr>
+                </tr>
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="p-2">
-                                    {% if user.is_superuser or user.is_staff %}
+                    {% if user.is_superuser or user.is_staff %}
                                         <textarea name="stool-examination-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.stool_examination_remarks|default:'' }}</textarea>
-                                    {% else %}
+                        {% else %}
                                         <span>{{ med_requirements.stool_examination_remarks|default:'None' }}</span>
-                                    {% endif %}
+                        {% endif %}
                                 </td>
                                 <td class="p-2 font-medium">Stool Examination</td>
                                 <td class="p-2 text-center">{% if med_requirements.stool_examination %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
                                 <td class="p-2 text-center">{% if med_requirements.stool_examination %}<button type="button" onclick="previewFile('{{ med_requirements.stool_examination.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Stool Examination')" class="text-blue-600 hover:underline">Preview</button>{% else %}<span class="text-gray-400">None</span>{% endif %}</td>
-                            </tr>
+                </tr>
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="p-2">
-                                    {% if user.is_superuser or user.is_staff %}
+                    {% if user.is_superuser or user.is_staff %}
                                         <textarea name="pwd-card-remark" class="w-full p-2 border rounded-md text-base h-20" placeholder="Enter remarks here...">{{ med_requirements.pwd_card_remarks|default:'' }}</textarea>
                                     {% else %}
                                         <span>{{ med_requirements.pwd_card_remarks|default:'None' }}</span>
                                     {% endif %}
-                                </td>
+                        </td>
                                 <td class="p-2 font-medium">PWD Card</td>
                                 <td class="p-2 text-center">{% if med_requirements.pwd_card %}<span class="text-green-600 text-xl">&#10003;</span>{% else %}<span class="text-red-600 text-xl">&#10007;</span>{% endif %}</td>
                                 <td class="p-2 text-center">
                                     {% if med_requirements.pwd_card %}
                                         <button type="button" onclick="previewFile('{{ med_requirements.pwd_card.url }}', '{{ student.firstname }} {{ student.lastname }}', 'PWD Card')" class="text-blue-600 hover:underline">Preview</button>
-                                    {% else %}
+                        {% else %}
                                         <span class="text-gray-400">None</span>
-                                    {% endif %}
+                        {% endif %}
                                 </td>
-                            </tr>
+                </tr>
                             {% else %}
                             <tr>
                                 <td colspan="4" class="text-center p-4">Please search for a student using the search bar above to view their medical requirements.</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
             </div>
             {% if med_requirements %}
             <div class="flex gap-4 mt-4 justify-center">
