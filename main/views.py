@@ -298,7 +298,7 @@ def main_view(request):
 @login_required
 def patient_form(request):
     if request.method == 'GET':
-    try:
+        try:
             patient = medical_models.Patient.objects.get(student_id=request.user.username)
             return redirect('main:dashboard')
         except medical_models.Patient.DoesNotExist:
@@ -403,12 +403,12 @@ def patient_form(request):
             messages.success(request, 'Medical information submitted successfully!')
             return redirect('main:student_dashboard')
             
-    except medical_models.Student.DoesNotExist:
-        messages.error(request, 'Student profile not found.')
-        return redirect('main:login')
-    except Exception as e:
-        print(e)
-        messages.error(request, f'Error saving patient information: {str(e)}')
+        except medical_models.Student.DoesNotExist:
+            messages.error(request, 'Student profile not found.')
+            return redirect('main:login')
+        except Exception as e:
+            print(e)
+            messages.error(request, f'Error saving patient information: {str(e)}')
             return render(request, 'patient_form.html')
         
     return render(request, 'patient_form.html')

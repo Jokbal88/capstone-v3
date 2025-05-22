@@ -1027,262 +1027,299 @@ def student_medical_requirements_tracker(request):
     student = None
     patient = None
     med_requirements = None
-    
-    student_id_to_process = None
+
+    # Check for student_id in both POST and GET requests
+    student_id_to_process = request.POST.get("student_id") or request.GET.get("student_id")
 
     if request.method == "POST":
-        student_id_to_process = request.POST.get("student_id")
+        # The student_id is already obtained above
         action = request.POST.get('action')
-        
-    elif request.method == "GET":
-        student_id_to_process = request.GET.get("student_id")
 
-    if student_id_to_process:
-        try:
-            patient = Patient.objects.get(student__student_id=student_id_to_process)
-            student = patient.student
-            med_requirements, created = MedicalRequirement.objects.get_or_create(patient=patient)
+        if student_id_to_process:
+            try:
+                patient = Patient.objects.get(student__student_id=student_id_to_process)
+                student = patient.student
+                med_requirements, created = MedicalRequirement.objects.get_or_create(patient=patient)
 
-            if request.method == "POST":
-                 # Extract all remarks
-                x_ray_remarks = request.POST.get("x-ray-remark", "")
-                cbc_remarks = request.POST.get("cbc-remark", "")
-                drug_test_remarks = request.POST.get("drug-test-remark", "")
-                stool_examination_remarks = request.POST.get("stool-examination-remark", "")
-                pwd_card_remarks = request.POST.get("pwd-card-remark", "")
+                print(f"Existing x_ray_remarks before processing POST: {med_requirements.x_ray_remarks}")
 
-                # Update remarks
-                med_requirements.x_ray_remarks = x_ray_remarks
-                med_requirements.cbc_remarks = cbc_remarks
-                med_requirements.drug_test_remarks = drug_test_remarks
-                med_requirements.stool_examination_remarks = stool_examination_remarks
-                med_requirements.pwd_card_remarks = pwd_card_remarks
+                # Extract action first
+                if action:
+                    # Extract all remarks regardless of action
+                    x_ray_remarks = request.POST.get("x-ray-remark", "")
+                    cbc_remarks = request.POST.get("cbc-remark", "")
+                    drug_test_remarks = request.POST.get("drug-test-remark", "")
+                    stool_examination_remarks = request.POST.get("stool-examination-remark", "")
+                    pwd_card_remarks = request.POST.get("pwd-card-remark", "")
 
-                # Save the medical requirements object with updated remarks and status
-                print("Before saving remarks:", med_requirements.__dict__)
-                try:
-                    med_requirements.save()
-                    print("Medical requirements saved successfully.")
-                except Exception as e:
-                    print(f"Error saving medical requirements: {e}")
-                    messages.error(request, f"Error saving remarks: {e}")
+                    # Update remarks
+                    med_requirements.x_ray_remarks = x_ray_remarks
+                    med_requirements.cbc_remarks = cbc_remarks
+                    med_requirements.drug_test_remarks = drug_test_remarks
+                    med_requirements.stool_examination_remarks = stool_examination_remarks
+                    med_requirements.pwd_card_remarks = pwd_card_remarks
 
-                if action == 'save_all_remarks':
-                    messages.success(request, "Remarks saved successfully.")
-                
-                elif action == 'approve_requirements':
-                    med_requirements.status = 'approved'
-                    med_requirements.reviewed_by = request.user
-                    med_requirements.reviewed_date = timezone.now()
-                    # med_requirements.save() # Removed as it's now saved before this block
+                    # Handle specific actions
+                    if action == 'save_all_remarks':
+                        try:
+                            med_requirements.save()
+                            messages.success(request, "Remarks saved successfully.")
+                        except Exception as e:
+                            messages.error(request, f"Error saving remarks: {e}")
+                        return redirect('medical:student_medical_requirements_tracker', student_id=student_id_to_process)
 
-                    # Send approval email
-                    subject = 'Medical Requirements Approved'
-                    email_body = f"""
-                        <html>
-                        <head>
-                            <style>
-                                body {{
-                                    font-family: Arial, sans-serif;
-                                    line-height: 1.6;
-                                    color: #333;
-                                    margin: 0;
-                                    padding: 20px;
-                                    background-color: #f4f4f4;
-                                    text-align: center;
-                                }}
-                                .container {{
-                                    max-width: 600px;
-                                    margin: 0 auto;
-                                    background-color: #fff;
-                                    padding: 30px;
-                                    border-radius: 8px;
-                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                    text-align: left;
-                                }}
-                                .title {{
-                                    text-align: center;
-                                    font-size: 24px;
-                                    color: #0056b3;
-                                    margin-bottom: 20px;
-                                    padding-bottom: 15px;
-                                    border-bottom: 1px solid #eee;
-                                }}
-                                 p {{
-                                    margin-bottom: 15px;
-                                }}
-                                .remarks-section {{
-                                    margin-top: 20px;
-                                    padding-top: 15px;
-                                    border-top: 1px solid #eee;
-                                }}
-                                .remarks-section h4 {{
-                                    margin-bottom: 10px;
-                                    color: #555;
-                                }}
-                                 .footer {{
-                                    margin-top: 30px;
-                                    padding-top: 20px;
-                                    font-size: 12px;
-                                    color: #999;
-                                    text-align: center;
-                                    border-top: 1px solid #eee;
-                                }}
-                            </style>
-                        </head>
-                        <body>
-                            <div class="container">
-                                <div class="title">MEDICAL REQUIREMENTS APPROVED</div>
-                                <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-                                <p>We are pleased to inform you that your medical requirements have been <strong style='color:green;'>APPROVED</strong>.</p>
-                                <div class="remarks-section">
-                                    <h4>Reviewer Remarks:</h4>
-                                    <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
-                                    <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
-                                    <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
-                                    <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
-                                    <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
-                                </div>
-                                <p>You can view your updated medical requirements status on the HealthHub Connect portal.</p>
-                                <p>Best regards,</p>
-                                <p><strong>HealthHub Connect Team</strong></p>
-                            </div>
-                            <div class="footer">
-                                <p>This is an automated message, please do not reply to this email.</p>
-                                <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                            </div>
-                        </body>
-                        </html>
-                        """
-                    from django.core.mail import send_mail
-                    from django.conf import settings
-                    
-                    try:
-                        send_mail(
-                            subject,
-                            '',
-                            settings.DEFAULT_FROM_EMAIL,
-                            [student.email],
-                            html_message=email_body,
-                            fail_silently=False,
-                        )
-                        messages.success(request, "Medical requirements approved and email sent.")
-                    except Exception as e:
-                        messages.error(request, f"Medical requirements approved, but failed to send email: {e}")
+                    elif action == 'approve_requirements':
+                        med_requirements.status = 'approved'
+                        med_requirements.reviewed_by = request.user
+                        med_requirements.reviewed_date = timezone.now()
+                        try:
+                            med_requirements.save()
+                            # Send approval email
+                            subject = 'Medical Requirements Approved'
+                            email_body = f"""
+                                <html>
+                                <head>
+                                    <style>
+                                        body {{
+                                            font-family: Arial, sans-serif;
+                                            line-height: 1.6;
+                                            color: #333;
+                                            margin: 0;
+                                            padding: 20px;
+                                            background-color: #f4f4f4;
+                                            text-align: center;
+                                        }}
+                                        .container {{
+                                            max-width: 600px;
+                                            margin: 0 auto;
+                                            background-color: #fff;
+                                            padding: 30px;
+                                            border-radius: 8px;
+                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                            text-align: left;
+                                        }}
+                                        .title {{
+                                            text-align: center;
+                                            font-size: 24px;
+                                            color: #0056b3;
+                                            margin-bottom: 20px;
+                                            padding-bottom: 15px;
+                                            border-bottom: 1px solid #eee;
+                                        }}
+                                         p {{
+                                            margin-bottom: 15px;
+                                        }}
+                                        .remarks-section {{
+                                            margin-top: 20px;
+                                            padding-top: 15px;
+                                            border-top: 1px solid #eee;
+                                        }}
+                                        .remarks-section h4 {{
+                                            margin-bottom: 10px;
+                                            color: #555;
+                                        }}
+                                         .footer {{
+                                            margin-top: 30px;
+                                            padding-top: 20px;
+                                            font-size: 12px;
+                                            color: #999;
+                                            text-align: center;
+                                            border-top: 1px solid #eee;
+                                        }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <div class="title">MEDICAL REQUIREMENTS APPROVED</div>
+                                        <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
+                                        <p>We are pleased to inform you that your medical requirements have been <strong style='color:green;'>APPROVED</strong>.</p>
+                                        <div class="remarks-section">
+                                            <h4>Reviewer Remarks:</h4>
+                                            <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
+                                            <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
+                                            <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
+                                            <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
+                                            <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
+                                        </div>
+                                        <p>You can view your updated medical requirements status on the HealthHub Connect portal.</p>
+                                        <p>Best regards,</p>
+                                        <p><strong>HealthHub Connect Team</strong></p>
+                                    </div>
+                                    <div class="footer">
+                                        <p>This is an automated message, please do not reply to this email.</p>
+                                        <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                                    </div>
+                                </body>
+                                </html>
+                                """
+                            from django.core.mail import send_mail
+                            from django.conf import settings
 
-                elif action == 'reject_requirements':
-                    med_requirements.status = 'rejected'
-                    med_requirements.reviewed_by = request.user
-                    med_requirements.reviewed_date = timezone.now()
-                    # med_requirements.save() # Removed as it's now saved before this block
+                            try:
+                                send_mail(
+                                    subject,
+                                    '',
+                                    settings.DEFAULT_FROM_EMAIL,
+                                    [student.email],
+                                    html_message=email_body,
+                                    fail_silently=False,
+                                )
+                                messages.success(request, "Medical requirements approved and email sent.")
+                            except Exception as e:
+                                messages.error(request, f"Medical requirements approved, but failed to send email: {e}")
+                            return redirect('medical:student_medical_requirements_tracker', student_id=student_id_to_process)
 
-                    # Send rejection email
-                    subject = 'Medical Requirements Rejected'
-                    email_body = f"""
-                        <html>
-                        <head>
-                            <style>
-                                body {{
-                                    font-family: Arial, sans-serif;
-                                    line-height: 1.6;
-                                    color: #333;
-                                    margin: 0;
-                                    padding: 20px;
-                                    background-color: #f4f4f4;
-                                    text-align: center;
-                                }}
-                                .container {{
-                                    max-width: 600px;
-                                    margin: 0 auto;
-                                    background-color: #fff;
-                                    padding: 30px;
-                                    border-radius: 8px;
-                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                    text-align: left;
-                                }}
-                                .title {{
-                                    text-align: center;
-                                    font-size: 24px;
-                                    color: #d9534f;
-                                    margin-bottom: 20px;
-                                    padding-bottom: 15px;
-                                    border-bottom: 1px solid #eee;
-                                }}
-                                 p {{
-                                    margin-bottom: 15px;
-                                }}
-                                .remarks-section {{
-                                    margin-top: 20px;
-                                    padding-top: 15px;
-                                    border-top: 1px solid #eee;
-                                }}
-                                .remarks-section h4 {{
-                                    margin-bottom: 10px;
-                                    color: #555;
-                                }}
-                                 .footer {{
-                                    margin-top: 30px;
-                                    padding-top: 20px;
-                                    font-size: 12px;
-                                    color: #999;
-                                    text-align: center;
-                                    border-top: 1px solid #eee;
-                                }}
-                            </style>
-                        </head>
-                        <body>
-                            <div class="container">
-                                <div class="title">MEDICAL REQUIREMENTS REJECTED</div>
-                                <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-                                <p>We regret to inform you that your medical requirements have been <strong style='color:red;'>REJECTED</strong>.</p>
-                                 <p>Please review the remarks below and resubmit the necessary documents.</p>
-                                <div class="remarks-section">
-                                    <h4>Reviewer Remarks:</h4>
-                                    <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
-                                    <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
-                                    <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
-                                    <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
-                                    <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
-                                </div>
-                                <p>You can view your updated medical requirements status and upload revised documents on the HealthHub Connect portal.</p>
-                                <p>Best regards,</p>
-                                <p><strong>HealthHub Connect Team</strong></p>
-                            </div>
-                            <div class="footer">
-                                <p>This is an automated message, please do not reply to this email.</p>
-                                <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                            </div>
-                        </body>
-                        </html>
-                        """
+                        except Exception as e:
+                            messages.error(request, f"Error saving medical requirements status: {e}")
+                        return redirect('medical:student_medical_requirements_tracker', student_id=student_id_to_process)
 
-                    from django.core.mail import send_mail
-                    from django.conf import settings
+                    elif action == 'reject_requirements':
+                        med_requirements.status = 'rejected'
+                        med_requirements.reviewed_by = request.user
+                        med_requirements.reviewed_date = timezone.now()
+                        try:
+                            med_requirements.save()
+                            # Send rejection email
+                            subject = 'Medical Requirements Rejected'
+                            email_body = f"""
+                                <html>
+                                <head>
+                                    <style>
+                                        body {{
+                                            font-family: Arial, sans-serif;
+                                            line-height: 1.6;
+                                            color: #333;
+                                            margin: 0;
+                                            padding: 20px;
+                                            background-color: #f4f4f4;
+                                            text-align: center;
+                                        }}
+                                        .container {{
+                                            max-width: 600px;
+                                            margin: 0 auto;
+                                            background-color: #fff;
+                                            padding: 30px;
+                                            border-radius: 8px;
+                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                            text-align: left;
+                                        }}
+                                        .title {{
+                                            text-align: center;
+                                            font-size: 24px;
+                                            color: #d9534f;
+                                            margin-bottom: 20px;
+                                            padding-bottom: 15px;
+                                            border-bottom: 1px solid #eee;
+                                        }}
+                                         p {{
+                                            margin-bottom: 15px;
+                                        }}
+                                        .remarks-section {{
+                                            margin-top: 20px;
+                                            padding-top: 15px;
+                                            border-top: 1px solid #eee;
+                                        }}
+                                        .remarks-section h4 {{
+                                            margin-bottom: 10px;
+                                            color: #555;
+                                        }}
+                                         .footer {{
+                                            margin-top: 30px;
+                                            padding-top: 20px;
+                                            font-size: 12px;
+                                            color: #999;
+                                            text-align: center;
+                                            border-top: 1px solid #eee;
+                                        }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <div class="title">MEDICAL REQUIREMENTS REJECTED</div>
+                                        <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
+                                        <p>We regret to inform you that your medical requirements have been <strong style='color:red;'>REJECTED</strong>.</p>
+                                         <p>Please review the remarks below and resubmit the necessary documents.</p>
+                                        <div class="remarks-section">
+                                            <h4>Reviewer Remarks:</h4>
+                                            <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
+                                            <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
+                                            <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
+                                            <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
+                                            <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
+                                        </div>
+                                        <p>You can view your updated medical requirements status and upload revised documents on the HealthHub Connect portal.</p>
+                                        <p>Best regards,</p>
+                                        <p><strong>HealthHub Connect Team</strong></p>
+                                    </div>
+                                    <div class="footer">
+                                        <p>This is an automated message, please do not reply to this email.</p>
+                                        <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                                    </div>
+                                </body>
+                                </html>
+                                """
 
-                    try:
-                        send_mail(
-                            subject,
-                            '',
-                            settings.DEFAULT_FROM_EMAIL,
-                            [student.email],
-                            html_message=email_body,
-                            fail_silently=False,
-                        )
-                        messages.success(request, "Medical requirements rejected and email sent.")
-                    except Exception as e:
-                        messages.error(request, f"Medical requirements rejected, but failed to send email: {e}")
-                        
-                return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient})
-            
-        except Patient.DoesNotExist:
-            student = Student.objects.filter(student_id=student_id_to_process).first()
-            if student:
-                 messages.error(request, "Patient profile not found for this student. Please create a patient profile first.")
-                 # Redirect to patient creation form if available
-                 # return redirect('medical:patient_basic_info', student_id=student_id_to_process)
-            else:
-                 messages.error(request, "Student not found.")
-    
+                            from django.core.mail import send_mail
+                            from django.conf import settings
+
+                            try:
+                                send_mail(
+                                    subject,
+                                    '',
+                                    settings.DEFAULT_FROM_EMAIL,
+                                    [student.email],
+                                    html_message=email_body,
+                                    fail_silently=False,
+                                )
+                                messages.success(request, "Medical requirements rejected and email sent.")
+                            except Exception as e:
+                                messages.error(request, f"Medical requirements rejected, but failed to send email: {e}")
+                            return redirect('medical:student_medical_requirements_tracker', student_id=student_id_to_process)
+
+                        except Exception as e:
+                            messages.error(request, f"Error saving medical requirements status: {e}")
+                        return redirect('medical:student_medical_requirements_tracker', student_id=student_id_to_process)
+
+                    # After handling all actions, redirect or re-render with updated data
+                    # The view currently renders at the end, ensure that's correct.
+
+            except Patient.DoesNotExist:
+                student = Student.objects.filter(student_id=student_id_to_process).first()
+                if student:
+                     messages.error(request, "Patient profile not found for this student. Please create a patient profile first.")
+                     # Redirect to patient creation form if available
+                     # return redirect('medical:patient_basic_info', student_id=student_id_to_process)
+                     # To prevent trying to fetch med_requirements again if patient not found:
+                     patient = None # Ensure patient is None
+                     med_requirements = None # Ensure med_requirements is None
+                else:
+                     messages.error(request, "Student not found.")
+                     # To prevent trying to fetch med_requirements again if student not found:
+                     student = None # Ensure student is None
+                     patient = None # Ensure patient is None
+                     med_requirements = None # Ensure med_requirements is None
+
+    # Re-fetch med_requirements if it wasn't found or created in the POST block, or if it's a GET request
+    # This block will now correctly use student_id_to_process if it came from a GET parameter.
+    if student_id_to_process and not med_requirements:
+         try:
+             patient = Patient.objects.get(student__student_id=student_id_to_process)
+             student = patient.student
+             med_requirements = MedicalRequirement.objects.get(patient=patient)
+         except (Patient.DoesNotExist, MedicalRequirement.DoesNotExist):
+             # Handle cases where patient or med_requirements still don't exist after POST attempt
+             pass # Will render with med_requirements=None, handled in template.
+    elif not student_id_to_process:
+        # If no student_id is provided (e.g., initial GET request to /medicalrequirementstracker/)
+        # we should not try to fetch med_requirements, just render the empty form.
+        pass
+
+    # Print statements for debugging
+    print("Rendering template with:")
+    print("Student:", student)
+    print("Patient:", patient)
+    print("Medical Requirements (before render):", med_requirements)
+
     return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient})
 
 # Views for handling the medical requirements uploaded file
@@ -1298,11 +1335,11 @@ def upload_requirements(request):
     md = None
     patient = None
 
-        if student_id:
-            try:
-                patient = Patient.objects.get(student__student_id=student_id)
+    if student_id:
+        try:
+            patient = Patient.objects.get(student__student_id=student_id)
             md, _ = MedicalRequirement.objects.get_or_create(patient=patient)
-            except Patient.DoesNotExist:
+        except Patient.DoesNotExist:
             patient = None
             md = None
 
@@ -1470,24 +1507,24 @@ def dental_schedule(request):
             action = request.POST.get("action")
 
             if action == "done":
-            student_id = request.POST.get("student_id")
-            service_type = request.POST.get("service_type")
-            
-            # Retrieve the DentalRecord object
-            dental_record = DentalRecords.objects.get(patient__student__student_id=student_id, service_type=service_type)
-            
-            # Create a TransactionRecord
-            TransactionRecord.objects.create(
-                patient=dental_record.patient,
-                transac_type="Dental Service",
-                transac_date=timezone.now()
-            )
-            
-            # Delete the dental record
-            dental_record.delete()
-            
-            messages.success(request, "Marked As Done")
-            return render(request, "admin/dentalschedule.html", {"schedules": schedules})
+                student_id = request.POST.get("student_id")
+                service_type = request.POST.get("service_type")
+                
+                # Retrieve the DentalRecord object
+                dental_record = DentalRecords.objects.get(patient__student__student_id=student_id, service_type=service_type)
+                
+                # Create a TransactionRecord
+                TransactionRecord.objects.create(
+                    patient=dental_record.patient,
+                    transac_type="Dental Service",
+                    transac_date=timezone.now()
+                )
+                
+                # Delete the dental record
+                dental_record.delete()
+                
+                messages.success(request, "Marked As Done")
+                return render(request, "admin/dentalschedule.html", {"schedules": schedules})
 
             elif action == "reschedule":
                 request_id = request.POST.get("request_id")
@@ -1879,64 +1916,6 @@ def dashboard_view(request):
             
     except Student.DoesNotExist:
         messages.error(request, 'Student profile not found.')
-        return redirect('main:login')
-
-    return render(request, 'student_dashboard.html', context)
-
-@login_required
-def verify_pwd(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-        if request.method == 'POST':
-            try:
-                patient = Patient.objects.get(student__student_id=student_id)
-                risk_assessment = RiskAssessment.objects.get(clearance=patient)
-                risk_assessment.pwd_verified = True
-                risk_assessment.pwd_verification_date = timezone.now()
-                risk_assessment.pwd_verified_by = request.user
-                risk_assessment.save()
-
-                # Send email notification
-                subject = 'PWD Status Verified'
-                message = f'Dear {patient.student.firstname} {patient.student.lastname},\n\n'
-                message += 'Your PWD status has been verified by the medical staff. '
-                message += 'You can now access PWD-related services and benefits.\n\n'
-                message += 'Best regards,\nHealthHub Connect Team'
-                
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [patient.student.email],
-                    fail_silently=False,
-                )
-
-                messages.success(request, f"PWD status verified for student {student_id}")
-            except Patient.DoesNotExist:
-                messages.error(request, "Student not found")
-            except RiskAssessment.DoesNotExist:
-                messages.error(request, "Risk assessment not found")
-        return redirect('medical:pwdlist')
-    return HttpResponseForbidden("You don't have permission to access this page.")
-
-@login_required
-def unverify_pwd(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-        if request.method == 'POST':
-            try:
-                patient = Patient.objects.get(student__student_id=student_id)
-                risk_assessment = RiskAssessment.objects.get(clearance=patient)
-                risk_assessment.pwd_verified = False
-                risk_assessment.pwd_verification_date = None
-                risk_assessment.pwd_verified_by = None
-                risk_assessment.save()
-                messages.success(request, f"PWD status unverified for student {student_id}")
-            except Patient.DoesNotExist:
-                messages.error(request, "Student not found")
-            except RiskAssessment.DoesNotExist:
-                messages.error(request, "Risk assessment not found")
-        return redirect('medical:pwdlist')
-    return HttpResponseForbidden("You don't have permission to access this page.")
-
         return redirect('main:login')
 
     return render(request, 'student_dashboard.html', context)

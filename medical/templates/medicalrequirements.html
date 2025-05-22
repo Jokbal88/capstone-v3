@@ -101,7 +101,7 @@
 <div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Medical Requirements Tracker</h2>
     {% if user.is_superuser or user.is_staff %}
-        <form method="POST" class="flex gap-4 mb-4">
+        <form method="GET" class="flex gap-4 mb-4">
             {% csrf_token %}
             <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
             <button type="submit" name="search_student" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
