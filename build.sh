@@ -9,7 +9,7 @@ pip install gunicorn
 
 # Install Node.js dependencies and build Tailwind CSS
 cd theme
-npm install
+npm install --legacy-peer-deps
 npm run build
 cd ..
 

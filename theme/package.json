@@ -1,0 +1,14 @@
+{
+  "name": "theme",
+  "version": "1.0.0",
+  "description": "Tailwind CSS theme for medical system",
+  "scripts": {
+    "build": "tailwindcss -i ./static_src/src/input.css -o ./static/css/output.css --minify",
+    "dev": "tailwindcss -i ./static_src/src/input.css -o ./static/css/output.css --watch"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35"
+  }
+} 
