@@ -33,9 +33,9 @@
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Type of Disability</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Verification Status</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
+                </tr>
+            </thead>
+            <tbody>
                     {% for patient in pwds %}
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.student_id }}</a></td>
@@ -68,14 +68,14 @@
                                     </form>
                                 {% endif %}
                             </td>
-                        </tr>
-                    {% empty %}
+                    </tr>
+                {% empty %}
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td colspan="8" class="p-2 text-center text-gray-500">No patients found</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         </div>
     </div>
 </div>
