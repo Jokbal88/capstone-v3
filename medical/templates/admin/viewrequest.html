@@ -3,23 +3,41 @@
 {% block title %}HealthHub Connect | View Request{% endblock %} 
 {% block extra_css %}
 {% tailwind_css %}
+<style>
+    .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    .tab-button {
+        transition: all 0.2s ease-in-out;
+    }
+    .tab-content {
+        display: none;
+        /* transition: opacity 0.2s ease-in-out; */
+    }
+    .tab-content.active {
+        display: block;
+        /* opacity: 1; */
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 
-<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4 mb-2">
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
         <div>
             <h2 class="font-bold text-2xl text-gray-800">Students Request</h2>
             <p class="text-gray-500 text-sm">View and manage student requests</p>
         </div>
+        <div class="flex gap-2">
+            <button type="button" class="tab-button border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md active text-sm md:text-base" onclick="showTab('request')">Request</button>
+            <button type="button" class="tab-button border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md text-sm md:text-base" onclick="showTab('approve-table')">Approve</button>
+        </div>
     </div>
-    <div class="flex gap-2 xs:w-full md:w-fit">
-        <button type="button" class="border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md active xs:text-[14px] sm:text-base" onclick="showTab('request')">Request</button>
-        <button type="button" class="border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md xs:text-[14px] sm:text-base" onclick="showTab('approve-table')">Approve</button>
-    </div>
-    <div class="h-full w-full overflow-auto flex">
-        <div class="h-fit max-h-full w-full" id="request">
+    <div class="h-full w-full overflow-auto">
+        <div class="h-fit max-h-full w-full tab-content" id="request">
             <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Request</h3>
             <div class="overflow-x-auto">
                 <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow-lg text-lg">
@@ -47,11 +65,11 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="request_id" value="{{ request.request_id }}">
                                         <input type="hidden" name="request_type" value="{{ request.request_type }}">
-                                        <button type="submit" name="action" value="approve" class="bg-green-600 text-white text-[14px] rounded-md p-2">Approve</button>
-                                        <button type="submit" name="action" value="reject" class="bg-red-600 text-white text-[14px] rounded-md p-2">Reject</button>
+                                        <button type="submit" name="action" value="approve" class="bg-green-600 text-white text-sm rounded-md p-2 hover:bg-green-700 transition-colors">Approve</button>
+                                        <button type="submit" name="action" value="reject" class="bg-red-600 text-white text-sm rounded-md p-2 hover:bg-red-700 transition-colors">Reject</button>
                                     </form>
                                 {% else %}
-                                    <span class="inline-block px-2 py-1 rounded bg-green-100 text-green-800">Approved</span>
+                                    <span class="inline-block px-2 py-1 rounded bg-green-100 text-green-800 text-sm">Approved</span>
                         {% endif %}
                             </td>
                         </tr>
@@ -64,7 +82,7 @@
             </table>
             </div>
         </div>
-        <div class="h-full w-full" id="approve-table" style="display:none;">
+        <div class="h-full w-full tab-content" id="approve-table" style="display:none;">
             <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Approved</h3>
             <div class="overflow-x-auto">
                 <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow-lg text-lg">
@@ -80,60 +98,26 @@
                 </thead>
                 <tbody>
                     {% for request in patient_requests %}
-                        {% if request.approve %}
-                            {% if request.request_type == "Eligibility Form" %}
-                                <tr class="tr-td">
-                                    <form action="" method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="request_id" value="{{ request.request_id }}">
-                                        <input type="hidden" name="request_type" value="{{ request.request_type }}">
-                                        <td class="text-center"><a href="{% url 'medical:eligibility_form' request.patient.student.student_id %}">{{ request.patient.student.student_id }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:eligibility_form' request.patient.student.student_id %}">{{ request.patient.student.lastname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:eligibility_form' request.patient.student.student_id %}">{{ request.patient.student.firstname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:eligibility_form' request.patient.student.student_id %}">{{ request.request_type }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:eligibility_form' request.patient.student.student_id %}">{{ request.date_approved }}</a></td>
-                                        <td class="flex justify-center gap-2">
-                                            <button type="submit" name="action" value="done" class="approve bg-green-600 text-[14px] rounded-md p-2">Mark As Done</button>
-                                        </td>
-                                    </form>
-                                </tr>
-                            {% elif request.request_type == "Medical Clearance for OJT/Practicum" %}
-                                <tr class="tr-td">
-                                    <form action="" method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="request_id" value="{{ request.request_id }}">
-                                        <input type="hidden" name="request_type" value="{{ request.request_type }}">
-                                        <td class="text-center"><a href="{% url 'medical:medicalclearance' request.patient.student.student_id %}">{{ request.patient.student.student_id }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:medicalclearance' request.patient.student.student_id %}">{{ request.patient.student.lastname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:medicalclearance' request.patient.student.student_id %}">{{ request.patient.student.firstname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:medicalclearance' request.patient.student.student_id %}">{{ request.request_type }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:medicalclearance' request.patient.student.student_id %}">{{ request.date_approved }}</a></td>
-                                        <td>
-                                            <button type="submit" name="action" value="done" class="approve bg-green-600 text-[14px] rounded-md p-2">Mark As Done</button>
-                                        </td>
-                                    </form>
-                                </tr>
-                            {% elif request.request_type == "Medical Certificate for Intramurals" %}
-                                <tr class="tr-td">
-                                    <form action="" method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="request_id" value="{{ request.request_id }}">
-                                        <input type="hidden" name="request_type" value="{{ request.request_type }}">
-                                        <td class="text-center"><a href="{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}">{{ request.patient.student.student_id }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}">{{ request.patient.student.lastname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}">{{ request.patient.student.firstname|title }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}">{{ request.request_type }}</a></td>
-                                        <td class="text-center"><a href="{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}">{{ request.date_approved }}</a></td>
-                                        <td class="flex justify-center gap-2">
-                                            <button type="submit" name="action" value="done" class="approve bg-green-600 text-[14px] rounded-md p-2">Mark As Done</button>
-                                        </td>
-                                    </form>
-                                </tr>
-                            {% endif %}
+                        {% if request.approve and not request.is_completed %}
+                            <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
+                                <form action="" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="request_id" value="{{ request.request_id }}">
+                                    <input type="hidden" name="request_type" value="{{ request.request_type }}">
+                                    <td class="text-center p-4"><a href="{% if request.request_type == 'Eligibility Form' %}{% url 'medical:eligibility_form' request.patient.student.student_id %}{% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}{% url 'medical:medicalclearance' request.patient.student.student_id %}{% elif request.request_type == 'Medical Certificate for Intramurals' %}{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}{% endif %}" class="text-blue-600 hover:underline">{{ request.patient.student.student_id }}</a></td>
+                                    <td class="text-center p-4"><a href="{% if request.request_type == 'Eligibility Form' %}{% url 'medical:eligibility_form' request.patient.student.student_id %}{% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}{% url 'medical:medicalclearance' request.patient.student.student_id %}{% elif request.request_type == 'Medical Certificate for Intramurals' %}{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}{% endif %}" class="text-blue-600 hover:underline">{{ request.patient.student.lastname|title }}</a></td>
+                                    <td class="text-center p-4"><a href="{% if request.request_type == 'Eligibility Form' %}{% url 'medical:eligibility_form' request.patient.student.student_id %}{% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}{% url 'medical:medicalclearance' request.patient.student.student_id %}{% elif request.request_type == 'Medical Certificate for Intramurals' %}{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}{% endif %}" class="text-blue-600 hover:underline">{{ request.patient.student.firstname|title }}</a></td>
+                                    <td class="text-center p-4"><a href="{% if request.request_type == 'Eligibility Form' %}{% url 'medical:eligibility_form' request.patient.student.student_id %}{% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}{% url 'medical:medicalclearance' request.patient.student.student_id %}{% elif request.request_type == 'Medical Certificate for Intramurals' %}{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}{% endif %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a></td>
+                                    <td class="text-center p-4"><a href="{% if request.request_type == 'Eligibility Form' %}{% url 'medical:eligibility_form' request.patient.student.student_id %}{% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}{% url 'medical:medicalclearance' request.patient.student.student_id %}{% elif request.request_type == 'Medical Certificate for Intramurals' %}{% url 'medical:med_cert_for_intrams' request.patient.student.student_id %}{% endif %}" class="text-blue-600 hover:underline">{{ request.date_approved }}</a></td>
+                                    <td class="text-center p-4">
+                                        <button type="submit" name="action" value="done" class="bg-green-600 text-white text-sm rounded-md p-2 hover:bg-green-700 transition-colors">Mark As Done</button>
+                                    </td>
+                                </form>
+                            </tr>
                         {% endif %}
                     {% empty %}
-                        <tr class="tr-td">
-                            <td colspan="6">No requests found</td>
+                        <tr>
+                            <td colspan="6" class="text-center p-4 text-gray-500">No approved requests found</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -146,20 +130,23 @@
 {% block extra_js %}
 <script>
     function showTab(tabId) {
-        var tabs = document.querySelectorAll('button[type="button"]');
-        var contents = document.querySelectorAll('#request, #approve-table');
+        var tabs = document.querySelectorAll('.tab-button');
+        var contents = document.querySelectorAll('.tab-content');
         tabs.forEach(function(tab) {
             tab.classList.remove('active');
         });
         contents.forEach(function(content) {
-            content.style.display = 'none';
+            content.classList.remove('active');
         });
-        document.getElementById(tabId).style.display = 'block';
+        document.getElementById(tabId).classList.add('active');
         document.querySelector('.tab-button[onclick="showTab(\'' + tabId + '\')"]').classList.add('active');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        showTab('request');
+        // Initialize based on hash or default to 'request'
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('tab') || 'request';
+        showTab(initialTab);
     });
 </script>
 {% endblock %}

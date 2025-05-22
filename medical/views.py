@@ -528,7 +528,8 @@ def view_request(request):
                     transac_type="Medical Document Request",
                     transac_date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 )
-                patient_request.delete()
+                patient_request.is_completed = True
+                patient_request.save()
                 messages.success(request, "Transaction successfully completed")
         except PatientRequest.DoesNotExist:
             messages.error(request, "Something went wrong")
@@ -1561,6 +1562,22 @@ def verify_pwd(request, student_id):
                 risk_assessment.pwd_verification_date = timezone.now()
                 risk_assessment.pwd_verified_by = request.user
                 risk_assessment.save()
+
+                # Send email notification
+                subject = 'PWD Status Verified'
+                message = f'Dear {patient.student.firstname} {patient.student.lastname},\n\n'
+                message += 'Your PWD status has been verified by the medical staff. '
+                message += 'You can now access PWD-related services and benefits.\n\n'
+                message += 'Best regards,\nHealthHub Connect Team'
+                
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [patient.student.email],
+                    fail_silently=False,
+                )
+
                 messages.success(request, f"PWD status verified for student {student_id}")
             except Patient.DoesNotExist:
                 messages.error(request, "Student not found")

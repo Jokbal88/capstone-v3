@@ -28,7 +28,7 @@
     >
       <nav
         id="navbar"
-        class="bg-[#fff] {% if user.is_superuser or user.is_staff %}flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[25%] min-h-screen fixed{% else %}flex justify-between h-[5rem]{% endif %}"
+        class="bg-[#fff] {% if user.is_superuser or user.is_staff %}flex xs:flex-row xs:justify-between lg:justify-normal lg:flex-col xs:w-full lg:w-[25%] sticky {% else %}flex justify-between h-[5rem]{% endif %}"
       >
         <div
           class="flex gap-2 p-4 items-stretch bg-[#3b82f6] {% if user.is_superuser or user.is_staff %} justify-center {% else %} justify-normal {% endif %}"
@@ -44,10 +44,11 @@
           </h1>
         </div>
         <ul
-          class="{% if user.is_superuser or user.is_staff %} xs:hidden lg:flex flex-col {% else %} flex flex-row w-full justify-between items-center{% endif %}"
+          class="{% if user.is_superuser or user.is_staff %} xs:hidden lg:flex overflow-hidden{% else %} flex flex-row w-full justify-between items-center{% endif %}"
         >
           {% if user.is_superuser or user.is_staff %}
-          <li>
+          <div class="h-full w-full flex flex-col overflow-auto scrollbar-hide">
+            <li>
             <a
               class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] py-4 font-medium hover:border-r-[4px] hover:border-[#3b82f6] transition-all {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-[#f0f0f0] lg:border-[#3b82f6] lg:border-r-[4px] {% endif %}"
               href="{% url 'main:admin_dashboard' %}"
@@ -123,21 +124,23 @@
                 Logout
             </a>
           </li>
+          </div>
+          
           {% else %}
-          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+          <li class="h-full transition-all hover:bg-[#f0f0f0] text-center hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'student_dashboard' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
               <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium  " href="{% url 'main:student_dashboard' %}">Dashboard</a>
           </li>
-          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+          <li class="h-full transition-all hover:bg-[#f0f0f0] text-center leading-tight  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'request' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
               <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:request' %}">Documentary Request</a>
           </li>
-          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+          <li class="h-full transition-all hover:bg-[#f0f0f0] text-center leading-tight  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'upload_requirements' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
               <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:upload_requirements' %}">Medical Requirements Upload</a>
           </li>
-          <li class="h-full transition-all hover:bg-[#f0f0f0]  hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
+          <li class="h-full transition-all hover:bg-[#f0f0f0] text-center leading-tight hover:border-b-[4px] hover:border-[#3b82f6] {% if request.resolver_match.url_name == 'dentalservice' %}border-[#3b82f6] border-b-[4px] bg-[#f0f0f0]{% endif %}">
               <a class="flex justify-center items-center h-full tracking-tight px-4 font-medium " href="{% url 'medical:dentalservice' %}">Dental Services Availment</a>
           </li>
-            <li class="flex items-center gap-2 pr-4 ml-auto">
-              <span class="font-semibold text-black">{{ user.get_full_name|default:user.username }}</span>
+            <li class="flex items-center gap-2 ml-auto">
+              <span class="font-semibold text-black text-center">{{ user.get_full_name|default:user.username }}</span>
               <a class="flex justify-center items-center h-full tracking-tight hover:bg-[#f0f0f0] px-4 font-medium hover:border-b-[4px] hover:border-[#3b82f6] transition-all text-blue-600 border border-blue-200 rounded" href="{% url 'main:logout' %}">Logout</a>
           </li>
           {% endif %}
@@ -159,7 +162,7 @@
         </svg>
       </nav>
       <section
-        class="bg-[#E5F2FF] h-full ml-[25%] w-full flex xs:p-4 lg:p-[1.5rem]{% if user.is_superuser or user.is_staff %} overflow-auto{% else %} justify-center items-center overflow-hidden{% endif %}"
+        class="bg-[#E5F2FF] h-full w-full flex xs:p-4 lg:p-[1.5rem]{% if user.is_superuser or user.is_staff %} overflow-auto{% else %} justify-center items-center overflow-hidden{% endif %}"
       >
         {% block content %} {% endblock %}
       </section>

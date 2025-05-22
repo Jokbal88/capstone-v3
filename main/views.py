@@ -76,7 +76,7 @@ def login_view(request):
             if user.is_staff or user.is_superuser:
                 redirect_url = 'main:admin_dashboard'
             else:
-                redirect_url = 'main:patient_form'
+                redirect_url = 'main:student_dashboard'
             
             return JsonResponse({
                 'status': 'success',
@@ -297,18 +297,17 @@ def main_view(request):
 
 @login_required
 def patient_form(request):
-    try:
-        # Get the medical student instance
-        medical_student = medical_models.Student.objects.get(student_id=request.user.username)
-        
-        if request.method == 'GET':
-            try:
+    if request.method == 'GET':
+        try:
             patient = medical_models.Patient.objects.get(student_id=request.user.username)
-            return redirect('main:student_dashboard') if patient else None
-            except medical_models.Patient.DoesNotExist:
-                pass
-        
-        if request.method == 'POST':
+            return redirect('main:dashboard')
+        except medical_models.Patient.DoesNotExist:
+            pass
+    if request.method == 'POST':
+        try:
+            # Get the medical student instance
+            medical_student = medical_models.Student.objects.get(student_id=request.user.username)
+            
             # Create PhysicalExamination first
             physical_exam = medical_models.PhysicalExamination.objects.create(
                 student=medical_student,
@@ -404,13 +403,13 @@ def patient_form(request):
             messages.success(request, 'Medical information submitted successfully!')
             return redirect('main:student_dashboard')
             
-    except medical_models.Student.DoesNotExist:
-        messages.error(request, 'Student profile not found.')
-        return redirect('main:login')
-    except Exception as e:
-        print(e)
-        messages.error(request, f'Error saving patient information: {str(e)}')
-        return render(request, 'patient_form.html')
+        except medical_models.Student.DoesNotExist:
+            messages.error(request, 'Student profile not found.')
+            return redirect('main:login')
+        except Exception as e:
+            print(e)
+            messages.error(request, f'Error saving patient information: {str(e)}')
+            return render(request, 'patient_form.html')
         
     return render(request, 'patient_form.html')
 

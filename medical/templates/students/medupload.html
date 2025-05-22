@@ -49,7 +49,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-1/2 shadow-lg">
+<div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Upload Medical Requirements</h2>
     <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1">
@@ -64,9 +64,9 @@
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
                 <thead class="bg-[#e6e6e6]">
                     <tr>
-                        <th class="p-2 text-left">Remarks</th>
-                        <th class="p-2 text-left">Requirement Type</th>
-                        <th class="p-2 text-left">File</th>
+                        <th class="p-2 text-center">Remarks</th>
+                        <th class="p-2 text-center">Requirement Type</th>
+                        <th class="p-2 text-center">File</th>
                         <th class="p-2 text-center">Status</th>
                         <th class="p-2 text-center">Upload</th>
                     </tr>
@@ -74,7 +74,7 @@
                 <tbody>
                     {% for req in requirements %}
                     <tr class="bg-white border-b hover:bg-gray-50">
-                        <td class="p-2">
+                        <td class="p-2 text-center">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' %}{{ md.x_ray_remarks|default:'None' }}
                                 {% elif req.slug == 'cbc' %}{{ md.cbc_remarks|default:'None' }}
@@ -84,8 +84,8 @@
                                 {% else %}None{% endif %}
                             {% else %}None{% endif %}
                         </td>
-                        <td class="p-2 font-medium">{{ req.name }}</td>
-                        <td class="p-2">
+                        <td class="p-2 font-medium text-center">{{ req.name }}</td>
+                        <td class="p-2 text-center">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
                                     <button onclick="previewFile('{{ md.chest_xray.url }}')" class="text-blue-600 hover:underline">Preview</button>
@@ -123,13 +123,13 @@
                                 <span class="text-gray-400">None</span>
         {% endif %}
                         </td>
-                        <td class="p-2 text-center">
+                        <td class="p-2 flex justify-center">
                             {% if md %}
-                                <form method="POST" enctype="multipart/form-data" class="flex flex-col items-center gap-2">
+                                <form method="POST" enctype="multipart/form-data" class="flex items-center">
                                     {% csrf_token %}
                                     <input type="hidden" name="student_id" value="{{ user.username }}">
                                     <input type="hidden" name="requirement_type" value="{{ req.slug }}">
-                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full mb-2" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <input type="file" name="file" class="file-input file-input-bordered file-input-sm w-full" accept=".pdf,.jpg,.jpeg,.png" required>
                                     <button type="submit" class="bg-[#3b82f6] text-white py-1 px-3 rounded-md font-semibold hover:bg-[#2563eb] transition-colors">Upload</button>
                                 </form>
                             {% else %}
