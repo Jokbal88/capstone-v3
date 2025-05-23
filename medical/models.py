@@ -4,6 +4,11 @@ from django.contrib.auth.models import User
 from main.models import Student
 from django.utils import timezone
 
+# Helper function for profile picture upload path
+def profile_picture_path(instance, filename):
+    # File will be uploaded to MEDIA_ROOT/medical/<lastname>_<firstname>/profile_picture/<filename>
+    return os.path.join('medical', f'{instance.student.lastname}_{instance.student.firstname}', 'profile_picture', filename)
+
 # Create your models here.
 class Student(models.Model):
     student_id = models.CharField(max_length=100, primary_key=True)
@@ -22,6 +27,9 @@ class Student(models.Model):
 
 class Patient(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    # Add profile picture field
+    profile_picture = models.ImageField(upload_to=profile_picture_path, null=True, blank=True)
+
     birth_date = models.CharField(max_length=100)
     age = models.PositiveIntegerField()
     weight = models.FloatField()

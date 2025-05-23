@@ -28,6 +28,7 @@ import uuid
 from django.utils.crypto import get_random_string
 from django.contrib.messages import get_messages
 from django.views.decorators.csrf import ensure_csrf_cookie
+import re
 
 def is_admin(user):
     return user.is_staff
@@ -67,6 +68,16 @@ def login_view(request):
                 })
 
             login(request, user)
+            
+            # --- Handle Welcome Message for First Login --- #
+            # Check if this is the user's first login
+            if not request.session.get('_has_logged_in_before', False):
+                messages.success(request, 'Welcome to HealthHub Connect!')
+                request.session['_has_logged_in_before'] = True # Set the flag
+            else:
+                # If not the first login, show a 'Welcome!' message
+                messages.info(request, 'Welcome!')
+            # --- End of Welcome Message Logic ---
             
             # Handle admin login
             if next_url and (user.is_staff or user.is_superuser):
@@ -115,6 +126,49 @@ def register(request):
             degree = request.POST.get('course')
             email = request.POST.get('email')
             password = request.POST.get('password')
+            confirm_password = request.POST.get('confirmPassword')
+
+            # --- Validation Errors --- #
+            general_errors = []
+            password_errors = []
+
+            # Check if passwords match
+            if password != confirm_password:
+                password_errors.append('Passwords do not match.')
+
+            # Check password length (server-side)
+            if len(password) < 8:
+                password_errors.append('Password must be at least 8 characters long.')
+
+            # Check for complexity (using regex)
+            if not re.search(r'[A-Z]', password):
+                password_errors.append('Password must contain at least one uppercase letter.')
+            if not re.search(r'[a-z]', password):
+                password_errors.append('Password must contain at least one lowercase letter.')
+            if not re.search(r'\d', password):
+                password_errors.append('Password must contain at least one digit.')
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+                password_errors.append('Password must contain at least one symbol (!@#$%^&*(),.?":{}|<>).')
+
+            # Check if student ID or email already exists
+            if User.objects.filter(username=student_id).exists():
+                general_errors.append(f'Student ID {student_id} is already registered.')
+            if User.objects.filter(email=email).exists():
+                general_errors.append(f'Email {email} is already registered.')
+
+            # If there are any errors (password or general), return with errors
+            if general_errors or password_errors:
+                # Add general errors to Django messages (for SweetAlert)
+                for error in general_errors:
+                    messages.error(request, error)
+                # Return password errors in context for inline display
+                return render(request, 'register.html', {
+                    'password_errors': password_errors,
+                    'form_data': request.POST # Pass POST data back to repopulate form
+                })
+
+            # --- If validation passes, proceed with creation --- #
+            print("Validation passed. Attempting to create user and student.") # Debug log
 
             # Create User account
             user = User.objects.create_user(
@@ -124,9 +178,10 @@ def register(request):
                 first_name=first_name,
                 last_name=last_name
             )
+            print(f"User account created for username: {user.username}") # Debug log
 
             # Create Student in main app only
-            Student.objects.create(
+            student = Student.objects.create(
                 student_id=student_id,
                 lrn=lrn,
                 lastname=last_name,
@@ -144,14 +199,19 @@ def register(request):
             
             # Send verification email
             send_verification_email(user, verification)
+            print("Verification email sent.") # Debug log
 
             messages.success(request, 'Registration successful! Please check your email to verify your account.')
+            print("Registration successful, redirecting to login.") # Debug log
             return redirect('main:login')
 
         except Exception as e:
-            messages.error(request, f'Registration failed: {str(e)}')
-            return redirect('main:register')
+            # Catch any other unexpected errors
+            print(f"An unexpected error occurred during registration: {e}") # Debug log: print the specific error
+            messages.error(request, f'An unexpected error occurred during registration: {str(e)}')
+            return render(request, 'register.html', request.POST) # Render with POST data
 
+    # For GET request, render the empty form
     return render(request, 'register.html')
 
 def verify_email(request, token):
@@ -325,7 +385,7 @@ def patient_form(request):
                 allergies=process_checkboxes(request.POST.getlist('allergies'), request.POST.get('other_allergies')),
                 medications=request.POST.get('medications', 'None'),
                 home_address=request.POST.get('home_address'),
-                city='Cebu City',
+                city=request.POST.get('city'),
                 state_province=request.POST.get('state_province'),
                 postal_zipcode=request.POST.get('postal_zipcode'),
                 country=request.POST.get('country'),
@@ -411,7 +471,12 @@ def patient_form(request):
             messages.error(request, f'Error saving patient information: {str(e)}')
             return render(request, 'patient_form.html')
         
-    return render(request, 'patient_form.html')
+    # For GET request or POST with errors, render the form with current date
+    today = date.today()
+    context = {
+        'current_date': today
+    }
+    return render(request, 'patient_form.html', context)
 
 def calculate_age(birthdate):
     born = datetime.strptime(birthdate, '%Y-%m-%d').date()
@@ -680,3 +745,39 @@ def logout_view(request):
 
 def email_verification(request):
     return render(request, 'email_verification.html')
+
+@login_required
+def upload_profile_picture_view(request):
+    if request.method == 'POST':
+        # Ensure a file was uploaded
+        if 'profile_picture' in request.FILES:
+            uploaded_file = request.FILES['profile_picture']
+            user = request.user
+            
+            try:
+                # Get the patient instance for the logged-in user
+                # Assuming Student.student_id matches User.username
+                student = medical_models.Student.objects.get(student_id=user.username)
+                patient = medical_models.Patient.objects.get(student=student)
+                
+                # Save the uploaded file to the profile_picture field
+                patient.profile_picture = uploaded_file
+                patient.save()
+                messages.success(request, 'Profile picture uploaded successfully!')
+                
+            except medical_models.Student.DoesNotExist:
+                messages.error(request, 'Student profile not found.')
+            except medical_models.Patient.DoesNotExist:
+                messages.error(request, 'Patient profile not found.')
+            except Exception as e:
+                messages.error(request, f'Error uploading profile picture: {e}')
+                
+        else:
+            messages.error(request, 'No file was uploaded.')
+            
+        # Redirect back to the student dashboard
+        return redirect('main:student_dashboard')
+    else:
+        # Handle GET requests if necessary, or return an error
+        messages.error(request, 'Invalid request method.')
+        return redirect('main:student_dashboard')

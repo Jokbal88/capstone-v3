@@ -28,7 +28,7 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG') is None # Set DEBUG to True if environment variable is NOT set
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -39,9 +39,9 @@ EMAIL_HOST_USER = 'ctuhealthhubconnect@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'tmuk uohv hopc jgqs'  # Your Gmail app password
 DEFAULT_FROM_EMAIL = 'ctuhealthhubconnect@gmail.com'
 
-SITE_URL = 'https://capstone-v3.onrender.com' if not DEBUG else 'http://localhost:8000'  # Use production URL when not in debug mode
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000') if DEBUG else os.environ.get('SITE_URL', 'https://capstone-v3.onrender.com')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 # Application definition
 
@@ -147,6 +147,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
 # Security Settings
+# These settings are active only when DEBUG is False (production)
 if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -157,3 +158,11 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+else:
+    # Settings for DEBUG=True (development)
+    SECURE_SSL_REDIRECT = False # Ensure no redirection in development
+    SESSION_COOKIE_SECURE = False # Allow HTTP for sessions in development
+    CSRF_COOKIE_SECURE = False # Allow HTTP for CSRF in development
+    SECURE_BROWSER_XSS_FILTER = False
+    SECURE_CONTENT_TYPE_NOSNIFF = False
+    X_FRAME_OPTIONS = 'SAMEORIGIN' # Or 'ALLOW-FROM ...' as needed for development if using frames

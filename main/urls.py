@@ -22,6 +22,7 @@ urlpatterns = [
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
     path('email-verification/', views.email_verification, name='email_verification'),
     path('resend-verification/', views.resend_verification, name='resend_verification'),
+    path('upload-profile-picture/', views.upload_profile_picture_view, name='upload_profile_picture'),
 ]
 
 if settings.DEBUG:

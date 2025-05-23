@@ -140,15 +140,15 @@
                         <td class="p-2 text-center">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <button type="button" onclick="previewFile('{{ md.chest_xray.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.chest_xray.name }}</button>
+                                    <button type="button" onclick="previewFile('{{ md.chest_xray.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <button type="button" onclick="previewFile('{{ md.cbc.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.cbc.name }}</button>
+                                    <button type="button" onclick="previewFile('{{ md.cbc.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <button type="button" onclick="previewFile('{{ md.drug_test.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.drug_test.name }}</button>
+                                    <button type="button" onclick="previewFile('{{ md.drug_test.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <button type="button" onclick="previewFile('{{ md.stool_examination.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.stool_examination.name }}</button>
+                                    <button type="button" onclick="previewFile('{{ md.stool_examination.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <button type="button" onclick="previewFile('{{ md.pwd_card.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">{{ md.pwd_card.name }}</button>
+                                    <button type="button" onclick="previewFile('{{ md.pwd_card.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}

@@ -18,15 +18,19 @@
         display: block;
     }
     .profile-icon {
-        font-size: 4rem;
-        width: 8rem;
-        height: 8rem;
+        font-size: 6rem;
+        width: 12rem;
+        height: 12rem;
         display: flex;
         align-items: center;
         justify-content: center;
         background-color: #E5F2FF;
         color: #3B82F6;
         border-radius: 9999px;
+        cursor: pointer;
+    }
+    .profile-icon img {
+        cursor: pointer;
     }
     /* Hide scrollbar but maintain functionality */
     .custom-scrollbar {
@@ -117,6 +121,46 @@
         cursor: default;
         color: #D1D5DB;
     }
+    /* Styles for the Profile Picture Preview Modal */
+    .profile-preview-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    .profile-preview-modal.active {
+        display: flex; /* Show when active */
+    }
+    .profile-preview-modal-content {
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        background-color: white; /* Optional: if you want a background behind the image */
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .profile-preview-modal-content img {
+        display: block;
+        max-width: 100%;
+        max-height: 80vh; /* Limit image height to avoid overflow */
+        margin: auto;
+    }
+    .profile-preview-close {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 1.5rem;
+        color: #fff; /* White color for visibility on dark overlay */
+        cursor: pointer;
+        z-index: 10000;
+    }
 </style>
 {% endblock %}
 
@@ -125,15 +169,44 @@
     <div class="w-[1300px] bg-white rounded-[24px] shadow-lg overflow-hidden flex ml-4">
     {% if patient %}
         <!-- Left: Profile Section -->
-        <div class="w-[260px] p-6 bg-white border-r flex flex-col items-center text-center">
-            <div class="profile-icon mb-6">
-                <i class="fas fa-user-circle"></i>
-            </div>
-            <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
-            <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
-            <p class="text-gray-600">{{ student.degree }}</p>
-            <p class="text-gray-600 mb-4">Year {{ student.year_level }}</p>
-            <button id="editProfileBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Edit Profile</button>
+        <div class="w-[260px] p-6 bg-white border-r flex flex-col items-start text-left">
+            <form id="profile-picture-form" method="post" action="{% url 'main:upload_profile_picture' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if patient.profile_picture %}
+                    <div class="profile-icon mb-6">
+                        <img src="{{ patient.profile_picture.url }}" alt="Profile Picture" class="rounded-full w-full h-full object-cover">
+                    </div>
+                {% else %}
+                    <div class="profile-icon mb-6">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                {% endif %}
+                <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
+                <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
+                <p class="text-gray-600 mb-2">{{ student.degree }}, Year {{ student.year_level }}</p>
+                
+                <p class="text-gray-600 mb-2">Sex: {{ student.sex }}</p>
+                {% if patient.birth_date %}
+                    <p class="text-gray-600 mb-2">Birth Date: {{ patient.birth_date }}</p>
+                {% endif %}
+                {% if patient.age %}
+                     <p class="text-gray-600 mb-2">Age: {{ patient.age }}</p>
+                {% endif %}
+                {% if patient.civil_status %}
+                    <p class="text-gray-600 mb-2">Civil Status: {{ patient.civil_status }}</p>
+                {% endif %}
+                 {% if patient.nationality %}
+                    <p class="text-gray-600 mb-2">Nationality: {{ patient.nationality }}</p>
+                {% endif %}
+                 {% if patient.religion %}
+                    <p class="text-gray-600 mb-2">Religion: {{ patient.religion }}</p>
+                {% endif %}
+
+                <!-- Profile Picture Upload (Hidden Input) -->
+                <input type="file" id="profile-picture-upload" name="profile_picture" class="hidden" accept="image/*">
+
+                <button type="button" id="editProfileBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Upload Profile Picture</button>
+            </form>
 
             <!-- Edit Profile Modal -->
             <div id="editProfileModal" class="hidden fixed inset-0 bg-black bg-opacity-40 items-center justify-center z-50">
@@ -160,10 +233,10 @@
                         <div class="mb-4">
                             <label class="block text-sm font-medium">Year Level</label>
                             <input type="text" class="w-full border rounded px-2 py-1" value="{{ student.year_level }}" />
-            </div>
+                        </div>
                         <button type="button" class="w-full bg-blue-500 text-white rounded py-2 font-semibold">Save Changes</button>
                     </form>
-            </div>
+                </div>
             </div>
         </div>
         <!-- Center: Tabbed Information -->
@@ -364,7 +437,7 @@
             </div>
         </div>
         <!-- Right: Requests Tracker -->
-        <div class="w-[260px] p-6 bg-gray-50 border-l flex flex-col">
+        <div class="w-[350px] p-6 bg-gray-50 border-l flex flex-col">
             <h2 class="text-lg font-bold text-gray-800 mb-4">My Requests</h2>
             <div class="flex-1 overflow-y-auto rounded-lg mb-6">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
@@ -428,20 +501,47 @@
 
 {% block extra_js %}
 <script>
-// Edit Profile Modal Logic
-const editBtn = document.getElementById('editProfileBtn');
-const modal = document.getElementById('editProfileModal');
-const closeModal = document.getElementById('closeEditProfile');
-if (editBtn && modal && closeModal) {
-    editBtn.onclick = () => modal.classList.remove('hidden');
-    closeModal.onclick = () => modal.classList.add('hidden');
-    window.onclick = (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
-    };
-}
-
-// Tab Switching Logic
 document.addEventListener('DOMContentLoaded', function() {
+    // Declare variables at the top of the scope
+    const editBtn = document.getElementById('editProfileBtn');
+    const modal = document.getElementById('editProfileModal');
+    const closeModal = document.getElementById('closeEditProfile');
+    const profilePictureInput = document.getElementById('profile-picture-upload'); // Get the hidden file input
+    const profilePictureForm = document.getElementById('profile-picture-form'); // Get the form
+    const uploadUrl = "{% url 'main:upload_profile_picture' %}"; // Get the upload URL from the template
+
+    // Edit Profile Modal Logic (using already declared variables)
+    if (editBtn) {
+        editBtn.onclick = () => {
+            // Trigger the hidden file input click
+            profilePictureInput.click();
+            // You might also want to open the modal depending on desired workflow
+            // modal.classList.remove('hidden');
+        };
+    }
+
+    // Listen for changes on the hidden file input
+    if (profilePictureInput) {
+        profilePictureInput.addEventListener('change', function() {
+            // If a file is selected, set the form action and submit
+            if (this.files && this.files[0]) {
+                profilePictureForm.action = uploadUrl; // Set the form's action
+                profilePictureForm.submit();
+            }
+        });
+    }
+
+    if (modal && closeModal) {
+        closeModal.onclick = () => modal.classList.add('hidden');
+        window.onclick = (e) => {
+            if (e.target === modal) modal.classList.add('hidden');
+        };
+    }
+
+    // Profile Picture Preview Logic (wrapped in a function and called here)
+    initializeProfilePreview();
+
+    // Tab Switching Logic
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -510,6 +610,55 @@ document.addEventListener('DOMContentLoaded', function() {
         calendarDays.appendChild(emptyDay);
     }
 });
+
+// Function to initialize profile preview (Definition remains here)
+function initializeProfilePreview() {
+    const profilePictureContainer = document.querySelector('.profile-icon'); // Get the profile icon/image container
+    console.log('Selected profilePictureContainer:', profilePictureContainer); // Debug log: check if element is found
+    const previewModal = document.getElementById('profile-preview-modal');
+    const previewImage = document.getElementById('profile-preview-image');
+    const closePreview = document.getElementById('profile-preview-close');
+
+    if (profilePictureContainer && previewModal && previewImage && closePreview) {
+        profilePictureContainer.addEventListener('click', () => {
+            console.log('Profile icon clicked!'); // Debug log
+            // Check if a profile picture exists
+            const profilePictureUrl = profilePictureContainer.querySelector('img') ? profilePictureContainer.querySelector('img').src : null;
+
+            console.log('Profile picture URL:', profilePictureUrl); // Debug log
+
+            if (profilePictureUrl) {
+                previewImage.src = profilePictureUrl; // Set the image source
+                previewModal.classList.add('active'); // Show the modal using the active class
+                console.log('Preview modal shown.'); // Debug log
+            } else {
+                console.log('No profile picture found, not showing modal.'); // Debug log
+            }
+        });
+
+        // Close modal when clicking the close button or outside the image
+        closePreview.addEventListener('click', () => {
+            previewModal.classList.remove('active'); // Hide the modal
+            previewImage.src = ''; // Clear the image source
+        });
+
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) { // Check if the click was on the modal background
+                previewModal.classList.remove('active'); // Hide the modal
+                previewImage.src = ''; // Clear the image source
+            }
+        });
+    }
+}
 </script>
 {% endblock %}
+
+<!-- Profile Picture Preview Modal HTML -->
+<div id="profile-preview-modal" class="profile-preview-modal hidden">
+    <div class="profile-preview-modal-content">
+        <span class="profile-preview-close">&times;</span>
+        <img id="profile-preview-image" src="" alt="Profile Picture Preview">
+    </div>
+</div>
+
 {% endblock %}
