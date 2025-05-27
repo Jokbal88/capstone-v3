@@ -27,14 +27,24 @@ class Student(models.Model):
         return f"{self.student_id} - {self.lastname}, {self.firstname}"
 
 class EmailVerification(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
-    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
-    
-    def is_token_expired(self):
-        # Token expires after 24 hours
-        return (timezone.now() - self.created_at).total_seconds() > 86400
-    
+
+    def is_otp_expired(self):
+        return timezone.now() > self.created_at + timezone.timedelta(minutes=5)
+
     def __str__(self):
         return f"Verification for {self.user.email}"
+
+class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('Student', 'Student'),
+        ('Faculty', 'Faculty'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Student')
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"

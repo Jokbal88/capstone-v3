@@ -136,7 +136,17 @@ STATICFILES_DIRS = [
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Simplified whitenoise configuration
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Enable whitenoise compression and caching
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_ALLOW_ALL_ORIGINS = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

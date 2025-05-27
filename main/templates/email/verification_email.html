@@ -37,20 +37,19 @@
             padding-bottom: 15px; /* Adjusted padding */
             border-bottom: 1px solid #eee;
         }
-        .button {
-            display: block; /* Make button a block element */
-            width: 100%; /* Full width button */
-            padding: 12px 0; /* Adjusted padding */
-            background-color: #007bff; /* Example blue color */
-            color: white !important;
+        .otp-code {
+            display: block;
+            width: 100%;
+            padding: 20px 0;
+            background-color: #f8f9fa;
+            color: #007bff;
             text-decoration: none;
             border-radius: 5px;
             margin: 20px 0;
             font-weight: bold;
-            text-align: center; /* Center button text */
-        }
-        .button:hover {
-            background-color: #0056b3;
+            text-align: center;
+            font-size: 32px;
+            letter-spacing: 5px;
         }
         .footer {
             margin-top: 30px;
@@ -81,11 +80,11 @@
 
         <p>Hello {{ user.first_name }},</p>
 
-        <p>Thank you for registering with HealthHub Connect. To complete your registration and access all features, please verify your email address by clicking the button below:</p>
+        <p>Thank you for registering with HealthHub Connect. To complete your registration and access all features, please use the following verification code:</p>
 
-        <a href="{{ verification_url }}" class="button">Verify Email Address</a>
+        <div class="otp-code">{{ otp }}</div>
 
-        <p>This verification link will expire in 24 hours.</p>
+        <p>This verification code will expire in 5 minutes.</p>
 
         <p>If you did not create an account with HealthHub Connect, please ignore this email.</p>
     </div>

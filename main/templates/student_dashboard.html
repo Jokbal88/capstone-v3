@@ -177,12 +177,12 @@
                         <img src="{{ patient.profile_picture.url }}" alt="Profile Picture" class="rounded-full w-full h-full object-cover">
                     </div>
                 {% else %}
-                    <div class="profile-icon mb-6">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
+            <div class="profile-icon mb-6">
+                <i class="fas fa-user-circle"></i>
+            </div>
                 {% endif %}
-                <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
-                <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">{{ student.firstname }} {{ student.middlename }} {{ student.lastname }}</h2>
+            <p class="text-gray-600 mb-2">Student ID: {{ student.student_id }}</p>
                 <p class="text-gray-600 mb-2">{{ student.degree }}, Year {{ student.year_level }}</p>
                 
                 <p class="text-gray-600 mb-2">Sex: {{ student.sex }}</p>
@@ -233,10 +233,10 @@
                         <div class="mb-4">
                             <label class="block text-sm font-medium">Year Level</label>
                             <input type="text" class="w-full border rounded px-2 py-1" value="{{ student.year_level }}" />
-                        </div>
+            </div>
                         <button type="button" class="w-full bg-blue-500 text-white rounded py-2 font-semibold">Save Changes</button>
                     </form>
-                </div>
+            </div>
             </div>
         </div>
         <!-- Center: Tabbed Information -->
@@ -503,9 +503,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Declare variables at the top of the scope
-    const editBtn = document.getElementById('editProfileBtn');
-    const modal = document.getElementById('editProfileModal');
-    const closeModal = document.getElementById('closeEditProfile');
+const editBtn = document.getElementById('editProfileBtn');
+const modal = document.getElementById('editProfileModal');
+const closeModal = document.getElementById('closeEditProfile');
     const profilePictureInput = document.getElementById('profile-picture-upload'); // Get the hidden file input
     const profilePictureForm = document.getElementById('profile-picture-form'); // Get the form
     const uploadUrl = "{% url 'main:upload_profile_picture' %}"; // Get the upload URL from the template
@@ -532,16 +532,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (modal && closeModal) {
-        closeModal.onclick = () => modal.classList.add('hidden');
-        window.onclick = (e) => {
-            if (e.target === modal) modal.classList.add('hidden');
-        };
-    }
+    closeModal.onclick = () => modal.classList.add('hidden');
+    window.onclick = (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    };
+}
 
     // Profile Picture Preview Logic (wrapped in a function and called here)
     initializeProfilePreview();
 
-    // Tab Switching Logic
+// Tab Switching Logic
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 

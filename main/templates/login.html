@@ -14,7 +14,7 @@
 		<div class="w-1/2 xs:hidden lg:flex">
 			<img class="h-full" src="{% static 'images/auth-image.webp' %}" alt="Consultation image">
 		</div>
-		<div class="xs:w-full lg:w-1/2 flex items-center justify-center xs:p-4 md:p-14 lg:p-[8rem]">
+		<div class="xs:w-full lg:w-1/2 flex items-center justify-center xs:px-2 xs:py-4 md:p-14 lg:p-[8rem]">
 			<div class="flex flex-col w-full gap-4">
 				<div class="flex flex-col gap-2">
 					<div class="self-center">
@@ -26,7 +26,7 @@
 					</div>
 				</div>
 
-				<form action="{% url 'main:login' %}" method="POST" class="flex flex-col gap-1">
+				<form id="loginForm" action="{% url 'main:login' %}" method="POST" class="flex flex-col gap-1">
 					{% csrf_token %}
 					{% if next %}
 					<input type="hidden" name="next" value="{{ next }}">
@@ -44,7 +44,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                             </svg>
                             <svg id="hideIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5" style="display: none;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395m6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                             </svg>
                         </button>
                     </div>
@@ -55,10 +55,47 @@
 						<a href="{% url 'main:recovery' %}" class="text-[14px]">Forgot Password?</a>
 					</div>
 				</form>
+
+                <!-- OTP Verification Form (Hidden by default) -->
+                <form id="otpForm" class="hidden flex-col gap-1 xs:px-2 py-4">
+                    {% csrf_token %}
+                    <div class="text-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-900">Verify Your Email</h2>
+                        <p class="text-sm text-gray-600 mt-2">Please enter the 6-digit verification code sent to your email</p>
+                    </div>
+                    
+                    <div class="flex justify-center gap-x-1 mb-4">
+                        {% for i in "123456" %}
+                        <input type="text" 
+                               name="otp" 
+                               maxlength="1" 
+                               pattern="\d" 
+                               required 
+                               class="w-0 flex-grow h-10 sm:h-11 text-center text-xl border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                               autocomplete="off">
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-sm">
+                            <a href="{% url 'main:resend_verification' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                                Didn't receive the code? Resend
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Verify
+                        </button>
+                    </div>
+                </form>
+
 				<p class="text-[14px]">Don't have an account? <a href="{% url 'main:register' %}" class="text-blue-500 underline">Register</a></p>
 			</div>
 		</div>
     </div>
+
     <script src="{% static 'scripts/login.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -69,7 +106,6 @@
             const messagesElement = document.getElementById('messages-data');
             if (messagesElement) {
                 const messages = JSON.parse(messagesElement.textContent);
-
                 messages.forEach(function(message) {
                     Swal.fire({
                         title: message.tags.charAt(0).toUpperCase() + message.tags.slice(1) + '!',
@@ -79,6 +115,80 @@
                     });
                 });
             }
+
+            // OTP Input Handling
+            const otpInputs = document.querySelectorAll('#otpForm input[name="otp"]');
+            
+            otpInputs.forEach((input, index) => {
+                // Handle input
+                input.addEventListener('input', function(e) {
+                    if (this.value.length === 1) {
+                        if (index < otpInputs.length - 1) {
+                            otpInputs[index + 1].focus();
+                        }
+                    }
+                });
+
+                // Handle backspace
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !this.value && index > 0) {
+                        otpInputs[index - 1].focus();
+                    }
+                });
+
+                // Handle paste
+                input.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+                    if (/^\d+$/.test(pastedData)) {
+                        for (let i = 0; i < pastedData.length; i++) {
+                            if (otpInputs[i]) {
+                                otpInputs[i].value = pastedData[i];
+                            }
+                        }
+                        if (pastedData.length === 6) {
+                            document.getElementById('otpForm').dispatchEvent(new Event('submit'));
+                        }
+                    }
+                });
+            });
+
+            // Handle OTP form submission
+            document.getElementById('otpForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const otp = Array.from(otpInputs).map(input => input.value).join('');
+                
+                const formData = new FormData();
+                formData.append('otp', otp);
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+                fetch('{% url "main:verify_otp" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = data.redirect_url;
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Verification Failed',
+                            text: data.message || 'Invalid verification code'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An error occurred during verification'
+                    });
+                });
+            });
         });
     </script>
 </body>

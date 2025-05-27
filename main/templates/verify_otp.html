@@ -1,0 +1,119 @@
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+
+{% block title %}HealthHub Connect | Verify OTP{% endblock %}
+
+{% block extra_css %}
+{% tailwind_css %}
+<style>
+    .otp-input {
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        font-size: 1.2rem;
+        margin: 0 5px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+    }
+    .otp-input:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Verify Your Email
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Please enter the 6-digit verification code sent to your email
+            </p>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="rounded-md p-4 {% if message.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-green-50 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form class="mt-8 space-y-6" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="email" value="{{ email }}">
+            
+            <div class="flex justify-center space-x-2">
+                {% for i in "123456" %}
+                    <input type="text" 
+                           name="otp" 
+                           maxlength="6" 
+                           pattern="\d{6}" 
+                           required 
+                           class="otp-input"
+                           autocomplete="off"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6); if(this.value.length === 6) this.form.submit();">
+                {% endfor %}
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="text-sm">
+                    <a href="{% url 'main:resend_verification' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                        Didn't receive the code? Resend
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Verify
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = document.querySelectorAll('.otp-input');
+    
+    inputs.forEach((input, index) => {
+        // Handle input
+        input.addEventListener('input', function(e) {
+            if (this.value.length === 1) {
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            }
+        });
+
+        // Handle backspace
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+
+        // Handle paste
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedData = e.clipboardData.getData('text').slice(0, 6);
+            if (/^\d+$/.test(pastedData)) {
+                for (let i = 0; i < pastedData.length; i++) {
+                    if (inputs[i]) {
+                        inputs[i].value = pastedData[i];
+                    }
+                }
+                if (pastedData.length === 6) {
+                    this.form.submit();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

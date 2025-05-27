@@ -147,7 +147,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="p-2">
-                                        <textarea name="prescription_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.prescription_remarks|default:'' }}</textarea>
+                                        <textarea name="prescription_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.prescription_remarks | prescription_remarks:'' }}</textarea>
                                     </td>
                                     <td class="p-2 text-center" rowspan="2">{{ mental_health_record.status|title }}</td>
                                 </tr>
@@ -162,7 +162,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="p-2">
-                                        <textarea name="certification_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.certification_remarks|default:'' }}</textarea>
+                                        <textarea name="certification_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.certification_remarks | default:'' }}</textarea>
                                     </td>
                                 </tr>
                             </tbody>

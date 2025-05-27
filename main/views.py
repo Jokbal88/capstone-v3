@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
-from main.models import Student, EmailVerification
+from main.models import Student, EmailVerification, Profile
 from medical.models import (
     PhysicalExamination,
     Patient,
@@ -29,6 +29,8 @@ from django.utils.crypto import get_random_string
 from django.contrib.messages import get_messages
 from django.views.decorators.csrf import ensure_csrf_cookie
 import re
+import random
+from django.views.decorators.http import require_http_methods
 
 def is_admin(user):
     return user.is_staff
@@ -50,48 +52,28 @@ def login_view(request):
                 user = None
 
         if user is not None:
-            # Check if email is verified
+            # Always generate and send OTP for login
             try:
                 verification = EmailVerification.objects.get(user=user)
-                if not verification.is_verified:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': 'Please verify your email address before logging in.'
-                    })
             except EmailVerification.DoesNotExist:
-                # Create verification if it doesn't exist
                 verification = EmailVerification.objects.create(user=user)
-                send_verification_email(user, verification)
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Please verify your email address before logging in. A new verification email has been sent.'
-                })
-
-            login(request, user)
             
-            # --- Handle Welcome Message for First Login --- #
-            # Check if this is the user's first login
-            if not request.session.get('_has_logged_in_before', False):
-                messages.success(request, 'Welcome to HealthHub Connect!')
-                request.session['_has_logged_in_before'] = True # Set the flag
-            else:
-                # If not the first login, show a 'Welcome!' message
-                messages.info(request, 'Welcome!')
-            # --- End of Welcome Message Logic ---
+            # Generate new OTP
+            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            verification.otp = otp
+            verification.created_at = timezone.now()
+            verification.save()
             
-            # Handle admin login
-            if next_url and (user.is_staff or user.is_superuser):
-                return redirect(next_url)
+            # Send verification email
+            send_verification_email(user, verification)
             
-            # Redirect based on user type
-            if user.is_staff or user.is_superuser:
-                redirect_url = 'main:admin_dashboard'
-            else:
-                redirect_url = 'main:student_dashboard'
+            # Store email in session for OTP verification
+            request.session['verification_email'] = user.email
             
             return JsonResponse({
                 'status': 'success',
-                'redirect_url': reverse(redirect_url)
+                'message': 'OTP sent to your email',
+                'show_otp': True
             })
         else:
             return JsonResponse({
@@ -112,125 +94,188 @@ def login_view(request):
         'next': request.GET.get('next', '')
     })
 
+@require_http_methods(["GET", "POST"])
 def register(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             # Get form data
-            first_name = request.POST.get('firstName')
-            middle_initial = request.POST.get('middleInitial')
-            last_name = request.POST.get('lastName')
-            sex = request.POST.get('sex')
-            year_level = request.POST.get('yrLevel')
-            student_id = request.POST.get('idNumber')
-            lrn = request.POST.get('lrn')
-            degree = request.POST.get('course')
-            email = request.POST.get('email')
-            password = request.POST.get('password')
-            confirm_password = request.POST.get('confirmPassword')
+            firstName = request.POST.get("firstName")
+            middleInitial = request.POST.get("middleInitial")
+            lastName = request.POST.get("lastName")
+            sex = request.POST.get("sex")
+            yrLevel = request.POST.get("yrLevel")
+            idNumber = request.POST.get("idNumber")
+            lrn = request.POST.get("lrn")
+            course = request.POST.get("course")
+            email = request.POST.get("email")
+            password = request.POST.get("password")
+            confirmPassword = request.POST.get("confirmPassword")
+            role = request.POST.get("role", 'Student') # Get selected role, default to Student
 
-            # --- Validation Errors --- #
-            general_errors = []
-            password_errors = []
+            # Validate LRN format only for students
+            if role == 'Student':
+                if not lrn or not lrn.isdigit() or len(lrn) != 12:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'LRN must be exactly 12 digits.'
+                    })
 
-            # Check if passwords match
-            if password != confirm_password:
-                password_errors.append('Passwords do not match.')
+                # Validate ID Number format only for students
+                if not idNumber or not idNumber.isdigit() or len(idNumber) != 7:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'ID Number must be exactly 7 digits.'
+                    })
 
-            # Check password length (server-side)
-            if len(password) < 8:
-                password_errors.append('Password must be at least 8 characters long.')
 
-            # Check for complexity (using regex)
-            if not re.search(r'[A-Z]', password):
-                password_errors.append('Password must contain at least one uppercase letter.')
-            if not re.search(r'[a-z]', password):
-                password_errors.append('Password must contain at least one lowercase letter.')
-            if not re.search(r'\d', password):
-                password_errors.append('Password must contain at least one digit.')
-            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-                password_errors.append('Password must contain at least one symbol (!@#$%^&*(),.?":{}|<>).')
-
-            # Check if student ID or email already exists
-            if User.objects.filter(username=student_id).exists():
-                general_errors.append(f'Student ID {student_id} is already registered.')
+            # Check if email already exists
             if User.objects.filter(email=email).exists():
-                general_errors.append(f'Email {email} is already registered.')
-
-            # If there are any errors (password or general), return with errors
-            if general_errors or password_errors:
-                # Add general errors to Django messages (for SweetAlert)
-                for error in general_errors:
-                    messages.error(request, error)
-                # Return password errors in context for inline display
-                return render(request, 'register.html', {
-                    'password_errors': password_errors,
-                    'form_data': request.POST # Pass POST data back to repopulate form
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Email already registered.'
                 })
 
-            # --- If validation passes, proceed with creation --- #
-            print("Validation passed. Attempting to create user and student.") # Debug log
+            # Check if student ID already exists (only for students)
+            if role == 'Student' and Student.objects.filter(student_id=idNumber).exists():
+                 return JsonResponse({
+                     'status': 'error',
+                     'message': 'Student ID already registered.'
+                 })
 
-            # Create User account
+            # Check if LRN already exists (only for students)
+            if role == 'Student' and Student.objects.filter(lrn=lrn).exists():
+                 return JsonResponse({
+                     'status': 'error',
+                     'message': 'LRN already registered.'
+                 })
+
+            # Validate password
+            if password != confirmPassword:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Passwords do not match.'
+                })
+
+            # Create user
             user = User.objects.create_user(
-                username=student_id,
+                username=email, # Using email as username
                 email=email,
                 password=password,
-                first_name=first_name,
-                last_name=last_name
-            )
-            print(f"User account created for username: {user.username}") # Debug log
-
-            # Create Student in main app only
-            student = Student.objects.create(
-                student_id=student_id,
-                lrn=lrn,
-                lastname=last_name,
-                firstname=first_name,
-                middlename=middle_initial,
-                degree=degree,
-                year_level=int(year_level),
-                sex=sex,
-                email=email,
-                contact_number=''
+                first_name=firstName, # Use Django's built-in fields
+                last_name=lastName,
             )
 
-            # Create email verification
-            verification = EmailVerification.objects.create(user=user)
+            # Create Profile for the user
+            profile = Profile.objects.create(user=user, role=role)
+
+            # Create Student instance only if the role is Student
+            if role == 'Student':
+                 # Further validate required fields for students
+                 if not all([sex, yrLevel, course]):
+                      return JsonResponse({
+                           'status': 'error',
+                           'message': 'Please provide all required student information.'
+                      })
+
+                 Student.objects.create(
+                     student_id=idNumber,
+                     lrn=lrn,
+                     lastname=lastName,
+                     firstname=firstName,
+                     middlename=middleInitial,
+                     degree=course,
+                     year_level=int(yrLevel), # Convert to integer
+                     sex=sex,
+                     email=email,
+                     contact_number='N/A' # Assuming contact number is not collected in this form
+                 )
+
+            # Generate OTP and create verification
+            otp = ''.join(random.choices('0123456789', k=6))
+            verification = EmailVerification.objects.create(user=user, otp=otp)
             
             # Send verification email
             send_verification_email(user, verification)
-            print("Verification email sent.") # Debug log
 
-            messages.success(request, 'Registration successful! Please check your email to verify your account.')
-            print("Registration successful, redirecting to login.") # Debug log
-            return redirect('main:login')
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Registration successful. Please check your email for the verification code.'
+            })
 
         except Exception as e:
-            # Catch any other unexpected errors
-            print(f"An unexpected error occurred during registration: {e}") # Debug log: print the specific error
-            messages.error(request, f'An unexpected error occurred during registration: {str(e)}')
-            return render(request, 'register.html', request.POST) # Render with POST data
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
 
-    # For GET request, render the empty form
-    return render(request, 'register.html')
+    return render(request, "register.html")
 
-def verify_email(request, token):
-    try:
-        verification = EmailVerification.objects.get(token=token)
+def verify_otp(request):
+    if request.method == 'POST':
+        email = request.session.get('verification_email')
+        otp = request.POST.get('otp')
         
-        if verification.is_token_expired():
-            messages.error(request, 'Verification link has expired. Please request a new one.')
-            return redirect('main:login')
+        print(f"Received OTP for email: {email}")
+        print(f"Entered OTP: {otp}")
+
+        if not email:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No verification session found. Please try logging in again.'
+            })
         
-        verification.is_verified = True
-        verification.save()
-        
-        messages.success(request, 'Email verified successfully! You can now log in.')
+        try:
+            user = User.objects.get(email=email)
+            verification = EmailVerification.objects.get(user=user)
+            
+            if verification.is_otp_expired():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Verification code has expired. Please request a new one.'
+                })
+            
+            if verification.otp == otp:
+                print("OTP matched!")
+                verification.is_verified = True
+                verification.save()
+                
+                # Log the user in
+                login(request, user)
+                
+                # Clear the verification session
+                del request.session['verification_email']
+                
+                # Return success response with appropriate redirect URL
+                if user.is_staff or user.is_superuser:
+                    return JsonResponse({
+                        'status': 'success',
+                        'redirect_url': reverse('main:admin_dashboard')
+                    })
+                else:
+                    return JsonResponse({
+                        'status': 'success',
+                        'redirect_url': reverse('main:student_dashboard')
+                    })
+            else:
+                print(f"OTP mismatch. Stored OTP: {verification.otp}")
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Invalid verification code.'
+                })
+                
+        except (User.DoesNotExist, EmailVerification.DoesNotExist):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid email address.'
+            })
+    
+    # For GET requests, get email from session
+    email = request.session.get('verification_email')
+    if not email:
+        messages.error(request, 'No verification session found. Please try logging in again.')
         return redirect('main:login')
-        
-    except EmailVerification.DoesNotExist:
-        messages.error(request, 'Invalid verification link.')
-        return redirect('main:login')
+    
+    return render(request, 'verify_otp.html', {'email': email})
 
 def resend_verification(request):
     if request.method == 'POST':
@@ -243,16 +288,19 @@ def resend_verification(request):
                 messages.info(request, 'Email is already verified.')
                 return redirect('main:login')
             
-            # Update token and timestamp
-            verification.token = uuid.uuid4()
+            # Generate new OTP
+            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+            
+            # Update OTP and timestamp
+            verification.otp = otp
             verification.created_at = timezone.now()
             verification.save()
             
             # Send new verification email
             send_verification_email(user, verification)
             
-            messages.success(request, 'A new verification email has been sent.')
-            return redirect('main:login')
+            messages.success(request, 'A new verification code has been sent.')
+            return redirect('main:verify_otp')
             
         except User.DoesNotExist:
             messages.error(request, 'No account found with this email address.')
@@ -296,35 +344,103 @@ def recovery(request):
     return render(request, 'recovery.html')
 
 def password_reset(request, token):
+    # First check if the session has the required data
+    if not request.session.get('reset_token') or not request.session.get('reset_email'):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Your password reset session has expired. Please request a new password reset link.'
+        })
+
     if request.method == 'POST':
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-        
-        if new_password != confirm_password:
-            messages.error(request, 'Passwords do not match.')
-            return render(request, 'password-reset.html', {'token': token})
-            
         try:
-            # Find the user with this token in their session
-            for user in User.objects.all():
-                if request.session.get('reset_token') == token and request.session.get('reset_email') == user.email:
-                    user.set_password(new_password)
-                    user.save()
-                    
-                    # Clear the session
-                    del request.session['reset_token']
-                    del request.session['reset_email']
-                    
-                    messages.success(request, 'Your password has been reset successfully.')
-                    return redirect('main:login')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
             
-            messages.error(request, 'Invalid or expired reset link.')
-            return redirect('main:recovery')
+            if not new_password or not confirm_password:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Both password fields are required.'
+                })
             
+            # Password validation
+            password_errors = []
+            
+            # Check password length
+            if len(new_password) < 8:
+                password_errors.append('Password must be at least 8 characters long.')
+            
+            # Check for uppercase letter
+            if not re.search(r'[A-Z]', new_password):
+                password_errors.append('Password must contain at least one uppercase letter.')
+            
+            # Check for lowercase letter
+            if not re.search(r'[a-z]', new_password):
+                password_errors.append('Password must contain at least one lowercase letter.')
+            
+            # Check for digit
+            if not re.search(r'\d', new_password):
+                password_errors.append('Password must contain at least one number.')
+            
+            # Check for special character
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', new_password):
+                password_errors.append('Password must contain at least one special character (!@#$%^&*(),.?":{}|<>).')
+            
+            # If there are password validation errors, return them
+            if password_errors:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Password validation failed:',
+                    'errors': password_errors
+                })
+            
+            if new_password != confirm_password:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Passwords do not match.'
+                })
+            
+            # Verify the token matches
+            if request.session.get('reset_token') != token:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Invalid or expired reset link. Please request a new password reset.'
+                })
+
+            # Get the email from session
+            reset_email = request.session.get('reset_email')
+            
+            # Find the user with this email
+            try:
+                user = User.objects.get(email=reset_email)
+            except User.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'User not found. Please request a new password reset.'
+                })
+
+            # Update the password
+            user.set_password(new_password)
+            user.save()
+            
+            # Clear the session
+            del request.session['reset_token']
+            del request.session['reset_email']
+            
+            # Return success response
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Your password has been reset successfully! You can now log in with your new password.',
+                'redirect_url': reverse('main:login')
+            })
+        
         except Exception as e:
-            messages.error(request, 'An error occurred while resetting your password.')
-            return redirect('main:recovery')
-            
+            print(f"Password reset error: {str(e)}")  # For debugging
+            return JsonResponse({
+                'status': 'error',
+                'message': 'An error occurred while resetting your password. Please try again.'
+            })
+    
+    # For GET requests, render the form
     return render(request, 'password-reset.html', {'token': token})
 
 
@@ -683,10 +799,35 @@ def mental_health_submit(request):
                 messages.error(request, 'Both prescription and certification are required.')
                 return redirect('main:mental_health')
             
-            MentalHealthRecord.objects.create(
+            record = MentalHealthRecord.objects.create(
                 patient=patient,
                 prescription=prescription,
                 certification=certification
+            )
+            
+            # Send notification email to student
+            subject = 'Mental Health Record Submission Confirmation'
+            message = f"""
+            Dear {patient.student.firstname},
+
+            This email confirms that we have received your mental health record submission.
+
+            Submission Details:
+            - Date Submitted: {record.date_submitted.strftime('%B %d, %Y')}
+            - Status: Pending Review
+
+            Our medical team will review your submission and you will be notified of the outcome.
+
+            Best regards,
+            Medical Services Team
+            """
+            
+            send_mail(
+                subject,
+                message,
+                settings.EMAIL_HOST_USER,
+                [patient.student.email],
+                fail_silently=False,
             )
             
             messages.success(request, 'Mental health documents submitted successfully.')
@@ -703,38 +844,116 @@ def mental_health_review(request, record_id):
     record = get_object_or_404(MentalHealthRecord, id=record_id)
     
     if request.method == 'POST':
-        status = request.POST.get('status')
-        notes = request.POST.get('notes')
+        status = request.POST.get('status', '').lower()
+        notes = request.POST.get('notes', '')
+        prescription_remarks = request.POST.get('prescription_remarks', '')
+        certification_remarks = request.POST.get('certification_remarks', '')
         
+        # Validate status
+        valid_statuses = ['approved', 'rejected', 'pending']
+        if status not in valid_statuses:
+            messages.error(request, f'Invalid status provided. Must be one of: {", ".join(valid_statuses)}')
+            return redirect('main:mental_health')
+        
+        # Update record
         record.status = status
         record.notes = notes
+        record.prescription_remarks = prescription_remarks
+        record.certification_remarks = certification_remarks
         record.reviewed_by = request.user
         record.reviewed_at = timezone.now()
         record.save()
         
-        # Send email notification to student
-        subject = f'Mental Health Record Review - {status.title()}'
+        # Initialize email variables
+        subject = ''
+        message = ''
+        
+        # Prepare email content based on status
+        if status == 'approved':
+            subject = 'Mental Health Record - Approved'
+            message = f"""
+            Dear {record.patient.student.firstname},
+
+            We are pleased to inform you that your mental health record has been approved.
+
+            Review Details:
+            - Date Reviewed: {record.reviewed_at.strftime('%B %d, %Y')}
+            - Status: Approved
+            - Reviewer: {record.reviewed_by.get_full_name()}
+
+            Document Review:
+            - Prescription Document: {prescription_remarks if prescription_remarks else 'Approved'}
+            - Certification Document: {certification_remarks if certification_remarks else 'Approved'}
+
+            Additional Notes:
+            {notes if notes else 'No additional notes provided.'}
+
+            Your mental health record is now complete and on file.
+
+            Best regards,
+            Medical Services Team
+            """
+        elif status == 'rejected':
+            subject = 'Mental Health Record - Additional Information Required'
+            message = f"""
+            Dear {record.patient.student.firstname},
+
+            We regret to inform you that your mental health record requires additional information or clarification.
+
+            Review Details:
+            - Date Reviewed: {record.reviewed_at.strftime('%B %d, %Y')}
+            - Status: Additional Information Required
+            - Reviewer: {record.reviewed_by.get_full_name()}
+
+            Document Review:
+            - Prescription Document: {prescription_remarks if prescription_remarks else 'No remarks provided'}
+            - Certification Document: {certification_remarks if certification_remarks else 'No remarks provided'}
+
+            Additional Notes:
+            {notes if notes else 'No specific reason provided.'}
+
+            Please submit the required information or clarification through the student portal.
+
+            Best regards,
+            Medical Services Team
+            """
+        elif status == 'pending':
+            subject = 'Mental Health Record - Status Updated'
         message = f"""
         Dear {record.patient.student.firstname},
         
-        Your mental health records have been reviewed.
-        Status: {status.title()}
-        
-        Notes: {notes if notes else 'No additional notes.'}
+            Your mental health record status has been updated to pending review.
+
+            Review Details:
+            - Date Updated: {record.reviewed_at.strftime('%B %d, %Y')}
+            - Status: Pending Review
+            - Updated By: {record.reviewed_by.get_full_name()}
+
+            Document Review:
+            - Prescription Document: {prescription_remarks if prescription_remarks else 'Under Review'}
+            - Certification Document: {certification_remarks if certification_remarks else 'Under Review'}
+
+            Additional Notes:
+            {notes if notes else 'No additional notes provided.'}
+
+            We will notify you once the review is complete.
         
         Best regards,
         Medical Services Team
         """
         
-        send_mail(
-            subject,
-            message,
-            settings.EMAIL_HOST_USER,
-            [record.patient.student.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.EMAIL_HOST_USER,
+                [record.patient.student.email],
+                fail_silently=False,
+            )
+            messages.success(request, 'Record reviewed successfully and notification sent.')
+        except Exception as e:
+            messages.error(request, f'Record reviewed but failed to send email: {str(e)}')
         
-        messages.success(request, 'Record reviewed successfully.')
         return redirect('main:mental_health')
         
     return render(request, 'admin/mental_health_review.html', {'record': record})
@@ -748,36 +967,14 @@ def email_verification(request):
 
 @login_required
 def upload_profile_picture_view(request):
-    if request.method == 'POST':
-        # Ensure a file was uploaded
-        if 'profile_picture' in request.FILES:
-            uploaded_file = request.FILES['profile_picture']
-            user = request.user
-            
-            try:
-                # Get the patient instance for the logged-in user
-                # Assuming Student.student_id matches User.username
-                student = medical_models.Student.objects.get(student_id=user.username)
-                patient = medical_models.Patient.objects.get(student=student)
-                
-                # Save the uploaded file to the profile_picture field
-                patient.profile_picture = uploaded_file
-                patient.save()
-                messages.success(request, 'Profile picture uploaded successfully!')
-                
-            except medical_models.Student.DoesNotExist:
-                messages.error(request, 'Student profile not found.')
-            except medical_models.Patient.DoesNotExist:
-                messages.error(request, 'Patient profile not found.')
-            except Exception as e:
-                messages.error(request, f'Error uploading profile picture: {e}')
-                
-        else:
-            messages.error(request, 'No file was uploaded.')
-            
-        # Redirect back to the student dashboard
-        return redirect('main:student_dashboard')
-    else:
-        # Handle GET requests if necessary, or return an error
-        messages.error(request, 'Invalid request method.')
-        return redirect('main:student_dashboard')
+    if request.method == 'POST' and request.FILES.get('profile_picture'):
+        try:
+            student = Student.objects.get(email=request.user.email)
+            student.profile_picture = request.FILES['profile_picture']
+            student.save()
+            return JsonResponse({'status': 'success'})
+        except Student.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Student profile not found'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})

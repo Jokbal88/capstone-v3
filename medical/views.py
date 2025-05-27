@@ -2046,6 +2046,11 @@ def mental_health_view(request):
             <div class="title">MENTAL HEALTH RECORD APPROVED</div>
             <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
             <p>We are pleased to inform you that your mental health record has been <strong style='color:green;'>APPROVED</strong>.</p>
+            <div class="remarks-section">
+                <h4>Reviewer Remarks:</h4>
+                 <p><strong>Prescription Remarks:</strong> {mental_health_record.prescription_remarks|default:'None'}</p>
+                 <p><strong>Certification Remarks:</strong> {mental_health_record.certification_remarks|default:'None'}</p>
+            </div>
             <p>Thank you for submitting your documents. You can view your updated record on the HealthHub Connect portal.</p>
             <p>Best regards,</p>
             <p><strong>HealthHub Connect Team</strong></p>

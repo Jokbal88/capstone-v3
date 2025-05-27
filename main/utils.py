@@ -5,17 +5,14 @@ from django.utils.html import strip_tags
 
 def send_verification_email(user, verification):
     """
-    Send verification email to user
+    Send OTP verification email to user
     """
-    subject = 'Verify your HealthHub Connect account'
-    
-    # Create verification URL
-    verification_url = f"{settings.SITE_URL}/verify-email/{verification.token}"
+    subject = 'Your HealthHub Connect Verification Code'
     
     # Render email template
     html_message = render_to_string('email/verification_email.html', {
         'user': user,
-        'verification_url': verification_url,
+        'otp': verification.otp,
     })
     
     # Strip HTML for plain text version

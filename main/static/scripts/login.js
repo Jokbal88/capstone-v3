@@ -1,73 +1,72 @@
-const togglePassword = document.querySelector('#togglePassword');
-    const password = document.querySelector('#password');
-    const showIcon = document.querySelector('#showIcon');
-    const hideIcon = document.querySelector('#hideIcon');
+document.addEventListener('DOMContentLoaded', function() {
+    // Password toggle functionality
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    const showIcon = document.getElementById('showIcon');
+    const hideIcon = document.getElementById('hideIcon');
 
-    togglePassword.addEventListener('click', function (e) {
-        // Toggle the type attribute
-        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-        password.setAttribute('type', type);
-        // Toggle the icons
-        if (type === 'password') {
-            showIcon.style.display = 'block';
-            hideIcon.style.display = 'none';
-        } else {
-            showIcon.style.display = 'none';
-            hideIcon.style.display = 'block';
-        }
-    });
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            showIcon.style.display = type === 'password' ? 'block' : 'none';
+            hideIcon.style.display = type === 'password' ? 'none' : 'block';
+        });
+    }
 
-    document.querySelector('form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Get the current CSRF token
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: new FormData(this),
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.status === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Welcome back!',
-                    text: 'Login successful',
-                    showConfirmButton: false,
-                    timer: 1500
-                }).then(() => {
-                    window.location.href = data.redirect_url;
-                });
-            } else {
+    // Login form submission
+    const loginForm = document.getElementById('loginForm');
+    const otpForm = document.getElementById('otpForm');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show OTP form and hide login form
+                    loginForm.classList.add('hidden');
+                    otpForm.classList.remove('hidden');
+                    
+                    // Focus on first OTP input
+                    document.querySelector('#otpForm input[name="otp"]').focus();
+                    
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message || 'Please check your email for the verification code'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Login Failed',
+                        text: data.message || 'Invalid credentials'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Login Failed',
-                    text: data.message
+                    title: 'Error',
+                    text: 'An error occurred during login'
                 });
-            }
-        })
-        .catch(error => {
-            // If there's a CSRF error, reload the page to get a fresh token
-            if (error.message.includes('CSRF')) {
-                window.location.reload();
-                return;
-            }
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Something went wrong! Please try again.'
             });
         });
-    });
+    }
+
+    // OTP input handling is now in the template file's script block
+});
