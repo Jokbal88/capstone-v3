@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Student, EmailVerification
+from .models import Student, EmailVerification, Faculty, Profile
 
 class EmailVerifiedFilter(admin.SimpleListFilter):
     title = _('email verified')
@@ -61,14 +61,20 @@ class UserAdminForm(forms.ModelForm):
             user.save()
         return user
 
+# Register Profile model
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
+    verbose_name_plural = 'Profile'
 
+# Extend UserAdmin to include Profile
 class CustomUserAdmin(UserAdmin):
+    inlines = (ProfileInline,)
     form = UserAdminForm
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_email_verified_method')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups', EmailVerifiedFilter)
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_role')
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'profile__role', EmailVerifiedFilter)
     search_fields = ('username', 'first_name', 'last_name', 'email')
     ordering = ('username',)
-    # is_email_verified_method is used for display in list_display and potentially readonly_fields
     readonly_fields = ('is_email_verified_method',)
 
     fieldsets = (
@@ -90,17 +96,21 @@ class CustomUserAdmin(UserAdmin):
     is_email_verified_method.boolean = True
     is_email_verified_method.short_description = _('Email Verified (Display)')
 
+    def get_role(self, obj):
+        return obj.profile.role if hasattr(obj, 'profile') else '-'
+    get_role.short_description = 'Role'
 
-# Re-register UserAdmin
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
-
+# Register Student model
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('student_id', 'lrn', 'lastname', 'firstname', 'degree', 'year_level')
-    list_filter = ('degree', 'year_level', 'sex')
-    search_fields = ('student_id', 'lrn', 'lastname', 'firstname', 'email')
+    list_display = ('student_id', 'lastname', 'firstname', 'degree', 'year_level', 'email')
+    list_filter = ('year_level', 'degree', 'sex')
+    search_fields = ('student_id', 'lastname', 'firstname', 'email', 'lrn')
     ordering = ('lastname', 'firstname')
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(pk__in=self.model.objects.values_list('pk', flat=True))
     
     fieldsets = (
         ('Personal Information', {
@@ -124,3 +134,27 @@ class StudentAdmin(admin.ModelAdmin):
             )
         }),
     )
+
+# Register Faculty model
+@admin.register(Faculty)
+class FacultyAdmin(admin.ModelAdmin):
+    list_display = ('get_name', 'department', 'position', 'created_at')
+    list_filter = ('department', 'position')
+    search_fields = ('user__first_name', 'user__last_name', 'user__email', 'department', 'position')
+    ordering = ('user__last_name', 'user__first_name')
+
+    def get_name(self, obj):
+        return f"{obj.user.get_full_name()}"
+    get_name.short_description = 'Name'
+
+# Register EmailVerification model
+@admin.register(EmailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at', 'is_verified')
+    list_filter = ('is_verified', 'created_at')
+    search_fields = ('user__email', 'user__username')
+    readonly_fields = ('created_at',)
+
+# Unregister the default UserAdmin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)

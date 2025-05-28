@@ -38,13 +38,25 @@ class EmailVerification(models.Model):
     def __str__(self):
         return f"Verification for {self.user.email}"
 
-class Profile(models.Model):
-    ROLE_CHOICES = [
-        ('Student', 'Student'),
-        ('Faculty', 'Faculty'),
-    ]
+class Faculty(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Student')
+    department = models.CharField(max_length=100)
+    position = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"{self.user.get_full_name()} - {self.position}"
+
+class Profile(models.Model):
+    ROLE_CHOICES = (
+        ('Student', 'Student'),
+        ('Faculty', 'Faculty'),
+    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='Student')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.role}"

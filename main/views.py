@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
-from main.models import Student, EmailVerification, Profile
+from main.models import Student, EmailVerification, Profile, Faculty
 from medical.models import (
     PhysicalExamination,
     Patient,
@@ -127,7 +127,6 @@ def register(request):
                         'message': 'ID Number must be exactly 7 digits.'
                     })
 
-
             # Check if email already exists
             if User.objects.filter(email=email).exists():
                 return JsonResponse({
@@ -137,17 +136,17 @@ def register(request):
 
             # Check if student ID already exists (only for students)
             if role == 'Student' and Student.objects.filter(student_id=idNumber).exists():
-                 return JsonResponse({
-                     'status': 'error',
-                     'message': 'Student ID already registered.'
-                 })
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Student ID already registered.'
+                })
 
             # Check if LRN already exists (only for students)
             if role == 'Student' and Student.objects.filter(lrn=lrn).exists():
-                 return JsonResponse({
-                     'status': 'error',
-                     'message': 'LRN already registered.'
-                 })
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'LRN already registered.'
+                })
 
             # Validate password
             if password != confirmPassword:
@@ -168,27 +167,49 @@ def register(request):
             # Create Profile for the user
             profile = Profile.objects.create(user=user, role=role)
 
-            # Create Student instance only if the role is Student
+            # Create Student or Faculty instance based on role
             if role == 'Student':
-                 # Further validate required fields for students
-                 if not all([sex, yrLevel, course]):
-                      return JsonResponse({
-                           'status': 'error',
-                           'message': 'Please provide all required student information.'
-                      })
+                # Further validate required fields for students
+                if not all([sex, yrLevel, course]):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Please provide all required student information.'
+                    })
 
-                 Student.objects.create(
-                     student_id=idNumber,
-                     lrn=lrn,
-                     lastname=lastName,
-                     firstname=firstName,
-                     middlename=middleInitial,
-                     degree=course,
-                     year_level=int(yrLevel), # Convert to integer
-                     sex=sex,
-                     email=email,
-                     contact_number='N/A' # Assuming contact number is not collected in this form
-                 )
+                # Create Student instance
+                Student.objects.create(
+                    student_id=idNumber,
+                    lrn=lrn,
+                    lastname=lastName,
+                    firstname=firstName,
+                    middlename=middleInitial,
+                    degree=course,
+                    year_level=int(yrLevel), # Convert to integer
+                    sex=sex,
+                    email=email,
+                    contact_number='N/A' # Assuming contact number is not collected in this form
+                )
+            elif role == 'Faculty': # Explicitly check for Faculty role
+                department = request.POST.get('department')
+                position = request.POST.get('position')
+
+                if not all([department, position]):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Please provide department and position information.'
+                    })
+
+                # Create Faculty instance
+                Faculty.objects.create(
+                    user=user,
+                    department=department,
+                    position=position
+                )
+            else:
+                 return JsonResponse({
+                    'status': 'error',
+                    'message': 'Invalid role specified.'
+                })
 
             # Generate OTP and create verification
             otp = ''.join(random.choices('0123456789', k=6))
@@ -217,7 +238,7 @@ def verify_otp(request):
         
         print(f"Received OTP for email: {email}")
         print(f"Entered OTP: {otp}")
-
+        
         if not email:
             return JsonResponse({
                 'status': 'error',
@@ -250,6 +271,11 @@ def verify_otp(request):
                     return JsonResponse({
                         'status': 'success',
                         'redirect_url': reverse('main:admin_dashboard')
+                    })
+                elif user.profile.role == 'Faculty':
+                    return JsonResponse({
+                        'status': 'success',
+                        'redirect_url': reverse('main:faculty_dashboard')
                     })
                 else:
                     return JsonResponse({
@@ -447,8 +473,16 @@ def password_reset(request, token):
 @login_required
 def main_view(request):
     if request.user.is_authenticated:
+        # For faculty members
+        if request.user.profile.role == 'Faculty':
+            try:
+                faculty = Faculty.objects.get(user=request.user)
+                return render(request, 'faculty_dashboard.html', {'faculty': faculty})
+            except Faculty.DoesNotExist:
+                messages.error(request, 'Faculty profile not found.')
+                return redirect('main:login')
         # For regular users (students)
-        if not request.user.is_staff and not request.user.is_superuser:
+        elif not request.user.is_staff and not request.user.is_superuser:
             try:
                 # Check medical student record
                 medical_student = medical_models.Student.objects.get(student_id=request.user.username)
@@ -978,3 +1012,44 @@ def upload_profile_picture_view(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+@login_required
+def faculty_dashboard_view(request):
+    if not request.user.profile.role == 'Faculty':
+        messages.error(request, 'Access denied. Faculty access only.')
+        return redirect('main:login')
+
+    # Get total students count
+    total_students = Student.objects.count()
+    
+    # Get pending requests
+    pending_requests = PatientRequest.objects.filter(approve=False).count()
+    
+    # Get today's appointments
+    today = timezone.now().date()
+    todays_appointments = PatientRequest.objects.filter(
+        date_requested__date=today,
+        approve=True
+    ).count()
+    
+    # Get recent requests
+    recent_requests = PatientRequest.objects.select_related(
+        'patient',
+        'patient__student'
+    ).order_by('-date_requested')[:10]
+    
+    # Get appointments for calendar
+    appointments = PatientRequest.objects.select_related(
+        'patient',
+        'patient__student'
+    ).filter(approve=True).order_by('date_requested')
+    
+    context = {
+        'total_students': total_students,
+        'pending_requests': pending_requests,
+        'todays_appointments': todays_appointments,
+        'recent_requests': recent_requests,
+        'appointments': appointments,
+    }
+    
+    return render(request, 'faculty_dashboard.html', context)

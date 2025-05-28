@@ -22,6 +22,7 @@ urlpatterns = [
     path('verify-otp/', views.verify_otp, name='verify_otp'),
     path('resend-verification/', views.resend_verification, name='resend_verification'),
     path('upload-profile-picture/', views.upload_profile_picture_view, name='upload_profile_picture'),
+    path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
 ]
 
 if settings.DEBUG:
