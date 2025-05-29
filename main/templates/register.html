@@ -34,31 +34,29 @@
             </div>
           </div>
           <h2 class="font-bold text-[1.3rem]">Account Registration</h2>
-          
           <!-- Role Selection -->
-            <div class="flex flex-col w-full mb-4">
+          <div class="flex flex-col w-full mb-4">
                 <label class="text-base">Registering as:</label>
                 <div class="flex gap-4 mt-2">
                     <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio" name="role" value="Student" checked>
+                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
                         <span class="ml-2">Student</span>
                     </label>
                     <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio" name="role" value="Faculty">
+                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
                         <span class="ml-2">Faculty</span>
                     </label>
                 </div>
                  <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
-            </div>
-
-          <form class="flex flex-col w-full gap-2" method="POST">
+          </div>
+          <form id="studentForm" class="flex flex-col w-full gap-2" method="POST">
             {% csrf_token %}
             <div class="flex w-full gap-2">
               <div class="w-full flex flex-col">
                 <label for="firstName" class="w-fit">First Name</label>
                 <input
                   type="text"
-                  class="w-full"
+                  class="w-full rounded-md"
                   id="firstName"
                   name="firstName"
                   placeholder="Enter your first name"
@@ -69,7 +67,7 @@
                 <label for="middleInitial" class="w-fit">M.I</label>
                 <input
                   type="text"
-                  class="w-full"
+                  class="w-full rounded-md"
                   id="middleInitial"
                   name="middleInitial"
                   maxlength="1"
@@ -80,9 +78,8 @@
               <div class="w-full flex flex-col">
                 <label for="lastName" class="w-fit">Last Name</label>
                 <input
-                  class="w-full"
+                  class="w-full rounded-md"
                   type="text"
-                  class="w-full"
                   id="lastName"
                   name="lastName"
                   placeholder="Enter your last name"
@@ -94,14 +91,14 @@
             <div class="flex w-full gap-2">
               <div class="flex flex-col w-full">
                 <label for="sex">Sex</label>
-                <select class="w-full" name="sex" id="sex" required>
+                <select class="w-full rounded-md" name="sex" id="sex" required>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
                 </select>
               </div>
               <div class="flex flex-col w-full">
                 <label for="yrLevel">Year Level</label>
-                <select class="w-full" name="yrLevel" id="yrLevel" required>
+                <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
                   <option value="1">First Year</option>
                   <option value="2">Second Year</option>
                   <option value="3">Third Year</option>
@@ -109,12 +106,11 @@
                 </select>
               </div>
             </div>
-         
             <div class="flex w-full gap-2">
               <div class="flex flex-col w-full">
                 <label for="idNumber">ID Number</label>
                 <input
-                  class="w-full"
+                  class="w-full rounded-md"
                   type="text"
                   id="idNumber"
                   name="idNumber"
@@ -128,7 +124,7 @@
               <div class="flex flex-col w-full">
                 <label for="lrn">LRN</label>
                 <input
-                  class="w-full"
+                  class="w-full rounded-md"
                   type="text"
                   id="lrn"
                   name="lrn"
@@ -140,10 +136,9 @@
                 />
               </div>
             </div>
-
             <div class="flex flex-col w-full">
               <label for="course">Course</label>
-              <select class="w-full" id="course" name="course" required>
+              <select class="w-full rounded-md" id="course" name="course" required>
                 <optgroup label="College of Education">
                   <option value="Bachelor of Elementary Education">
                     Bachelor of Elementary Education
@@ -247,11 +242,133 @@
                 </optgroup>
               </select>
             </div>
-            
             <div class="flex flex-col w-full">
               <label for="email">Email</label>
               <input
-                class="w-full"
+                class="w-full rounded-md"
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="password" class="label">Password</label>
+              <div class="relative w-full flex items-center">
+                <input
+                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="Enter your password"
+                  required
+                  minlength="8"
+                />
+                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="togglePassword">
+                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
+                </span>
+              </div>
+              <div class="mt-2 text-sm">
+                <div class="flex items-center gap-2" id="length-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>At least 8 characters</span>
+                </div>
+                <div class="flex items-center gap-2" id="uppercase-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>At least one uppercase letter</span>
+                </div>
+                <div class="flex items-center gap-2" id="lowercase-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>At least one lowercase letter</span>
+                </div>
+                <div class="flex items-center gap-2" id="number-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>At least one number</span>
+                </div>
+                <div class="flex items-center gap-2" id="special-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>At least one special character (!@#$%^&*(),.?":{}|<>)</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="confirmPassword">Confirm Password</label>
+              <div class="relative w-full flex items-center">
+                <input
+                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  placeholder="Confirm your password"
+                  required
+                  minlength="8"
+                />
+                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleConfirmPassword">
+                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
+                </span>
+              </div>
+              <div class="mt-2 text-sm">
+                <div class="flex items-center gap-2" id="match-check">
+                  <i class="fas fa-circle text-gray-300"></i>
+                  <span>Passwords match</span>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="bg-[#3b82f6] text-white text-[14px] p-3 rounded-md w-full cursor-pointer mt-4">Register</button>
+          </form>
+          <form id="facultyForm" class="hidden flex-col w-full gap-2" method="POST">
+            {% csrf_token %}
+            <div class="flex w-full gap-2">
+              <div class="w-full flex flex-col">
+                <label for="firstName" class="w-fit">First Name</label>
+                <input
+                  type="text"
+                  class="w-full rounded-md"
+                  id="firstName"
+                  name="firstName"
+                  placeholder="Enter your first name"
+                  required
+                />
+              </div>
+              <div class="w-full flex flex-col">
+                <label for="middleInitial" class="w-fit">M.I</label>
+                <input
+                  type="text"
+                  class="w-full rounded-md"
+                  id="middleInitial"
+                  name="middleInitial"
+                  maxlength="1"
+                  placeholder="Enter your middle initial"
+                  required
+                />
+              </div>
+            </div>
+            <div class="flex w-full gap-2">
+              <div class="w-full flex flex-col">
+                <label for="lastName" class="w-fit">Last Name</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  class="w-full rounded-md"
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Enter your last name"
+                  required
+                />
+              </div>
+              <div class="flex flex-col w-full">
+                <label for="sex">Sex</label>
+                <select class="w-full rounded-md" name="sex" id="sex" required>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="email">Email</label>
+              <input
+                class="w-full rounded-md"
                 type="email"
                 id="email"
                 name="email"
@@ -331,164 +448,189 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-    // LRN validation
-    const lrnInput = document.getElementById('lrn');
-    lrnInput.addEventListener('input', function(e) {
-        // Remove any non-digit characters
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+      // LRN validation
+      const lrnInput = document.getElementById('lrn');
+      lrnInput.addEventListener('input', function(e) {
+          // Remove any non-digit characters
+          this.value = this.value.replace(/[^0-9]/g, '');
+      });
 
-    // ID Number validation
-    const idNumberInput = document.getElementById('idNumber');
-    idNumberInput.addEventListener('input', function(e) {
-        // Remove any non-digit characters
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+      // ID Number validation
+      const idNumberInput = document.getElementById('idNumber');
+      idNumberInput.addEventListener('input', function(e) {
+          // Remove any non-digit characters
+          this.value = this.value.replace(/[^0-9]/g, '');
+      });
 
-    document.querySelector('form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        // Validate LRN length
-        if (lrnInput.value.length !== 12) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Invalid LRN',
-                text: 'LRN must be exactly 12 digits.'
-            });
-            return;
-        }
+      document.querySelector('form').addEventListener('submit', function(e) {
+          e.preventDefault();
+          
+          // Validate LRN length
+          if (lrnInput.value.length !== 12) {
+              Swal.fire({
+                  icon: 'error',
+                  title: 'Invalid LRN',
+                  text: 'LRN must be exactly 12 digits.'
+              });
+              return;
+          }
 
-        // Validate ID Number length
-        if (idNumberInput.value.length !== 7) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Invalid ID Number',
-                text: 'ID Number must be exactly 7 digits.'
-            });
-            return;
-        }
-        
-        fetch(this.action, {
-            method: 'POST',
-            body: new FormData(this),
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Registration Successful!',
-                    text: 'Please check your email for the verification code.',
-                    showConfirmButton: false,
-                    timer: 1500
-                }).then(() => {
-                    window.location.href = "/";
-                });
-            } else {
-                // Handle specific error messages
-                let errorMessage = 'Registration failed. Please try again.';
-                if (data.message) {
-                    if (data.message.includes('Student ID')) {
-                        errorMessage = 'This Student ID is already registered.';
-                    } else if (data.message.includes('Email')) {
-                        errorMessage = 'This email is already registered.';
-                    } else {
-                        errorMessage = data.message;
-                    }
-                }
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Registration Failed',
-                    text: errorMessage
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Failed',
-                text: 'An error occurred. Please try again.'
-            });
-        });
-    });
+          // Validate ID Number length
+          if (idNumberInput.value.length !== 7) {
+              Swal.fire({
+                  icon: 'error',
+                  title: 'Invalid ID Number',
+                  text: 'ID Number must be exactly 7 digits.'
+              });
+              return;
+          }
+          
+          fetch(this.action, {
+              method: 'POST',
+              body: new FormData(this),
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.status === 'success') {
+                  Swal.fire({
+                      icon: 'success',
+                      title: 'Registration Successful!',
+                      text: 'Please check your email for the verification code.',
+                      showConfirmButton: false,
+                      timer: 1500
+                  }).then(() => {
+                      window.location.href = "/";
+                  });
+              } else {
+                  // Handle specific error messages
+                  let errorMessage = 'Registration failed. Please try again.';
+                  if (data.message) {
+                      if (data.message.includes('Student ID')) {
+                          errorMessage = 'This Student ID is already registered.';
+                      } else if (data.message.includes('Email')) {
+                          errorMessage = 'This email is already registered.';
+                      } else {
+                          errorMessage = data.message;
+                      }
+                  }
+                  
+                  Swal.fire({
+                      icon: 'error',
+                      title: 'Registration Failed',
+                      text: errorMessage
+                  });
+              }
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              Swal.fire({
+                  icon: 'error',
+                  title: 'Registration Failed',
+                  text: 'An error occurred. Please try again.'
+              });
+          });
+      });
 
-    // Password validation
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirmPassword');
-    const togglePassword = document.getElementById('togglePassword');
-    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+      // Password validation
+      const passwordInput = document.getElementById('password');
+      const confirmPasswordInput = document.getElementById('confirmPassword');
+      const togglePassword = document.getElementById('togglePassword');
+      const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
 
-    // Password validation checks
-    const lengthCheck = document.getElementById('length-check');
-    const uppercaseCheck = document.getElementById('uppercase-check');
-    const lowercaseCheck = document.getElementById('lowercase-check');
-    const numberCheck = document.getElementById('number-check');
-    const specialCheck = document.getElementById('special-check');
-    const matchCheck = document.getElementById('match-check');
+      // Password validation checks
+      const lengthCheck = document.getElementById('length-check');
+      const uppercaseCheck = document.getElementById('uppercase-check');
+      const lowercaseCheck = document.getElementById('lowercase-check');
+      const numberCheck = document.getElementById('number-check');
+      const specialCheck = document.getElementById('special-check');
+      const matchCheck = document.getElementById('match-check');
 
-    function updateValidationUI(element, isValid) {
-        const icon = element.querySelector('i');
-        if (isValid) {
-            icon.className = 'fas fa-check-circle text-green-500';
-            element.classList.add('text-green-500');
-            element.classList.remove('text-gray-500');
-        } else {
-            icon.className = 'fas fa-circle text-gray-300';
-            element.classList.add('text-gray-500');
-            element.classList.remove('text-green-500');
-        }
-    }
+      function updateValidationUI(element, isValid) {
+          const icon = element.querySelector('i');
+          if (isValid) {
+              icon.className = 'fas fa-check-circle text-green-500';
+              element.classList.add('text-green-500');
+              element.classList.remove('text-gray-500');
+          } else {
+              icon.className = 'fas fa-circle text-gray-300';
+              element.classList.add('text-gray-500');
+              element.classList.remove('text-green-500');
+          }
+      }
 
-    function validatePassword(password) {
-        const hasLength = password.length >= 8;
-        const hasUppercase = /[A-Z]/.test(password);
-        const hasLowercase = /[a-z]/.test(password);
-        const hasNumber = /\d/.test(password);
-        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      function validatePassword(password) {
+          const hasLength = password.length >= 8;
+          const hasUppercase = /[A-Z]/.test(password);
+          const hasLowercase = /[a-z]/.test(password);
+          const hasNumber = /\d/.test(password);
+          const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-        updateValidationUI(lengthCheck, hasLength);
-        updateValidationUI(uppercaseCheck, hasUppercase);
-        updateValidationUI(lowercaseCheck, hasLowercase);
-        updateValidationUI(numberCheck, hasNumber);
-        updateValidationUI(specialCheck, hasSpecial);
+          updateValidationUI(lengthCheck, hasLength);
+          updateValidationUI(uppercaseCheck, hasUppercase);
+          updateValidationUI(lowercaseCheck, hasLowercase);
+          updateValidationUI(numberCheck, hasNumber);
+          updateValidationUI(specialCheck, hasSpecial);
 
-        return hasLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
-    }
+          return hasLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
+      }
 
-    function validatePasswordMatch() {
-        const password = passwordInput.value;
-        const confirmPassword = confirmPasswordInput.value;
-        const isValid = password === confirmPassword && password !== '';
-        updateValidationUI(matchCheck, isValid);
-        return isValid;
-    }
+      function validatePasswordMatch() {
+          const password = passwordInput.value;
+          const confirmPassword = confirmPasswordInput.value;
+          const isValid = password === confirmPassword && password !== '';
+          updateValidationUI(matchCheck, isValid);
+          return isValid;
+      }
 
-    passwordInput.addEventListener('input', function() {
-        validatePassword(this.value);
-        validatePasswordMatch();
-    });
+      passwordInput.addEventListener('input', function() {
+          validatePassword(this.value);
+          validatePasswordMatch();
+      });
 
-    confirmPasswordInput.addEventListener('input', validatePasswordMatch);
+      confirmPasswordInput.addEventListener('input', validatePasswordMatch);
 
-    // Toggle password visibility
-    togglePassword.addEventListener('click', function() {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        this.querySelector('i').classList.toggle('fa-eye');
-        this.querySelector('i').classList.toggle('fa-eye-slash');
-    });
+      // Toggle password visibility
+      togglePassword.addEventListener('click', function() {
+          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+          passwordInput.setAttribute('type', type);
+          this.querySelector('i').classList.toggle('fa-eye');
+          this.querySelector('i').classList.toggle('fa-eye-slash');
+      });
 
-    toggleConfirmPassword.addEventListener('click', function() {
-        const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        confirmPasswordInput.setAttribute('type', type);
-        this.querySelector('i').classList.toggle('fa-eye');
-        this.querySelector('i').classList.toggle('fa-eye-slash');
-    });
+      toggleConfirmPassword.addEventListener('click', function() {
+          const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+          confirmPasswordInput.setAttribute('type', type);
+          this.querySelector('i').classList.toggle('fa-eye');
+          this.querySelector('i').classList.toggle('fa-eye-slash');
+      });
+      
+      // Get radio buttons and student fields container
+      const studentRole = document.getElementById('studentRole');
+      const facultyRole = document.getElementById('facultyRole');
+
+      const studentForm = document.querySelector('#studentForm');
+      const facultyForm = document.querySelector('#facultyForm');
+
+      // Function to toggle student fields visibility
+      function toggleStudentFields() {
+          if (studentRole.checked) {
+              studentForm.classList.replace('hidden', 'flex');
+              facultyForm.classList.replace('flex', 'hidden');
+          } else {
+              studentForm.classList.replace('flex', 'hidden');
+              facultyForm.classList.replace('hidden', 'flex');
+          }
+      }
+
+      // Add event listeners to radio buttons
+      studentRole.addEventListener('change', toggleStudentFields);
+      facultyRole.addEventListener('change', toggleStudentFields);
+
+      // Initial check on page load
+      toggleStudentFields();
     </script>
   </body>
 </html>

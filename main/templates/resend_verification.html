@@ -1,41 +1,56 @@
-{% extends 'base.html' %}
-
-{% block title %}Resend Verification Email{% endblock %}
-
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="text-center">Resend Verification Email</h3>
-                </div>
-                <div class="card-body">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                    
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                        <div class="text-center mt-3">
-                            <button type="submit" class="btn btn-primary">Resend Verification Email</button>
-                        </div>
-                    </form>
-                    
-                    <div class="text-center mt-3">
-                        <p>Remember your password? <a href="{% url 'main:login' %}">Login here</a></p>
-                    </div>
-                </div>
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HealthHub Connect | Resend Verification Email</title>
+    <link
+      rel="shortcut icon"
+      href="{% static 'images/CTU_logo.png' %}"
+      type="image/x-icon"
+    />
+    {% tailwind_css %}
+    <link rel="stylesheet" href="{% static 'styles/base.css' %}" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </head>
+  <body>
+    <div class="flex w-full h-screen">
+      <div class="w-1/2 xs:hidden lg:flex">
+        <img class="h-full" src="{% static 'images/auth-image.webp' %}" alt="Consultation image" />
+      </div>
+      <div class="xs:w-full lg:w-1/2 flex items-center justify-center xs:p-4 md:p-14 lg:p-[8rem]">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <div class="self-center">
+              <img class="size-[7rem]" src="{% static 'images/CTU_logo.png' %}" alt="CTU Logo">
             </div>
+            <div class="flex flex-col items-center">
+              <h1 class="text-[1.5rem] font-bold">HealthHub Connect</h1>
+              <p class="font-normal w-[70%] text-center">An Integrated Kahimsug Clinic Management System in CTU Argao</p>
+            </div>
+          </div>
+          <div class="flex flex-col w-fit">
+            <h2 class="font-bold text-[1.3rem] w-fit">Resend Verification Email</h2>
+          </div>
+          <form method="POST" class="flex flex-col">
+                {% csrf_token %}
+                <div class="form-group flex flex-col gap-1">
+                    <label for="email" class="text-base">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <button type="submit" class="btn btn-primary text-[14px] bg-[#3b82f6] rounded-md mt-4 py-2 px-4 text-white">Resend Verification Email</button>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </form>
+            <p class="text-center text-[14px]">Remember your password? <a href="{% url 'main:login' %}" class="underline">Login here</a></p>
         </div>
+      </div>
     </div>
-</div>
-{% endblock %} 
+  </body>
+</html>
