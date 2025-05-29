@@ -2190,12 +2190,15 @@ def dashboard_view(request):
                     'family_history': medical_models.FamilyMedicalHistory.objects.filter(examination=patient.examination).first(),
                     'risk_assessment': medical_models.RiskAssessment.objects.filter(clearance=patient).first(),
                     'physical_exam': patient.examination,
+                    'patient_requests': PatientRequest.objects.filter(patient=patient).order_by('-date_requested'),
+                    'medical_profile_incomplete': not patient.examination
                 }
                 print("Context:", context)  # Add this debug line
             else:
                 context = {
                     'student': student,
-                    'patient': None
+                    'patient': None,
+                    'medical_profile_incomplete': True
                 }
                 messages.info(request, 'Please complete your medical profile.')
                 return redirect('main:patient_form')
@@ -2203,7 +2206,8 @@ def dashboard_view(request):
         except medical_models.Student.DoesNotExist:
             context = {
                 'student': student,
-                'patient': None
+                'patient': None,
+                'medical_profile_incomplete': True
             }
             messages.error(request, 'Medical profile not found.')
             return redirect('main:patient_form')

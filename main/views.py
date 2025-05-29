@@ -301,10 +301,11 @@ def verify_otp(request):
         email = request.session.get('verification_email')
         otp = request.POST.get('otp')
         
-        print(f"Received OTP for email: {email}")
+        print(f"Received OTP verification request for email: {email}")
         print(f"Entered OTP: {otp}")
         
         if not email:
+            print("No verification email found in session")
             return JsonResponse({
                 'status': 'error',
                 'message': 'No verification session found. Please try logging in again.'
@@ -314,41 +315,60 @@ def verify_otp(request):
             user = User.objects.get(email=email)
             verification = EmailVerification.objects.get(user=user)
             
+            print(f"Found user: {user.username}")
+            print(f"Stored OTP: {verification.otp}")
+            print(f"OTP created at: {verification.created_at}")
+            
             if verification.is_otp_expired():
+                print("OTP has expired")
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Verification code has expired. Please request a new one.'
                 })
             
             if verification.otp == otp:
-                print("OTP matched!")
+                print("OTP matched successfully")
                 verification.is_verified = True
                 verification.save()
                 
                 # Log the user in
                 login(request, user)
+                print(f"User {user.username} logged in successfully")
                 
                 # Clear the verification session
                 if 'verification_email' in request.session:
                     del request.session['verification_email']
                 
-                # Redirect to main_view to handle profile completion check and subsequent redirection
+                # Return success with redirect URL
                 return JsonResponse({
                     'status': 'success',
                     'message': 'OTP verified successfully.',
                     'redirect_url': reverse('main:main')
                 })
             else:
-                print(f"OTP mismatch. Stored OTP: {verification.otp}")
+                print(f"OTP mismatch. Stored OTP: {verification.otp}, Received OTP: {otp}")
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Invalid verification code.'
                 })
                 
-        except (User.DoesNotExist, EmailVerification.DoesNotExist):
+        except User.DoesNotExist:
+            print(f"User not found for email: {email}")
             return JsonResponse({
                 'status': 'error',
                 'message': 'Invalid email address.'
+            })
+        except EmailVerification.DoesNotExist:
+            print(f"EmailVerification not found for user with email: {email}")
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Verification record not found. Please try logging in again.'
+            })
+        except Exception as e:
+            print(f"Unexpected error during OTP verification: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': 'An unexpected error occurred. Please try again.'
             })
     
     # For GET requests, get email from session
@@ -528,63 +548,77 @@ def password_reset(request, token):
 
 @login_required
 def main_view(request):
+    print(f"Entering main_view for user: {request.user.username}")
     # Check if the user is authenticated (already done by @login_required, but good practice)
     if request.user.is_authenticated:
         profile_complete = False # Assume incomplete initially
         try:
+            print(f"Checking profile completion for user: {request.user.username}")
             # Get the Patient record for the current user
             patient = medical_models.Patient.objects.get(user=request.user)
+            print(f"Found patient record for user: {request.user.username}")
 
-            # Check for existence of related medical records using try-except for RelatedObjectDoesNotExist
+            # Check for existence of related medical records
             try:
                 physical_exam = patient.examination
-                # If physical_exam exists, check its related objects
+                print(f"Found physical examination for patient")
+                
+                # Check medical history
                 try:
                     medical_history = physical_exam.medicalhistory
+                    print("Found medical history")
+                except medical_models.MedicalHistory.DoesNotExist:
+                    print("Medical history not found")
+                    profile_complete = False
+                    raise
+
+                # Check family history
+                try:
                     family_history = physical_exam.familymedicalhistory
-                    # Check RiskAssessment which is linked directly to Patient
-                    risk_assessment = patient.riskassessment
-
-                    # If all accesses succeed, the profile is complete
-                    profile_complete = True
-
-                except medical_models.MedicalHistory.RelatedObjectDoesNotExist:
-                    print("MedicalHistory does not exist.")
+                    print("Found family medical history")
+                except medical_models.FamilyMedicalHistory.DoesNotExist:
+                    print("Family medical history not found")
                     profile_complete = False
-                except medical_models.FamilyMedicalHistory.RelatedObjectDoesNotExist:
-                    print("FamilyMedicalHistory does not exist.")
-                    profile_complete = False
-                except medical_models.RiskAssessment.RelatedObjectDoesNotExist:
-                    print("RiskAssessment does not exist.")
-                    profile_complete = False
+                    raise
 
-            except medical_models.PhysicalExamination.RelatedObjectDoesNotExist:
-                print("PhysicalExamination does not exist.")
+                # Check risk assessment
+                try:
+                    risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+                    print("Found risk assessment")
+                except medical_models.RiskAssessment.DoesNotExist:
+                    print("Risk assessment not found")
+                    profile_complete = False
+                    raise
+
+                # If we get here, all records exist
+                profile_complete = True
+                print("Profile is complete")
+
+            except Exception as e:
+                print(f"Error checking medical records: {str(e)}")
                 profile_complete = False
 
         except medical_models.Patient.DoesNotExist:
-            print("Patient object does not exist.")
+            print(f"No patient record found for user: {request.user.username}")
             profile_complete = False
         except Exception as e:
-            # Catch any other unexpected errors during access
-            print(f"Unexpected error during profile check in main_view: {e}")
+            print(f"Unexpected error during profile check in main_view: {str(e)}")
             messages.error(request, 'An unexpected error occurred while verifying your profile status.')
-            # Decide how to handle unexpected errors - maybe redirect to an error page or back to login
-            return redirect('main:login') # Redirect to login for safety
+            return redirect('main:login')
 
+        print(f"Profile completion status: {profile_complete}")
         if not profile_complete:
-            # If profile is incomplete, redirect to the patient form
+            print("Redirecting to patient form due to incomplete profile")
             messages.info(request, 'Please complete your medical profile first.')
             return redirect('main:patient_form')
         else:
-            # If profile is complete, redirect to the appropriate dashboard based on role
+            print("Profile is complete, redirecting to appropriate dashboard")
             if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
                 return redirect('main:faculty_dashboard')
             else:
-                # Default to student dashboard for students and other roles without specific dashboards
                 return redirect('main:student_dashboard')
     else:
-        # If not authenticated, redirect to login (should not be reached with @login_required)
+        print("User is not authenticated in main_view")
         return redirect('main:login')
 
 @login_required
@@ -740,7 +774,7 @@ def patient_form(request):
             # --- Risk Assessment logic ---
             risk_list = request.POST.getlist('risk_assessment')
             # Get or create RiskAssessment linked to the patient
-            risk_assessment, _ = medical_models.RiskAssessment.objects.get_or_create(patient=patient)
+            risk_assessment, _ = medical_models.RiskAssessment.objects.get_or_create(clearance=patient)
             risk_assessment.cardiovascular_disease = 'cardiovascular' in risk_list
             risk_assessment.chronic_lung_disease = 'chronic_lung' in risk_list
             risk_assessment.chronic_renal_disease = 'chronic_kidney' in risk_list
@@ -920,45 +954,39 @@ def dashboard_view(request):
             # Now get related models through physical_exam if it exists
             medical_history = medical_models.MedicalHistory.objects.filter(examination=physical_exam).first()
             family_history = medical_models.FamilyMedicalHistory.objects.filter(examination=physical_exam).first()
-            # Risk assessment is linked to Patient directly now
-            risk_assessment = medical_models.RiskAssessment.objects.filter(patient=patient).first()
+            # Risk assessment is linked to Patient through clearance field
+            try:
+                risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+            except medical_models.RiskAssessment.DoesNotExist:
+                risk_assessment = None
 
         # Get patient requests (linked to Patient directly)
         patient_requests = PatientRequest.objects.filter(patient=patient).order_by('-date_requested')
 
-        # We might still need the Student object for some student-specific data like LRN, degree, year_level
-        # Check if a Student object exists for this user's email (assuming email is used for username)
+        # Get student information
         student = None
         try:
             student = Student.objects.get(email=request.user.email)
         except Student.DoesNotExist:
             # Handle cases where a Student object might not exist for this user (e.g., faculty)
-            pass # Or log a warning if unexpected
-
+            pass
 
         context = {
-            'user': request.user, # Pass the user object
-            'student': student, # Pass the student object if found
+            'user': request.user,
+            'student': student,
             'patient': patient,
             'medical_history': medical_history,
             'family_history': family_history,
             'risk_assessment': risk_assessment,
             'physical_exam': physical_exam,
             'patient_requests': patient_requests,
-            # Add a flag to indicate if the medical profile is incomplete
             'medical_profile_incomplete': not patient.examination
         }
-
-        # The template student_dashboard.html might still expect a 'student' object with certain attributes.
-        # We need to ensure that the template can handle a None student or use the 'user' object where appropriate.
-        # Further adjustments to the template might be necessary depending on its implementation.
 
         return render(request, 'student_dashboard.html', context)
 
     except medical_models.Patient.DoesNotExist:
-        # If no Patient record exists for the user, display a message on the dashboard
         messages.info(request, 'Your medical profile is incomplete. Please complete it.')
-        # Render the dashboard template with a flag indicating incomplete profile
         return render(request, 'student_dashboard.html', {'medical_profile_incomplete': True})
     except Exception as e:
         print(f"Error in dashboard_view: {e}")
@@ -1175,13 +1203,15 @@ def faculty_dashboard_view(request):
         return redirect('main:login')
 
     try:
-        # Attempt to get the Patient record for the faculty user
+        # Get faculty information
+        faculty = Faculty.objects.get(user=request.user)
+        
+        # Get the Patient record for the faculty user
         patient = medical_models.Patient.objects.get(user=request.user)
         medical_profile_incomplete = not patient.examination
-    except medical_models.Patient.DoesNotExist:
-        # If no Patient record exists, assume profile is incomplete for faculty as well
-        patient = None # Or create a placeholder patient if needed for context later
-        medical_profile_incomplete = True
+    except (Faculty.DoesNotExist, medical_models.Patient.DoesNotExist):
+        messages.error(request, 'Faculty profile not found.')
+        return redirect('main:login')
 
     # Get total students count
     total_students = Student.objects.count()
@@ -1196,25 +1226,58 @@ def faculty_dashboard_view(request):
         approve=True
     ).count()
     
-    # Get recent requests
+    # Get recent requests with student information
     recent_requests = PatientRequest.objects.select_related(
-        'patient',
-        'patient__student'
+        'patient__user'
     ).order_by('-date_requested')[:10]
     
     # Get appointments for calendar
     appointments = PatientRequest.objects.select_related(
-        'patient',
-        'patient__student'
+        'patient__user'
     ).filter(approve=True).order_by('date_requested')
     
+    # Format appointments for the calendar
+    calendar_events = []
+    for appointment in appointments:
+        try:
+            student = Student.objects.get(email=appointment.patient.user.email)
+            calendar_events.append({
+                'title': f"{student.firstname} {student.lastname}",
+                'start': appointment.date_requested.strftime('%Y-%m-%d'),
+                'description': appointment.request_type
+            })
+        except Student.DoesNotExist:
+            continue  # Skip if student not found
+    
+    # Get faculty's medical information
+    physical_exam = patient.examination if patient.examination else None
+    medical_history = None
+    family_history = None
+    risk_assessment = None
+
+    if physical_exam:
+        try:
+            medical_history = medical_models.MedicalHistory.objects.get(examination=physical_exam)
+            family_history = medical_models.FamilyMedicalHistory.objects.get(examination=physical_exam)
+            risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+        except (medical_models.MedicalHistory.DoesNotExist, 
+                medical_models.FamilyMedicalHistory.DoesNotExist,
+                medical_models.RiskAssessment.DoesNotExist):
+            pass
+
     context = {
+        'faculty': faculty,
+        'patient': patient,
+        'medical_history': medical_history,
+        'family_history': family_history,
+        'risk_assessment': risk_assessment,
+        'physical_exam': physical_exam,
         'total_students': total_students,
         'pending_requests': pending_requests,
         'todays_appointments': todays_appointments,
         'recent_requests': recent_requests,
-        'appointments': appointments,
-        'medical_profile_incomplete': medical_profile_incomplete, # Pass flag to template
+        'appointments': calendar_events,
+        'medical_profile_incomplete': medical_profile_incomplete,
     }
     
     return render(request, 'faculty_dashboard.html', context)

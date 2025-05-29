@@ -173,7 +173,22 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        window.location.href = data.redirect_url;
+                        // Show success message before redirecting
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message || 'OTP verified successfully',
+                            showConfirmButton: false,
+                            timer: 1500
+                        }).then(() => {
+                            // Redirect to the URL provided by the server
+                            if (data.redirect_url) {
+                                window.location.href = data.redirect_url;
+                            } else {
+                                // Fallback to main view if no redirect URL is provided
+                                window.location.href = '{% url "main:main" %}';
+                            }
+                        });
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -183,6 +198,7 @@
                     }
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',

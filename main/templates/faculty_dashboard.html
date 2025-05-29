@@ -1,166 +1,418 @@
 {% extends 'mainv2.html' %}
-{% load static %}
+{% load static tailwind_tags %}
+
+{% block title %} HealthHub Connect | Faculty Dashboard {% endblock %}
+
+{% block extra_css %} 
+{% tailwind_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    .tab-button.active {
+        background-color: #3B82F6;
+        color: white;
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .profile-icon {
+        font-size: 6rem;
+        width: 12rem;
+        height: 12rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #E5F2FF;
+        color: #3B82F6;
+        border-radius: 9999px;
+        cursor: pointer;
+    }
+    .profile-icon img {
+        cursor: pointer;
+    }
+    .custom-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .content-area {
+        height: calc(100vh - 4rem);
+        overflow-y: auto;
+    }
+    .tab-content {
+        transition: opacity 0.2s ease-in-out;
+    }
+    .tab-content:not(.active) {
+        display: none;
+        opacity: 0;
+    }
+    .tab-content.active {
+        display: block;
+        opacity: 1;
+    }
+    .sticky {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+    }
+    .calendar-grid {
+        background-color: white;
+        border-radius: 0.5rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="p-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        <!-- Total Students Card -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-blue-100 text-blue-500">
-                    <i class="fas fa-users text-2xl"></i>
+<div class="w-full h-full flex items-center justify-start">
+    <div class="w-[1300px] bg-white rounded-[24px] shadow-lg overflow-hidden flex ml-4">
+    {% if patient %}
+        <!-- Left: Profile Section -->
+        <div class="w-[260px] p-6 bg-white border-r flex flex-col items-start text-left">
+            <form id="profile-picture-form" method="post" action="{% url 'main:upload_profile_picture' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if patient.profile_picture %}
+                    <div class="profile-icon mb-6">
+                        <img src="{{ patient.profile_picture.url }}" alt="Profile Picture" class="rounded-full w-full h-full object-cover">
+                    </div>
+                {% else %}
+                    <div class="profile-icon mb-6">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                {% endif %}
+                <h2 class="text-xl font-bold text-gray-800 mb-2">{{ faculty.user.get_full_name }}</h2>
+                <p class="text-gray-600 mb-2">Faculty ID: {{ faculty.faculty_id }}</p>
+                <p class="text-gray-600 mb-2">{{ faculty.department }}, {{ faculty.position }}</p>
+                <p class="text-gray-600 mb-2">Sex: {{ faculty.sex }}</p>
+                {% if patient.birth_date %}
+                    <p class="text-gray-600 mb-2">Birth Date: {{ patient.birth_date }}</p>
+                {% endif %}
+                {% if patient.age %}
+                    <p class="text-gray-600 mb-2">Age: {{ patient.age }}</p>
+                {% endif %}
+                {% if patient.civil_status %}
+                    <p class="text-gray-600 mb-2">Civil Status: {{ patient.civil_status }}</p>
+                {% endif %}
+                {% if patient.nationality %}
+                    <p class="text-gray-600 mb-2">Nationality: {{ patient.nationality }}</p>
+                {% endif %}
+                {% if patient.religion %}
+                    <p class="text-gray-600 mb-2">Religion: {{ patient.religion }}</p>
+                {% endif %}
+
+                <input type="file" id="profile-picture-upload" name="profile_picture" class="hidden" accept="image/*">
+                <button type="button" id="editProfileBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Upload Profile Picture</button>
+            </form>
+        </div>
+
+        <!-- Center: Tabbed Information -->
+        <div class="flex-1 h-full flex flex-col overflow-x-auto p-8">
+            <div class="border-b sticky top-0 bg-white z-10 mb-4">
+                <div class="flex overflow-x-auto">
+                    <button class="tab-button active px-6 py-3 text-sm font-medium" data-tab="general">General Information</button>
+                    <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="medical">Medical Information</button>
+                    <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="history">Medical History</button>
+                    <button class="tab-button px-6 py-3 text-sm font-medium" data-tab="contact">Contact Information</button>
                 </div>
-                <div class="ml-4">
-                    <h2 class="text-gray-600 text-sm">Total Students</h2>
-                    <p class="text-2xl font-semibold">{{ total_students }}</p>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar flex-1">
+                <div class="p-2">
+                    <!-- General Information Tab -->
+                    <div class="tab-content active" id="general-tab">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Sex</h3>
+                                <p class="text-gray-900">{{ faculty.sex }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Age</h3>
+                                <p class="text-gray-900">{{ patient.age }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Birth Date</h3>
+                                <p class="text-gray-900">{{ patient.birth_date }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Civil Status</h3>
+                                <p class="text-gray-900">{{ patient.civil_status }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Nationality</h3>
+                                <p class="text-gray-900">{{ patient.nationality }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Religion</h3>
+                                <p class="text-gray-900">{{ patient.religion }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Information Tab -->
+                    <div class="tab-content" id="medical-tab">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Blood Type</h3>
+                                <p class="text-gray-900">{{ patient.bloodtype }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Height</h3>
+                                <p class="text-gray-900">{{ patient.height }} cm</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Weight</h3>
+                                <p class="text-gray-900">{{ patient.weight }} kg</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Blood Pressure</h3>
+                                <p class="text-gray-900">{{ patient.blood_pressure|default:"Not recorded" }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Allergies</h3>
+                                <p class="text-gray-900">{{ patient.allergies|default:"None" }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Current Medications</h3>
+                                <p class="text-gray-900">{{ patient.medications|default:"None" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical History Tab -->
+                    <div class="tab-content" id="history-tab">
+                        <div class="grid grid-cols-1 gap-4">
+                            {% if medical_history and not medical_history.no_history %}
+                                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                    <h3 class="font-semibold text-gray-700 mb-2">Medical Conditions</h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        {% if medical_history.tuberculosis %}
+                                            <p class="text-gray-900">• Tuberculosis</p>
+                                        {% endif %}
+                                        {% if medical_history.hypertension %}
+                                            <p class="text-gray-900">• Hypertension</p>
+                                        {% endif %}
+                                        <!-- Add other medical conditions as needed -->
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                    <h3 class="font-semibold text-gray-700 mb-2">Medical History</h3>
+                                    <p class="text-gray-900">No medical history reported</p>
+                                </div>
+                            {% endif %}
+
+                            {% if family_history and not family_history.no_history %}
+                                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                    <h3 class="font-semibold text-gray-700 mb-2">Family Medical History</h3>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        {% if family_history.hypertension %}
+                                            <p class="text-gray-900">• Hypertension</p>
+                                        {% endif %}
+                                        {% if family_history.asthma %}
+                                            <p class="text-gray-900">• Asthma</p>
+                                        {% endif %}
+                                        <!-- Add other family medical conditions as needed -->
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                    <h3 class="font-semibold text-gray-700 mb-2">Family Medical History</h3>
+                                    <p class="text-gray-900">No family medical history reported</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Tab -->
+                    <div class="tab-content" id="contact-tab">
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Home Address</h3>
+                                <p class="text-gray-900">{{ patient.home_address }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">City</h3>
+                                <p class="text-gray-900">{{ patient.city }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Province</h3>
+                                <p class="text-gray-900">{{ patient.state_province }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Postal Code</h3>
+                                <p class="text-gray-900">{{ patient.postal_zipcode }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Emergency Contact</h3>
+                                <p class="text-gray-900">{{ patient.parent_guardian }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                <h3 class="font-semibold text-gray-700 mb-2">Emergency Contact Number</h3>
+                                <p class="text-gray-900">{{ patient.parent_guardian_contact_number }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Pending Requests Card -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-yellow-100 text-yellow-500">
-                    <i class="fas fa-clock text-2xl"></i>
+        <!-- Right: Requests and Calendar Section -->
+        <div class="w-[350px] p-6 bg-gray-50 border-l flex flex-col">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Recent Requests</h2>
+            <div class="flex-1 overflow-y-auto rounded-lg mb-6">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th class="px-3 py-2 text-left font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for request in recent_requests %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-3 py-2">{{ request.request_type }}</td>
+                            <td class="px-3 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
+                            <td class="px-3 py-2">
+                                {% if request.approve %}
+                                    <span class="inline-block px-2 py-1 rounded bg-green-100 text-green-800">Approved</span>
+                                {% else %}
+                                    <span class="inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-800">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-3 py-8 text-center text-gray-400">No requests found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Calendar Section -->
+            <div class="bg-white rounded-lg p-4 shadow-sm">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Calendar</h2>
+                    <div class="flex space-x-2">
+                        <button id="prevMonth" class="p-2 hover:bg-gray-100 rounded-full">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="nextMonth" class="p-2 hover:bg-gray-100 rounded-full">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="ml-4">
-                    <h2 class="text-gray-600 text-sm">Pending Requests</h2>
-                    <p class="text-2xl font-semibold">{{ pending_requests }}</p>
-                </div>
+                <div id="calendar" class="calendar-grid"></div>
             </div>
         </div>
-
-        <!-- Today's Appointments Card -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-green-100 text-green-500">
-                    <i class="fas fa-calendar-check text-2xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h2 class="text-gray-600 text-sm">Today's Appointments</h2>
-                    <p class="text-2xl font-semibold">{{ todays_appointments }}</p>
-                </div>
+    {% else %}
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center w-full flex items-center justify-center">
+            <div>
+                <p class="text-gray-600 mb-4">No medical records found. Please complete your medical form.</p>
+                <a href="{% url 'main:patient_form' %}" class="inline-block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Complete Medical Form</a>
             </div>
         </div>
-    </div>
-
-    <!-- Recent Activity Section -->
-    <div class="bg-white rounded-lg shadow p-4 mb-4">
-        <h2 class="text-lg font-semibold mb-4">Recent Activity</h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% for request in recent_requests %}
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ request.student.firstname }} {{ request.student.lastname }}</div>
-                            <div class="text-sm text-gray-500">{{ request.student.student_id }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ request.request_type }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ request.date_requested|date:"M d, Y" }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {% if request.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                {% elif request.status == 'approved' %}bg-green-100 text-green-800
-                                {% else %}bg-red-100 text-red-800{% endif %}">
-                                {{ request.status|title }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="viewRequest({{ request.id }})" class="text-blue-600 hover:text-blue-900">View</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Calendar Section -->
-    <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-lg font-semibold mb-4">Upcoming Appointments</h2>
-        <div id="calendar" class="calendar"></div>
+    {% endif %}
     </div>
 </div>
-
-<!-- Request Details Modal -->
-<div id="requestModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Request Details</h3>
-            <div class="mt-2 px-7 py-3">
-                <div id="requestDetails" class="text-sm text-gray-500">
-                    <!-- Request details will be loaded here -->
-                </div>
-            </div>
-            <div class="items-center px-4 py-3">
-                <button id="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
 
 {% block extra_js %}
 <script>
-    // Initialize calendar
-    document.addEventListener('DOMContentLoaded', function() {
-        const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            events: [
-                {% for appointment in appointments %}
-                {
-                    title: '{{ appointment.student.firstname }} {{ appointment.student.lastname }}',
-                    start: '{{ appointment.date_requested|date:"Y-m-d" }}',
-                    description: '{{ appointment.request_type }}'
-                },
-                {% endfor %}
-            ],
-            eventClick: function(info) {
-                alert('Appointment: ' + info.event.title + '\nType: ' + info.event.extendedProps.description);
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab Switching Logic
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab');
+            const content = document.getElementById(`${tabId}-tab`);
+            if (content) {
+                content.classList.add('active');
             }
         });
-        calendar.render();
     });
 
-    // Request modal functionality
-    function viewRequest(requestId) {
-        const modal = document.getElementById('requestModal');
-        const details = document.getElementById('requestDetails');
-        
-        // Fetch request details
-        fetch(`/api/request/${requestId}/`)
-            .then(response => response.json())
-            .then(data => {
-                details.innerHTML = `
-                    <p><strong>Student:</strong> ${data.student_name}</p>
-                    <p><strong>Request Type:</strong> ${data.request_type}</p>
-                    <p><strong>Date:</strong> ${data.date_requested}</p>
-                    <p><strong>Status:</strong> ${data.status}</p>
-                    <p><strong>Notes:</strong> ${data.notes || 'No notes'}</p>
-                `;
-                modal.classList.remove('hidden');
-            });
+    // Calendar Initialization
+    const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: '',
+            center: 'title',
+            right: ''
+        },
+        events: [
+            {% for appointment in appointments %}
+            {
+                title: '{{ appointment.title|escapejs }}',
+                start: '{{ appointment.start|escapejs }}',
+                description: '{{ appointment.description|escapejs }}',
+                backgroundColor: '#3B82F6',
+                borderColor: '#3B82F6',
+                textColor: '#ffffff'
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-semibold">Appointment Details</h3>
+                        <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <p><span class="font-medium">Student:</span> ${info.event.title}</p>
+                        <p><span class="font-medium">Date:</span> ${info.event.start.toLocaleDateString()}</p>
+                        <p><span class="font-medium">Type:</span> ${info.event.extendedProps.description}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        },
+        dayMaxEvents: true,
+        height: 'auto',
+        aspectRatio: 1.35
+    });
+    calendar.render();
+
+    // Calendar Navigation
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        calendar.prev();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        calendar.next();
+    });
+
+    // Profile Picture Upload
+    const editBtn = document.getElementById('editProfileBtn');
+    const profilePictureInput = document.getElementById('profile-picture-upload');
+    const profilePictureForm = document.getElementById('profile-picture-form');
+
+    if (editBtn && profilePictureInput && profilePictureForm) {
+        editBtn.onclick = () => {
+            profilePictureInput.click();
+        };
+
+        profilePictureInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                profilePictureForm.submit();
+            }
+        });
     }
-
-    document.getElementById('closeModal').addEventListener('click', function() {
-        document.getElementById('requestModal').classList.add('hidden');
-    });
+});
 </script>
+{% endblock %}
+
 {% endblock %} 
