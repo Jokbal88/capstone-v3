@@ -40,13 +40,16 @@ class EmailVerification(models.Model):
 
 class Faculty(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    faculty_id = models.CharField(max_length=7, unique=True, null=True, blank=True)
     department = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
+    sex = models.CharField(max_length=1, choices=Student.GENDER_CHOICES, null=True, blank=True)
+    middlename = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.get_full_name()} - {self.position}"
+        return f"{self.user.get_full_name()} ({self.faculty_id}) - {self.position}"
 
 class Profile(models.Model):
     ROLE_CHOICES = (

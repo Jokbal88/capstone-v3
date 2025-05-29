@@ -325,7 +325,7 @@
                 <input
                   type="text"
                   class="w-full rounded-md"
-                  id="firstName"
+                  id="facultyFirstName"
                   name="firstName"
                   placeholder="Enter your first name"
                   required
@@ -336,33 +336,70 @@
                 <input
                   type="text"
                   class="w-full rounded-md"
-                  id="middleInitial"
+                  id="facultyMiddleInitial"
                   name="middleInitial"
                   maxlength="1"
                   placeholder="Enter your middle initial"
                   required
                 />
               </div>
-            </div>
-            <div class="flex w-full gap-2">
               <div class="w-full flex flex-col">
                 <label for="lastName" class="w-fit">Last Name</label>
                 <input
                   class="w-full rounded-md"
                   type="text"
-                  class="w-full rounded-md"
-                  id="lastName"
+                  id="facultyLastName"
                   name="lastName"
                   placeholder="Enter your last name"
                   required
                 />
               </div>
+            </div>
+            <div class="flex w-full gap-2">
               <div class="flex flex-col w-full">
                 <label for="sex">Sex</label>
-                <select class="w-full rounded-md" name="sex" id="sex" required>
+                <select class="w-full rounded-md" name="sex" id="facultySex" required>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
                 </select>
+              </div>
+              <div class="w-full flex flex-col">
+                <label for="idNumber">ID Number</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  id="facultyIdNumber"
+                  name="idNumber"
+                  maxlength="7"
+                  placeholder="Enter your ID number"
+                  required
+                  pattern="[0-9]{7}"
+                  title="Please enter a valid 7-digit ID number"
+                />
+              </div>
+            </div>
+            <div class="flex w-full gap-2">
+              <div class="flex flex-col w-full">
+                <label for="department">Department</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  id="department"
+                  name="department"
+                  placeholder="Enter your department"
+                  required
+                />
+              </div>
+              <div class="flex flex-col w-full">
+                <label for="position">Position</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  id="position"
+                  name="position"
+                  placeholder="Enter your position"
+                  required
+                />
               </div>
             </div>
             <div class="flex flex-col w-full">
@@ -370,7 +407,7 @@
               <input
                 class="w-full rounded-md"
                 type="email"
-                id="email"
+                id="facultyEmail"
                 name="email"
                 placeholder="Enter your email"
                 required
@@ -382,34 +419,34 @@
                 <input
                   class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   type="password"
-                  id="password"
+                  id="facultyPassword"
                   name="password"
                   placeholder="Enter your password"
                   required
                   minlength="8"
                 />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="togglePassword">
+                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleFacultyPassword">
                   <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
                 </span>
               </div>
               <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="length-check">
+                <div class="flex items-center gap-2" id="facultyLength-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>At least 8 characters</span>
                 </div>
-                <div class="flex items-center gap-2" id="uppercase-check">
+                <div class="flex items-center gap-2" id="facultyUppercase-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>At least one uppercase letter</span>
                 </div>
-                <div class="flex items-center gap-2" id="lowercase-check">
+                <div class="flex items-center gap-2" id="facultyLowercase-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>At least one lowercase letter</span>
                 </div>
-                <div class="flex items-center gap-2" id="number-check">
+                <div class="flex items-center gap-2" id="facultyNumber-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>At least one number</span>
                 </div>
-                <div class="flex items-center gap-2" id="special-check">
+                <div class="flex items-center gap-2" id="facultySpecial-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>At least one special character (!@#$%^&*(),.?":{}|<>)</span>
                 </div>
@@ -421,18 +458,18 @@
                 <input
                   class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   type="password"
-                  id="confirmPassword"
+                  id="facultyConfirmPassword"
                   name="confirmPassword"
                   placeholder="Confirm your password"
                   required
                   minlength="8"
                 />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleConfirmPassword">
+                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleFacultyConfirmPassword">
                   <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
                 </span>
               </div>
               <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="match-check">
+                <div class="flex items-center gap-2" id="facultyMatch-check">
                   <i class="fas fa-circle text-gray-300"></i>
                   <span>Passwords match</span>
                 </div>
@@ -448,99 +485,28 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-      // LRN validation
+      // Get radio buttons and form containers
+      const studentRole = document.getElementById('studentRole');
+      const facultyRole = document.getElementById('facultyRole');
+
+      const studentForm = document.querySelector('#studentForm');
+      const facultyForm = document.querySelector('#facultyForm');
+
+      // LRN validation (only applies to student form)
       const lrnInput = document.getElementById('lrn');
-      lrnInput.addEventListener('input', function(e) {
-          // Remove any non-digit characters
-          this.value = this.value.replace(/[^0-9]/g, '');
-      });
 
-      // ID Number validation
+      // Student form ID Number validation
       const idNumberInput = document.getElementById('idNumber');
-      idNumberInput.addEventListener('input', function(e) {
-          // Remove any non-digit characters
-          this.value = this.value.replace(/[^0-9]/g, '');
-      });
 
-      document.querySelector('form').addEventListener('submit', function(e) {
-          e.preventDefault();
-          
-          // Validate LRN length
-          if (lrnInput.value.length !== 12) {
-              Swal.fire({
-                  icon: 'error',
-                  title: 'Invalid LRN',
-                  text: 'LRN must be exactly 12 digits.'
-              });
-              return;
-          }
+      // Faculty ID Number validation
+      const facultyIdNumberInput = document.getElementById('facultyIdNumber');
 
-          // Validate ID Number length
-          if (idNumberInput.value.length !== 7) {
-              Swal.fire({
-                  icon: 'error',
-                  title: 'Invalid ID Number',
-                  text: 'ID Number must be exactly 7 digits.'
-              });
-              return;
-          }
-          
-          fetch(this.action, {
-              method: 'POST',
-              body: new FormData(this),
-              headers: {
-                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-              }
-          })
-          .then(response => response.json())
-          .then(data => {
-              if (data.status === 'success') {
-                  Swal.fire({
-                      icon: 'success',
-                      title: 'Registration Successful!',
-                      text: 'Please check your email for the verification code.',
-                      showConfirmButton: false,
-                      timer: 1500
-                  }).then(() => {
-                      window.location.href = "/";
-                  });
-              } else {
-                  // Handle specific error messages
-                  let errorMessage = 'Registration failed. Please try again.';
-                  if (data.message) {
-                      if (data.message.includes('Student ID')) {
-                          errorMessage = 'This Student ID is already registered.';
-                      } else if (data.message.includes('Email')) {
-                          errorMessage = 'This email is already registered.';
-                      } else {
-                          errorMessage = data.message;
-                      }
-                  }
-                  
-                  Swal.fire({
-                      icon: 'error',
-                      title: 'Registration Failed',
-                      text: errorMessage
-                  });
-              }
-          })
-          .catch(error => {
-              console.error('Error:', error);
-              Swal.fire({
-                  icon: 'error',
-                  title: 'Registration Failed',
-                  text: 'An error occurred. Please try again.'
-              });
-          });
-      });
-
-      // Password validation
+      // Password validation elements for student form
       const passwordInput = document.getElementById('password');
       const confirmPasswordInput = document.getElementById('confirmPassword');
       const togglePassword = document.getElementById('togglePassword');
       const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
 
-      // Password validation checks
       const lengthCheck = document.getElementById('length-check');
       const uppercaseCheck = document.getElementById('uppercase-check');
       const lowercaseCheck = document.getElementById('lowercase-check');
@@ -548,7 +514,84 @@
       const specialCheck = document.getElementById('special-check');
       const matchCheck = document.getElementById('match-check');
 
+      // Password validation elements for faculty form
+      const facultyPasswordInput = document.getElementById('facultyPassword');
+      const facultyConfirmPasswordInput = document.getElementById('facultyConfirmPassword');
+      const toggleFacultyPassword = document.getElementById('toggleFacultyPassword');
+      const toggleFacultyConfirmPassword = document.getElementById('toggleFacultyConfirmPassword');
+
+      const facultyLengthCheck = document.getElementById('facultyLength-check');
+      const facultyUppercaseCheck = document.getElementById('facultyUppercase-check');
+      const facultyLowercaseCheck = document.getElementById('facultyLowercase-check');
+      const facultyNumberCheck = document.getElementById('facultyNumber-check');
+      const facultySpecialCheck = document.getElementById('facultySpecial-check');
+      const facultyMatchCheck = document.getElementById('facultyMatch-check');
+
+      // Faculty form specific elements
+      const facultyFirstNameInput = document.getElementById('facultyFirstName');
+      const facultyMiddleInitialInput = document.getElementById('facultyMiddleInitial');
+      const facultyLastNameInput = document.getElementById('facultyLastName');
+      const facultySexSelect = document.getElementById('facultySex');
+      const facultyEmailInput = document.getElementById('facultyEmail');
+      const departmentInput = document.getElementById('department');
+      const positionInput = document.getElementById('position');
+
+
+      // Function to toggle form visibility
+      function toggleForms() {
+          if (studentRole.checked) {
+              studentForm.style.display = 'flex';
+              facultyForm.style.display = 'none';
+               // attachLrnListener(); // Call here as well when switching to student form
+          } else if (facultyRole.checked) {
+              studentForm.style.display = 'none';
+              facultyForm.style.display = 'flex';
+          }
+      }
+
+      // Add event listeners to radio buttons
+      studentRole.addEventListener('change', toggleForms);
+      facultyRole.addEventListener('change', toggleForms);
+
+      // Initial check on page load
+      toggleForms();
+
+      // LRN validation (only applies to student form)
+      function attachLrnListener() {
+          if (studentRole.checked) {
+              lrnInput.addEventListener('input', function(e) {
+                  this.value = this.value.replace(/[^0-9]/g, '');
+              });
+          }
+      }
+
+      // Call on initial load
+      attachLrnListener();
+
+      // Call when role changes
+      studentRole.addEventListener('change', attachLrnListener);
+      facultyRole.addEventListener('change', function() {
+          // Optionally remove listener if needed, though not strictly necessary with the check inside
+          // For simplicity here, we rely on the check inside attachLrnListener
+      });
+
+      // Student form ID Number validation
+       if (idNumberInput) { // Check if element exists
+            idNumberInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+       }
+
+      // Faculty ID Number validation
+      if (facultyIdNumberInput) { // Check if element exists
+          facultyIdNumberInput.addEventListener('input', function(e) {
+              this.value = this.value.replace(/[^0-9]/g, '');
+          });
+      }
+
+      // Password validation functions
       function updateValidationUI(element, isValid) {
+          if (!element) return; // Added check
           const icon = element.querySelector('i');
           if (isValid) {
               icon.className = 'fas fa-check-circle text-green-500';
@@ -561,76 +604,271 @@
           }
       }
 
-      function validatePassword(password) {
+       function validatePassword(password, lengthElement, uppercaseElement, lowercaseElement, numberElement, specialElement) {
           const hasLength = password.length >= 8;
           const hasUppercase = /[A-Z]/.test(password);
           const hasLowercase = /[a-z]/.test(password);
           const hasNumber = /\d/.test(password);
           const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-          updateValidationUI(lengthCheck, hasLength);
-          updateValidationUI(uppercaseCheck, hasUppercase);
-          updateValidationUI(lowercaseCheck, hasLowercase);
-          updateValidationUI(numberCheck, hasNumber);
-          updateValidationUI(specialCheck, hasSpecial);
+          updateValidationUI(lengthElement, hasLength);
+          updateValidationUI(uppercaseElement, hasUppercase);
+          updateValidationUI(lowercaseElement, hasLowercase);
+          updateValidationUI(numberElement, hasNumber);
+          updateValidationUI(specialElement, hasSpecial);
 
           return hasLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
       }
 
-      function validatePasswordMatch() {
-          const password = passwordInput.value;
-          const confirmPassword = confirmPasswordInput.value;
+      function validatePasswordMatch(password, confirmPassword, matchElement) {
           const isValid = password === confirmPassword && password !== '';
-          updateValidationUI(matchCheck, isValid);
+          updateValidationUI(matchElement, isValid);
           return isValid;
       }
 
-      passwordInput.addEventListener('input', function() {
-          validatePassword(this.value);
-          validatePasswordMatch();
-      });
 
-      confirmPasswordInput.addEventListener('input', validatePasswordMatch);
-
-      // Toggle password visibility
-      togglePassword.addEventListener('click', function() {
-          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-          passwordInput.setAttribute('type', type);
-          this.querySelector('i').classList.toggle('fa-eye');
-          this.querySelector('i').classList.toggle('fa-eye-slash');
-      });
-
-      toggleConfirmPassword.addEventListener('click', function() {
-          const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-          confirmPasswordInput.setAttribute('type', type);
-          this.querySelector('i').classList.toggle('fa-eye');
-          this.querySelector('i').classList.toggle('fa-eye-slash');
-      });
-      
-      // Get radio buttons and student fields container
-      const studentRole = document.getElementById('studentRole');
-      const facultyRole = document.getElementById('facultyRole');
-
-      const studentForm = document.querySelector('#studentForm');
-      const facultyForm = document.querySelector('#facultyForm');
-
-      // Function to toggle student fields visibility
-      function toggleStudentFields() {
-          if (studentRole.checked) {
-              studentForm.classList.replace('hidden', 'flex');
-              facultyForm.classList.replace('flex', 'hidden');
-          } else {
-              studentForm.classList.replace('flex', 'hidden');
-              facultyForm.classList.replace('hidden', 'flex');
-          }
+      // Add event listeners for student password validation
+      if (passwordInput) { // Added check
+            passwordInput.addEventListener('input', function() {
+                validatePassword(this.value, lengthCheck, uppercaseCheck, lowercaseCheck, numberCheck, specialCheck);
+                validatePasswordMatch(this.value, confirmPasswordInput.value, matchCheck);
+            });
       }
 
-      // Add event listeners to radio buttons
-      studentRole.addEventListener('change', toggleStudentFields);
-      facultyRole.addEventListener('change', toggleStudentFields);
+      if (confirmPasswordInput) { // Added check
+           confirmPasswordInput.addEventListener('input', function() {
+                validatePasswordMatch(passwordInput.value, this.value, matchCheck);
+           });
+      }
 
-      // Initial check on page load
-      toggleStudentFields();
+
+      // Add event listeners for faculty password validation
+      if (facultyPasswordInput) { // Added check
+          facultyPasswordInput.addEventListener('input', function() {
+              validatePassword(this.value, facultyLengthCheck, facultyUppercaseCheck, facultyLowercaseCheck, facultyNumberCheck, facultySpecialCheck);
+              validatePasswordMatch(this.value, facultyConfirmPasswordInput.value, facultyMatchCheck);
+          });
+      }
+
+      if (facultyConfirmPasswordInput) { // Added check
+          facultyConfirmPasswordInput.addEventListener('input', function() {
+              validatePasswordMatch(facultyPasswordInput.value, this.value, facultyMatchCheck);
+          });
+      }
+
+
+      // Toggle password visibility for student form
+      if (togglePassword) { // Added check
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.querySelector('i').classList.toggle('fa-eye');
+                this.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+      }
+
+
+      // Toggle password visibility for faculty form
+      if (toggleFacultyPassword) { // Added check
+          toggleFacultyPassword.addEventListener('click', function() {
+              const type = facultyPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+              facultyPasswordInput.setAttribute('type', type);
+              this.querySelector('i').classList.toggle('fa-eye');
+              this.querySelector('i').classList.toggle('fa-eye-slash');
+          });
+      }
+
+
+      // Toggle confirm password visibility for student form
+      if (toggleConfirmPassword) { // Added check
+          toggleConfirmPassword.addEventListener('click', function() {
+              const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+              confirmPasswordInput.setAttribute('type', type);
+              this.querySelector('i').classList.toggle('fa-eye');
+              this.querySelector('i').classList.toggle('fa-eye-slash');
+          });
+      }
+
+
+      // Toggle confirm password visibility for faculty form
+       if (toggleFacultyConfirmPassword) { // Added check
+          toggleFacultyConfirmPassword.addEventListener('click', function() {
+              const type = facultyConfirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+              facultyConfirmPasswordInput.setAttribute('type', type);
+              this.querySelector('i').classList.toggle('fa-eye');
+              this.querySelector('i').classList.toggle('fa-eye-slash');
+          });
+       }
+
+
+      // Student form submission handler
+      if (studentForm) { // Added check
+            studentForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Only proceed if the student form is currently displayed
+                if (studentForm.style.display === 'none') {
+                    return; // Stop if the form is hidden
+                }
+
+                // Get the selected role and add it to FormData
+                const selectedRole = document.querySelector('input[name="role"]:checked').value;
+                const formData = new FormData(this);
+                formData.append('role', selectedRole);
+
+                // Validate LRN length
+                if (lrnInput.value.length !== 12) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid LRN',
+                        text: 'LRN must be exactly 12 digits.'
+                    });
+                    return;
+                }
+
+                // Validate student ID Number length
+                if (idNumberInput.value.length !== 7) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid ID Number',
+                        text: 'ID Number must be exactly 7 digits.'
+                    });
+                    return;
+                }
+
+                 // Validate student password
+                if (!validatePassword(passwordInput.value, lengthCheck, uppercaseCheck, lowercaseCheck, numberCheck, specialCheck) || !validatePasswordMatch(passwordInput.value, confirmPasswordInput.value, matchCheck)) {
+                     Swal.fire({
+                        icon: 'error',
+                        title: 'Password Validation Failed',
+                        text: 'Please ensure your password meets all the requirements and the confirmation matches.'
+                    });
+                    return;
+                }
+
+                // If all student validations pass, submit the form via fetch
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Registration Successful!',
+                            text: 'registered successfully, Please proceed to login',
+                            showConfirmButton: false,
+                            timer: 1500
+                        }).then(() => {
+                            window.location.href = "/"; // Redirect after success
+                        });
+                    } else {
+                        let errorMessage = 'Registration failed. Please try again.';
+                        if (data.message) {
+                            if (data.message.includes('Student ID')) {
+                                errorMessage = 'This Student ID is already registered.';
+                            } else if (data.message.includes('Email')) {
+                                errorMessage = 'This email is already registered.';
+                            } else {
+                                errorMessage = data.message;
+                            }
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Registration Failed',
+                            text: errorMessage
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Registration Failed',
+                        text: 'An error occurred. Please try again.'
+                    });
+                });
+            });
+      }
+
+
+      // Faculty form submission handler
+      if (facultyForm) { // Added check
+            facultyForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                // Only proceed if the faculty form is currently displayed
+                if (facultyForm.style.display === 'none') {
+                    return; // Stop if the form is hidden
+                }
+
+                // Get the selected role and add it to FormData
+                const selectedRole = document.querySelector('input[name="role"]:checked').value;
+                const formData = new FormData(this);
+                formData.append('role', selectedRole);
+
+                // Validate Faculty ID Number length
+                if (facultyIdNumberInput.value.length !== 7) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid ID Number',
+                        text: 'ID Number must be exactly 7 digits.'
+                    });
+                    return;
+                }
+
+                // Validate faculty password
+                if (!validatePassword(facultyPasswordInput.value, facultyLengthCheck, facultyUppercaseCheck, facultyLowercaseCheck, facultyNumberCheck, facultySpecialCheck) || !validatePasswordMatch(facultyPasswordInput.value, facultyConfirmPasswordInput.value, facultyMatchCheck)) {
+                     Swal.fire({
+                        icon: 'error',
+                        title: 'Password Validation Failed',
+                        text: 'Please ensure your password meets all the requirements and the confirmation matches.'
+                    });
+                    return;
+                }
+
+                // If all faculty validations pass, submit the form via fetch
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: 'registered successfully, Please proceed to login'
+                        }).then(() => {
+                            window.location.href = '/'; // Redirect after success
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.message
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'An error occurred during registration.'
+                    });
+                });
+            });
+      }
+
     </script>
   </body>
 </html>

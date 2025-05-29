@@ -142,6 +142,14 @@ class FacultyAdmin(admin.ModelAdmin):
     list_filter = ('department', 'position')
     search_fields = ('user__first_name', 'user__last_name', 'user__email', 'department', 'position')
     ordering = ('user__last_name', 'user__first_name')
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        (None, {'fields': ('user', 'faculty_id')}),
+        ('Personal Information', {'fields': ('sex', 'middlename')}),
+        ('Professional Information', {'fields': ('department', 'position')}),
+        ('Important Dates', {'fields': ('created_at', 'updated_at')}),
+    )
 
     def get_name(self, obj):
         return f"{obj.user.get_full_name()}"

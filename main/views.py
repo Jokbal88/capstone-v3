@@ -97,6 +97,8 @@ def login_view(request):
 @require_http_methods(["GET", "POST"])
 def register(request):
     if request.method == "POST":
+        print("Received POST request in register view.")
+        print("POST data:", request.POST)
         try:
             # Get form data
             firstName = request.POST.get("firstName")
@@ -112,9 +114,14 @@ def register(request):
             confirmPassword = request.POST.get("confirmPassword")
             role = request.POST.get("role", 'Student') # Get selected role, default to Student
 
+            print("Received role:", role)
+            if role == 'Student':
+                 print("Received LRN for student:", lrn)
+
             # Validate LRN format only for students
             if role == 'Student':
                 if not lrn or not lrn.isdigit() or len(lrn) != 12:
+                    print("LRN validation failed for student.")
                     return JsonResponse({
                         'status': 'error',
                         'message': 'LRN must be exactly 12 digits.'
@@ -192,35 +199,55 @@ def register(request):
             elif role == 'Faculty': # Explicitly check for Faculty role
                 department = request.POST.get('department')
                 position = request.POST.get('position')
+                faculty_id = request.POST.get('idNumber') # Get the ID number for faculty
+                sex = request.POST.get('sex') # Get the sex for faculty
+                middlename = request.POST.get('middleInitial') # Get the middle initial for faculty
 
-                if not all([department, position]):
+                if not all([department, position, faculty_id, sex]):
                     return JsonResponse({
                         'status': 'error',
-                        'message': 'Please provide department and position information.'
+                        'message': 'Please provide all required faculty information (Department, Position, ID Number, Sex).'
+                    })
+
+                # Optional validation for faculty ID format (if needed, add here)
+                if not faculty_id.isdigit() or len(faculty_id) != 7:
+                     return JsonResponse({
+                         'status': 'error',
+                         'message': 'Faculty ID Number must be exactly 7 digits.'
+                     })
+
+                # Check if faculty ID already exists
+                if Faculty.objects.filter(faculty_id=faculty_id).exists():
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Faculty ID already registered.'
                     })
 
                 # Create Faculty instance
                 Faculty.objects.create(
                     user=user,
+                    faculty_id=faculty_id,
                     department=department,
-                    position=position
+                    position=position,
+                    sex=sex,
+                    middlename=middlename
                 )
             else:
-                 return JsonResponse({
+                return JsonResponse({
                     'status': 'error',
                     'message': 'Invalid role specified.'
                 })
 
             # Generate OTP and create verification
-            otp = ''.join(random.choices('0123456789', k=6))
-            verification = EmailVerification.objects.create(user=user, otp=otp)
+            # otp = ''.join(random.choices('0123456789', k=6))
+            # verification = EmailVerification.objects.create(user=user, otp=otp)
             
             # Send verification email
-            send_verification_email(user, verification)
+            # send_verification_email(user, verification)
 
             return JsonResponse({
                 'status': 'success',
-                'message': 'Registration successful. Please check your email for the verification code.'
+                'message': 'Registration successful. Please log in to verify your email.'
             })
 
         except Exception as e:
