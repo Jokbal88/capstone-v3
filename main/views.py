@@ -332,22 +332,12 @@ def verify_otp(request):
                 if 'verification_email' in request.session:
                     del request.session['verification_email']
                 
-                # Return success response with appropriate redirect URL
-                if user.is_staff or user.is_superuser:
-                    return JsonResponse({
-                        'status': 'success',
-                        'redirect_url': reverse('main:admin_dashboard')
-                    })
-                elif hasattr(user, 'profile') and user.profile.role == 'Faculty':
-                    return JsonResponse({
-                        'status': 'success',
-                        'redirect_url': reverse('main:faculty_dashboard')
-                    })
-                else:
-                    return JsonResponse({
-                        'status': 'success',
-                        'redirect_url': reverse('main:student_dashboard')
-                    })
+                # Redirect to main_view to handle profile completion check and subsequent redirection
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'OTP verified successfully.',
+                    'redirect_url': reverse('main:main')
+                })
             else:
                 print(f"OTP mismatch. Stored OTP: {verification.otp}")
                 return JsonResponse({
@@ -545,34 +535,40 @@ def main_view(request):
             # Get the Patient record for the current user
             patient = medical_models.Patient.objects.get(user=request.user)
 
-            # Attempt to access related medical records. If any raise DoesNotExist, profile is incomplete.
-            physical_exam = patient.examination
-            medical_history = physical_exam.medicalhistory
-            family_history = physical_exam.familymedicalhistory
-            risk_assessment = patient.riskassessment
+            # Check for existence of related medical records using try-except for RelatedObjectDoesNotExist
+            try:
+                physical_exam = patient.examination
+                # If physical_exam exists, check its related objects
+                try:
+                    medical_history = physical_exam.medicalhistory
+                    family_history = physical_exam.familymedicalhistory
+                    # Check RiskAssessment which is linked directly to Patient
+                    risk_assessment = patient.riskassessment
 
-            # If all accesses succeed, the profile is complete
-            profile_complete = True
+                    # If all accesses succeed, the profile is complete
+                    profile_complete = True
+
+                except medical_models.MedicalHistory.RelatedObjectDoesNotExist:
+                    print("MedicalHistory does not exist.")
+                    profile_complete = False
+                except medical_models.FamilyMedicalHistory.RelatedObjectDoesNotExist:
+                    print("FamilyMedicalHistory does not exist.")
+                    profile_complete = False
+                except medical_models.RiskAssessment.RelatedObjectDoesNotExist:
+                    print("RiskAssessment does not exist.")
+                    profile_complete = False
+
+            except medical_models.PhysicalExamination.RelatedObjectDoesNotExist:
+                print("PhysicalExamination does not exist.")
+                profile_complete = False
 
         except medical_models.Patient.DoesNotExist:
-            # Patient object doesn't exist, profile incomplete
-            profile_complete = False
-        except medical_models.PhysicalExamination.DoesNotExist:
-            # PhysicalExamination doesn't exist, profile incomplete
-            profile_complete = False
-        except medical_models.MedicalHistory.DoesNotExist:
-            # MedicalHistory doesn't exist, profile incomplete
-            profile_complete = False
-        except medical_models.FamilyMedicalHistory.DoesNotExist:
-            # FamilyMedicalHistory doesn't exist, profile incomplete
-            profile_complete = False
-        except medical_models.RiskAssessment.DoesNotExist:
-            # RiskAssessment doesn't exist, profile incomplete
+            print("Patient object does not exist.")
             profile_complete = False
         except Exception as e:
             # Catch any other unexpected errors during access
-            print(f"Error during profile check in main_view: {e}")
-            messages.error(request, 'An error occurred while verifying your profile status.')
+            print(f"Unexpected error during profile check in main_view: {e}")
+            messages.error(request, 'An unexpected error occurred while verifying your profile status.')
             # Decide how to handle unexpected errors - maybe redirect to an error page or back to login
             return redirect('main:login') # Redirect to login for safety
 
@@ -597,38 +593,50 @@ def patient_form(request):
     try:
         patient = medical_models.Patient.objects.get(user=request.user)
     except medical_models.Patient.DoesNotExist:
-        # If no patient record exists, this is unexpected after registration, but handle defensively
-        messages.error(request, "Patient record not found for your account. Please contact support.")
-        # Redirect based on user role, since dashboard might be different
-        if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
-            return redirect('main:faculty_dashboard')
-        else:
-            return redirect('main:student_dashboard')
+        # If no patient record exists, create one and link it to the user
+        print("Patient object does not exist. Creating a new one.")
+        patient = medical_models.Patient.objects.create(user=request.user)
+        # A message might be helpful here to inform the user that a new record was created
+        messages.info(request, "A new medical profile record has been created for your account. Please fill out the form.")
+
 
     if request.method == 'GET':
-        profile_complete = False # Assume incomplete initially
+        profile_complete = True # Assume complete initially, prove otherwise
         try:
-            # Attempt to access related medical records. If any raise DoesNotExist, profile is incomplete.
-            physical_exam = patient.examination
-            medical_history = physical_exam.medicalhistory
-            family_history = physical_exam.familymedicalhistory
-            risk_assessment = patient.riskassessment
+            # Check for the existence of essential linked medical records sequentially
+            if not patient.examination:
+                print("PatientForm GET: PhysicalExamination does not exist.")
+                profile_complete = False
+            else:
+                physical_exam = patient.examination
+                try:
+                    # Check MedicalHistory linked via PhysicalExamination
+                    medical_history = physical_exam.medicalhistory
 
-            # If all accesses succeed, the profile is complete
-            profile_complete = True
+                    # Check FamilyMedicalHistory linked via PhysicalExamination
+                    family_history = physical_exam.familymedicalhistory
 
-        except medical_models.PhysicalExamination.DoesNotExist:
-            profile_complete = False
-        except medical_models.MedicalHistory.DoesNotExist:
-            profile_complete = False
-        except medical_models.FamilyMedicalHistory.DoesNotExist:
-            profile_complete = False
-        except medical_models.RiskAssessment.DoesNotExist:
+                    # Check RiskAssessment linked directly to Patient
+                    risk_assessment = patient.riskassessment
+
+                    # If we reached here, all essential related objects exist
+                    # profile_complete remains True
+
+                except medical_models.MedicalHistory.RelatedObjectDoesNotExist:
+                    print(f"PatientForm GET: Missing related medical record: {e}")
+                    profile_complete = False # Explicitly set to False if any related object is missing
+                except Exception as e:
+                    print(f"PatientForm GET: Unexpected error checking related medical records: {e}")
+                    profile_complete = False # Treat unexpected errors as incomplete profile
+
+        except medical_models.Patient.DoesNotExist:
+            # This exception should ideally be caught by the outer try-except,
+            # but including for robustness in this nested structure if needed.
+            print("PatientForm GET: Patient object does not exist in nested check.")
             profile_complete = False
         except Exception as e:
-            # Catch any other unexpected errors during access
-            print(f"Error during profile check in patient_form GET: {e}")
-            # Continue to render the form on unexpected errors
+             print(f"PatientForm GET: Unexpected error getting patient object: {e}")
+             profile_complete = False # Treat unexpected errors as incomplete
 
         if profile_complete:
              messages.info(request, 'Your medical profile is already complete.')
@@ -638,7 +646,7 @@ def patient_form(request):
              else:
                  return redirect('main:student_dashboard')
 
-        # For GET request, render the form with current date and patient data if exists
+        # If profile is incomplete, render the form
         today = date.today()
         context = {
             'current_date': today,
@@ -649,13 +657,14 @@ def patient_form(request):
     if request.method == 'POST':
         try:
             # Update the existing Patient record with form data
+            patient = medical_models.Patient.objects.get(user=request.user)
             patient.birth_date = request.POST.get('birth_date')
             patient.age = calculate_age(request.POST.get('birth_date')) if patient.birth_date else None
             patient.weight = float(request.POST.get('weight')) if request.POST.get('weight') else None
             patient.height = float(request.POST.get('height')) if request.POST.get('height') else None
             patient.bloodtype = request.POST.get('bloodtype')
             patient.allergies = process_checkboxes(request.POST.getlist('allergies'), request.POST.get('other_allergies'))
-            patient.medications = request.POST.get('medications', '') # Changed default to empty string
+            patient.medications = request.POST.get('medications', '')
             patient.home_address = request.POST.get('home_address')
             patient.city = request.POST.get('city')
             patient.state_province = request.POST.get('state_province')
@@ -663,24 +672,38 @@ def patient_form(request):
             patient.country = request.POST.get('country')
             patient.nationality = request.POST.get('nationality')
             patient.civil_status = request.POST.get('civil_status')
-            # Handle number_of_children carefully as it's an IntegerField
             num_children_str = request.POST.get('number_of_children')
             patient.number_of_children = int(num_children_str) if num_children_str and num_children_str.isdigit() else None
 
-            # Auto-set academic year if it's not provided by the form
             if not patient.academic_year:
                  patient.academic_year = f"{timezone.now().year}-{timezone.now().year + 1}"
 
-            patient.section = request.POST.get('section', '') # Changed default to empty string
+            patient.section = request.POST.get('section', '')
             patient.parent_guardian = request.POST.get('parent_guardian')
-            patient.parent_guardian_contact_number = request.POST.get('parent_guardian_contact', '') # Changed default
+            patient.parent_guardian_contact_number = request.POST.get('parent_guardian_contact', '')
 
             patient.save() # Save updated patient info first
 
+            # --- Physical Examination logic --- 
+            # Get or create PhysicalExamination linked to the patient
+            physical_exam, _ = medical_models.PhysicalExamination.objects.get_or_create(patient=patient)
+            exam_date_str = request.POST.get('date_of_physical_examination')
+            if exam_date_str:
+                physical_exam.date_of_physical_examination = exam_date_str
+            else:
+                 if not physical_exam.date_of_physical_examination:
+                     physical_exam.date_of_physical_examination = timezone.now().strftime('%Y-%m-%d')
+            physical_exam.save()
+
+            # Link the examination to the patient if it wasn't already linked
+            if not patient.examination:
+                 patient.examination = physical_exam
+                 patient.save() # Save patient again to establish the link
+
             # --- Medical History logic ---
             med_hist_list = request.POST.getlist('medical_history')
-            # Get or create MedicalHistory and update fields
-            medical_history, _ = medical_models.MedicalHistory.objects.get_or_create(examination__patient=patient) # Link via patient
+            # Get or create MedicalHistory linked to the physical_exam
+            medical_history, _ = medical_models.MedicalHistory.objects.get_or_create(examination=physical_exam)
             medical_history.tuberculosis = 'tuberculosis' in med_hist_list
             medical_history.hypertension = 'hypertension' in med_hist_list
             medical_history.heart_disease = 'heart_disease' in med_hist_list
@@ -700,8 +723,8 @@ def patient_form(request):
 
             # --- Family Medical History logic ---
             fam_hist_list = request.POST.getlist('family_history')
-            # Get or create FamilyMedicalHistory and update fields
-            family_history, _ = medical_models.FamilyMedicalHistory.objects.get_or_create(examination__patient=patient) # Link via patient
+            # Get or create FamilyMedicalHistory linked to the physical_exam
+            family_history, _ = medical_models.FamilyMedicalHistory.objects.get_or_create(examination=physical_exam)
             family_history.hypertension = 'hypertension' in fam_hist_list
             family_history.asthma = 'asthma' in fam_hist_list
             family_history.cancer = 'cancer' in fam_hist_list
@@ -716,8 +739,8 @@ def patient_form(request):
 
             # --- Risk Assessment logic ---
             risk_list = request.POST.getlist('risk_assessment')
-            # Get or create RiskAssessment and update fields
-            risk_assessment, _ = medical_models.RiskAssessment.objects.get_or_create(patient=patient) # Link to patient directly
+            # Get or create RiskAssessment linked to the patient
+            risk_assessment, _ = medical_models.RiskAssessment.objects.get_or_create(patient=patient)
             risk_assessment.cardiovascular_disease = 'cardiovascular' in risk_list
             risk_assessment.chronic_lung_disease = 'chronic_lung' in risk_list
             risk_assessment.chronic_renal_disease = 'chronic_kidney' in risk_list
@@ -728,28 +751,7 @@ def patient_form(request):
             risk_assessment.disability = request.POST.get('disability', '')
             risk_assessment.save()
 
-            # --- Physical Examination logic --- 
-            # Get or create PhysicalExamination after saving related data
-            physical_exam, _ = medical_models.PhysicalExamination.objects.get_or_create(patient=patient)
-            # Update physical examination date if provided in the form
-            exam_date_str = request.POST.get('date_of_physical_examination')
-            if exam_date_str:
-                physical_exam.date_of_physical_examination = exam_date_str
-            else:
-                 # Set a default date if none is provided and it's a new exam record
-                 if not physical_exam.date_of_physical_examination:
-                     physical_exam.date_of_physical_examination = timezone.now().strftime('%Y-%m-%d')
-
-            physical_exam.save()
-
-            # Link the examination to the patient (ensure this is done after saving physical_exam)
-            # This should only be necessary if the link wasn't established by get_or_create,
-            # but explicitly setting it here reinforces the link after all related data is processed.
-            if not patient.examination:
-                 patient.examination = physical_exam
-                 patient.save() # Save patient again to establish the link
-
-
+            # After successfully saving all related data and linking examination, redirect
             messages.success(request, 'Medical information submitted successfully!')
             # Redirect based on user role
             if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
