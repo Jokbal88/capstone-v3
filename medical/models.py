@@ -7,7 +7,9 @@ from django.utils import timezone
 # Helper function for profile picture upload path
 def profile_picture_path(instance, filename):
     # File will be uploaded to MEDIA_ROOT/medical/<lastname>_<firstname>/profile_picture/<filename>
-    return os.path.join('medical', f'{instance.student.lastname}_{instance.student.firstname}', 'profile_picture', filename)
+    # Updated to use user's username or ID for path
+    user_identifier = instance.user.username or instance.user.id # Use username or ID as identifier
+    return os.path.join('medical', f'{user_identifier}', 'profile_picture', filename)
 
 # Create your models here.
 class Student(models.Model):
@@ -26,42 +28,68 @@ class Student(models.Model):
         return f"{self.lastname}, {self.firstname}"
 
 class Patient(models.Model):
-    student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    # Link Patient to the User model instead of Student
+    # Make nullable initially for migration purposes
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     # Add profile picture field
     profile_picture = models.ImageField(upload_to=profile_picture_path, null=True, blank=True)
 
     birth_date = models.CharField(max_length=100)
-    age = models.PositiveIntegerField()
-    weight = models.FloatField()
-    height = models.FloatField()
-    bloodtype = models.CharField(max_length=20)
-    allergies = models.CharField(max_length=100)
-    medications = models.CharField(max_length=100)
-    home_address = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-    state_province = models.CharField(max_length=100)
-    postal_zipcode = models.CharField(max_length=20)
-    country = models.CharField(max_length=100)
-    nationality = models.CharField(max_length=100)
-    civil_status = models.CharField(max_length=20)
+    # Make age nullable for initial patient creation during registration
+    age = models.PositiveIntegerField(null=True, blank=True)
+    # Make weight nullable for initial patient creation during registration
+    weight = models.FloatField(null=True, blank=True)
+    # Make height nullable for initial patient creation during registration
+    height = models.FloatField(null=True, blank=True)
+    # Make bloodtype nullable for initial patient creation during registration
+    bloodtype = models.CharField(max_length=20, null=True, blank=True)
+    # Make allergies nullable for initial patient creation during registration
+    allergies = models.CharField(max_length=100, null=True, blank=True)
+    # Make medications nullable for initial patient creation during registration
+    medications = models.CharField(max_length=100, null=True, blank=True)
+    # Make home_address nullable for initial patient creation during registration
+    home_address = models.CharField(max_length=100, null=True, blank=True)
+    # Make city nullable for initial patient creation during registration
+    city = models.CharField(max_length=100, null=True, blank=True)
+    # Make state_province nullable for initial patient creation during registration
+    state_province = models.CharField(max_length=100, null=True, blank=True)
+    # Make postal_zipcode nullable for initial patient creation during registration
+    postal_zipcode = models.CharField(max_length=20, null=True, blank=True)
+    # Make country nullable for initial patient creation during registration
+    country = models.CharField(max_length=100, null=True, blank=True)
+    # Make nationality nullable for initial patient creation during registration
+    nationality = models.CharField(max_length=100, null=True, blank=True)
+    # Make civil_status nullable for initial patient creation during registration
+    civil_status = models.CharField(max_length=20, null=True, blank=True)
+    # Make religion nullable for initial patient creation during registration
     religion = models.CharField(max_length=50, null=True, blank=True)
+    # Make number_of_children nullable for initial patient creation during registration
     number_of_children = models.PositiveIntegerField(null=True, blank=True)
-    academic_year = models.CharField(max_length=20)
-    section = models.CharField(max_length=20)
-    parent_guardian = models.CharField(max_length=100)
+    # Make academic_year nullable for initial patient creation during registration
+    academic_year = models.CharField(max_length=20, null=True, blank=True)
+    # Make section nullable for initial patient creation during registration
+    section = models.CharField(max_length=20, null=True, blank=True)
+    # Make parent_guardian nullable for initial patient creation during registration
+    parent_guardian = models.CharField(max_length=100, null=True, blank=True)
+    # Make parent_guardian_contact_number nullable for initial patient creation during registration
     parent_guardian_contact_number = models.CharField(max_length=15, null=True, blank=True)
-    examination = models.OneToOneField('PhysicalExamination', on_delete=models.CASCADE)
+    # Make examination nullable for initial patient creation during registration
+    examination = models.OneToOneField('PhysicalExamination', on_delete=models.CASCADE, related_name='patient_for_examination', null=True, blank=True)
 
     def __str__(self):
-        return f"{self.student.firstname} {self.student.lastname}"
+        # Updated to use user's information
+        return f"Patient Record for {self.user.get_full_name() or self.user.username}"
 
 class PhysicalExamination(models.Model):
-    student = models.OneToOneField(Student, on_delete=models.CASCADE)
+    # Keep link to Patient, which is now linked to User
+    # Make nullable initially for migration purposes
+    patient = models.OneToOneField('Patient', on_delete=models.CASCADE, related_name='physical_examination', null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_of_physical_examination = models.CharField(max_length=100)
     
     def __str__(self):
-        return f"Physical Exam - {self.student.firstname} {self.student.lastname}"
+        # Updated to use patient's user information
+        return f"Physical Exam - {self.patient.user.get_full_name() or self.patient.user.username}"
 
 class MedicalHistory(models.Model):
     examination = models.OneToOneField(PhysicalExamination, on_delete=models.CASCADE)
@@ -85,7 +113,8 @@ class MedicalHistory(models.Model):
     medications = models.CharField(max_length=255, null=True, blank=True)
     
     def __str__(self):
-        return f"Medical history of {self.examination.student.firstname} {self.examination.student.lastname}"
+        # Updated to use examination's patient's user information
+        return f"Medical history of {self.examination.patient.user.get_full_name() or self.examination.patient.user.username}"
 
 class FamilyMedicalHistory(models.Model):
     examination = models.OneToOneField(PhysicalExamination, on_delete=models.CASCADE)
@@ -101,7 +130,8 @@ class FamilyMedicalHistory(models.Model):
     other_medical_history = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return f"Family Medical History of {self.examination.student.firstname} {self.examination.student.lastname}"
+        # Updated to use examination's patient's user information
+        return f"Family Medical History of {self.examination.patient.user.get_full_name() or self.examination.patient.user.username}"
 
 class ObgyneHistory(models.Model):
     examination = models.OneToOneField(PhysicalExamination, on_delete=models.CASCADE)
@@ -114,18 +144,24 @@ class ObgyneHistory(models.Model):
     additional_history = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return f"OB-GYNE History of {self.examination.student.firstname} {self.examination.student.lastname}"
+        # Updated to use examination's patient's user information
+        return f"OB-GYNE History of {self.examination.patient.user.get_full_name() or self.examination.patient.user.username}"
     
 class MedicalClearance(models.Model):
+    # MedicalClearance is primary_key, linking to Patient. No direct nullability needed here,
+    # but ensure reverse links are handled.
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, primary_key=True)
 
     def __str__(self):
-        return f"Medical clearance for {self.patient.student.firstname} {self.patient.student.lastname}"
+        # Updated to use patient's user information
+        return f"Medical clearance for {self.patient.user.get_full_name() or self.patient.user.username}"
 
 class RiskAssessment(models.Model):
+    # Keep link to Patient, which is now linked to User (via MedicalClearance)
     medical_clearance_id = models.OneToOneField(MedicalClearance, on_delete=models.CASCADE, related_name="riskassessment", null=True, blank=True)
     id = models.AutoField(primary_key=True)
-    clearance = models.OneToOneField(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    clearance = models.OneToOneField(Patient, on_delete=models.CASCADE, null=True, blank=True)
     cardiovascular_disease = models.BooleanField(default=False)
     chronic_lung_disease = models.BooleanField(default=False)
     chronic_renal_disease = models.BooleanField(default=False)
@@ -160,7 +196,8 @@ class MedicalRequirement(models.Model):
         ('rejected', 'Rejected'),
     ]
 
-    patient = models.OneToOneField(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.OneToOneField(Patient, on_delete=models.CASCADE, null=True, blank=True)
     #clearance = models.OneToOneField(MedicalClearance, on_delete=models.CASCADE)
     vaccination_type = models.CharField(max_length=50, null=True, blank=True)
     vaccinated_1st = models.BooleanField(default=False, null=True, blank=True)
@@ -173,7 +210,9 @@ class MedicalRequirement(models.Model):
     stool_examination_remarks = models.CharField(max_length=100, null=True, blank=True)
 
     def patient_directory_path(instance, filename, field_name):
-        return os.path.join('medical', f'{instance.patient.student.lastname}_{instance.patient.student.firstname}', field_name, filename)
+        # Updated to use patient's user information for path
+        user_identifier = instance.patient.user.username or instance.patient.user.id # Use username or ID as identifier
+        return os.path.join('medical', f'{user_identifier}', field_name, filename)
     
     def chest_xray_path(instance, filename):
         return MedicalRequirement.patient_directory_path(instance, filename, 'chest_xrays')
@@ -200,7 +239,8 @@ class MedicalRequirement(models.Model):
     reviewed_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Medical Requirements for {self.patient.student.firstname} {self.patient.student.lastname}"
+        # Updated to use patient's user information
+        return f"Medical Requirements for {self.patient.user.get_full_name() or self.patient.user.username}"
 
     # def delete(self, *args, **kwargs):
     #     self.chest_xray.delete(save=False)
@@ -210,6 +250,7 @@ class MedicalRequirement(models.Model):
     #     super().delete(*args, **kwargs)
 
 class EligibilityForm(models.Model):
+    # EligibilityForm is primary_key, linking to Patient. No direct nullability needed here.
     patient = models.OneToOneField(Patient, primary_key=True, on_delete=models.CASCADE)
     # age = models.PositiveIntegerField()
     # birth_date = models.CharField(max_length=100)
@@ -228,6 +269,7 @@ class EligibilityForm(models.Model):
     validity_date = models.CharField(max_length=100)
     
 class MedicalCertificate(models.Model):
+    # MedicalCertificate is primary_key, linking to Patient. No direct nullability needed here.
     patient = models.OneToOneField(Patient, primary_key=True, on_delete=models.CASCADE)
     college = models.CharField(max_length=100)
     year = models.CharField(max_length=50)
@@ -244,7 +286,8 @@ class MedicalCertificate(models.Model):
 
 class PatientRequest(models.Model):
     request_id = models.AutoField(primary_key=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     request_type = models.CharField(max_length=100)
     approve = models.BooleanField(default=False)
     date_requested = models.DateTimeField()
@@ -252,20 +295,22 @@ class PatientRequest(models.Model):
     is_completed = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.request_type} request for {self.patient.student.firstname})"
+        return f"{self.request_type} request for {self.patient.user.get_full_name() or self.patient.user.username}"
     
 class PrescriptionRecord(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     problem = models.CharField(max_length=50)
     treatment = models.CharField(max_length=50)
     date_prescribed = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"Prescription for {self.patient.student.firstname} {self.patient.student.lastname}"
+        return f"Prescription for {self.patient.user.get_full_name() or self.patient.user.username}"
 
 class DentalRecords(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     service_type = models.CharField(max_length=50)
     date_requested = models.DateTimeField()
     date_appointed = models.DateField(null=True)
@@ -274,16 +319,18 @@ class DentalRecords(models.Model):
     #     pass
 
 class EmergencyHealthAssistanceRecord(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=100)
     reason = models.CharField(max_length=100)
     date_assisted = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.patient.student.firstname} {self.patient.student.lastname}"
+        return f"{self.patient.user.get_full_name() or self.patient.user.username}"
 
 class TransactionRecord(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     transac_type = models.CharField(max_length=100)
     transac_date = models.DateTimeField()
 
@@ -291,10 +338,13 @@ class TransactionRecord(models.Model):
     #     return f"{self.student.firstname} {self.student.lastname}"
     
 class MentalHealthRecord(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    # Link to Patient, make nullable initially
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     
     def mental_health_path(instance, filename, field_name):
-        return os.path.join('medical', f'{instance.patient.student.lastname}_{instance.patient.student.firstname}', 'mental_health', field_name, filename)
+        # Updated to use patient's user information for path
+        user_identifier = instance.patient.user.username or instance.patient.user.id # Use username or ID as identifier
+        return os.path.join('medical', f'{user_identifier}', 'mental_health', field_name, filename)
     
     def prescription_path(instance, filename):
         return MentalHealthRecord.mental_health_path(instance, filename, 'prescriptions')
@@ -310,5 +360,5 @@ class MentalHealthRecord(models.Model):
     certification_remarks = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f'Mental Health Record for {self.patient.student.get_full_name()}'
+        return f'Mental Health Record for {self.patient.user.get_full_name() or self.patient.user.username}'
     

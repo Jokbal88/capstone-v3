@@ -38,21 +38,21 @@
           <form id="registrationForm" class="flex flex-col w-full gap-2" method="POST">
             {% csrf_token %}
 
-            <!-- Role Selection -->
-            <div class="flex flex-col w-full mb-4">
-                  <label class="text-base">Registering as:</label>
-                  <div class="flex gap-4 mt-2">
-                      <label class="inline-flex items-center">
-                          <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
-                          <span class="ml-2">Student</span>
-                      </label>
-                      <label class="inline-flex items-center">
-                          <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
-                          <span class="ml-2">Faculty</span>
-                      </label>
-                  </div>
-                   <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
-            </div>
+          <!-- Role Selection -->
+          <div class="flex flex-col w-full mb-4">
+                <label class="text-base">Registering as:</label>
+                <div class="flex gap-4 mt-2">
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
+                        <span class="ml-2">Student</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
+                        <span class="ml-2">Faculty</span>
+                    </label>
+                </div>
+                 <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
+          </div>
 
             <div class="flex w-full gap-2">
               <div class="w-full flex flex-col">
@@ -92,199 +92,199 @@
             </div>
             <!-- Student Fields Section -->
             <div id="studentFields" class="flex flex-col w-full gap-2">
-              <div class="flex w-full gap-2">
-                <div class="flex flex-col w-full">
-                  <label for="sex">Sex</label>
-                  <select class="w-full rounded-md" name="sex" id="sex" required>
-                    <option value="M">Male</option>
-                    <option value="F">Female</option>
-                  </select>
-                </div>
-                <div class="flex flex-col w-full">
-                  <label for="yrLevel">Year Level</label>
-                  <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
-                    <option value="1">First Year</option>
-                    <option value="2">Second Year</option>
-                    <option value="3">Third Year</option>
-                    <option value="4">Fourth Year</option>
-                  </select>
-                </div>
-              </div>
-              <div class="flex w-full gap-2">
-                <div class="flex flex-col w-full">
-                  <label for="studentIdNumber">Student ID Number</label>
-                  <input
-                    class="w-full rounded-md"
-                    type="text"
-                    id="studentIdNumber"
-                    name="idNumber"
-                    maxlength="7"
-                    placeholder="Enter your Student ID number"
-                    required
-                    pattern="[0-9]{7}"
-                    title="Please enter a valid 7-digit Student ID number"
-                  />
-                </div>
-                <div class="flex flex-col w-full">
-                  <label for="lrn">LRN</label>
-                  <input
-                    class="w-full rounded-md"
-                    type="text"
-                    id="lrn"
-                    name="lrn"
-                    maxlength="12"
-                    placeholder="Enter your LRN"
-                    required
-                    pattern="[0-9]{12}"
-                    title="Please enter a valid 12-digit LRN"
-                  />
-                </div>
-              </div>
+            <div class="flex w-full gap-2">
               <div class="flex flex-col w-full">
-                <label for="course">Course</label>
-                <select class="w-full rounded-md" id="course" name="course" required>
-                  <optgroup label="College of Education">
-                    <option value="Bachelor of Elementary Education">
-                      Bachelor of Elementary Education
-                    </option>
-                    <option value="Bachelor of Secondary Education Major in Math">
-                      Bachelor of Secondary Education Major in Math
-                    </option>
-                    <option
-                      value="Bachelor of Technology and Livelihood Education Major in Home Economics"
-                    >
-                      Bachelor of Technology and Livelihood Education Major in
-                      Home Economics
-                    </option>
-                  </optgroup>
-                  <optgroup label="College of Arts and Science">
-                    <option value="Bachelor of Arts in English Language Studies">
-                      Bachelor of Arts in English Language Studies
-                    </option>
-                    <option value="Bachelor of Arts in Literature">
-                      Bachelor of Arts in Literature
-                    </option>
-                  </optgroup>
-                  <optgroup label="College of Technology and Engineering">
-                    <option value="Bachelor of Science in Industrial Engineering">
-                      Bachelor of Science in Industrial Engineering
-                    </option>
-                    <option value="Bachelor of Science in Information Technology">
-                      Bachelor of Science in Information Technology
-                    </option>
-                    <option
-                      value="Bachelor in Industrial Technology Major in Drafting Technology"
-                    >
-                      Bachelor in Industrial Technology Major in Drafting
-                      Technology
-                    </option>
-                    <option
-                      value="Bachelor in Industrial Technology Major in Electronics Technology"
-                    >
-                      Bachelor in Industrial Technology Major in Electronics
-                      Technology
-                    </option>
-                    <option
-                      value="Bachelor in Industrial Technology Major in Computer Technology"
-                    >
-                      Bachelor in Industrial Technology Major in Computer
-                      Technology
-                    </option>
-                    <option
-                      value="Bachelor in Industrial Technology Major in Garments Technology"
-                    >
-                      Bachelor in Industrial Technology Major in Garments
-                      Technology
-                    </option>
-                    <option
-                      value="Bachelor in Industrial Technology Major in Automotive Technology"
-                    >
-                      Bachelor in Industrial Technology Major in Automotive
-                      Technology
-                    </option>
-                  </optgroup>
-                  <optgroup label="College of Forestry">
-                    <option value="Bachelor of Science in Forestry">
-                      Bachelor of Science in Forestry
-                    </option>
-                  </optgroup>
-                  <optgroup label="College of Agriculture">
-                    <option
-                      value="Bachelor of Science in Agriculture Major in Animal Science"
-                    >
-                      Bachelor of Science in Agriculture Major in Animal Science
-                    </option>
-                    <option
-                      value="Bachelor of Science in Agriculture Major in Horticulture"
-                    >
-                      Bachelor of Science in Agriculture Major in Horticulture
-                    </option>
-                    <option
-                      value="Bachelor of Science in Agriculture Major in Agronomy"
-                    >
-                      Bachelor of Science in Agriculture Major in Agronomy
-                    </option>
-                    <option
-                      value="Bachelor of Science in Agriculture Major in Crop Protection"
-                    >
-                      Bachelor of Science in Agriculture Major in Crop Protection
-                    </option>
-                    <option
-                      value="Bachelor of Science in Agriculture Major in Agricultural Economics"
-                    >
-                      Bachelor of Science in Agriculture Major in Agricultural
-                      Economics
-                    </option>
-                  </optgroup>
-                  <optgroup label="College of Hospitality Management and Tourism">
-                    <option value="Bachelor of Science in Hospitality Management">
-                      Bachelor of Science in Hospitality Management
-                    </option>
-                    <option value="Bachelor of Science in Tourism">
-                      Bachelor of Science in Tourism
-                    </option>
-                  </optgroup>
+                <label for="sex">Sex</label>
+                <select class="w-full rounded-md" name="sex" id="sex" required>
+                  <option value="M">Male</option>
+                  <option value="F">Female</option>
                 </select>
               </div>
+              <div class="flex flex-col w-full">
+                <label for="yrLevel">Year Level</label>
+                <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
+                  <option value="1">First Year</option>
+                  <option value="2">Second Year</option>
+                  <option value="3">Third Year</option>
+                  <option value="4">Fourth Year</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex w-full gap-2">
+              <div class="flex flex-col w-full">
+                  <label for="studentIdNumber">Student ID Number</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                    id="studentIdNumber"
+                  name="idNumber"
+                  maxlength="7"
+                    placeholder="Enter your Student ID number"
+                  required
+                  pattern="[0-9]{7}"
+                    title="Please enter a valid 7-digit Student ID number"
+                />
+              </div>
+              <div class="flex flex-col w-full">
+                <label for="lrn">LRN</label>
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  id="lrn"
+                  name="lrn"
+                  maxlength="12"
+                  placeholder="Enter your LRN"
+                  required
+                  pattern="[0-9]{12}"
+                  title="Please enter a valid 12-digit LRN"
+                />
+              </div>
+            </div>
+            <div class="flex flex-col w-full">
+              <label for="course">Course</label>
+              <select class="w-full rounded-md" id="course" name="course" required>
+                <optgroup label="College of Education">
+                  <option value="Bachelor of Elementary Education">
+                    Bachelor of Elementary Education
+                  </option>
+                  <option value="Bachelor of Secondary Education Major in Math">
+                    Bachelor of Secondary Education Major in Math
+                  </option>
+                  <option
+                    value="Bachelor of Technology and Livelihood Education Major in Home Economics"
+                  >
+                    Bachelor of Technology and Livelihood Education Major in
+                    Home Economics
+                  </option>
+                </optgroup>
+                <optgroup label="College of Arts and Science">
+                  <option value="Bachelor of Arts in English Language Studies">
+                    Bachelor of Arts in English Language Studies
+                  </option>
+                  <option value="Bachelor of Arts in Literature">
+                    Bachelor of Arts in Literature
+                  </option>
+                </optgroup>
+                <optgroup label="College of Technology and Engineering">
+                  <option value="Bachelor of Science in Industrial Engineering">
+                    Bachelor of Science in Industrial Engineering
+                  </option>
+                  <option value="Bachelor of Science in Information Technology">
+                    Bachelor of Science in Information Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Drafting Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Drafting
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Electronics Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Electronics
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Computer Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Computer
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Garments Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Garments
+                    Technology
+                  </option>
+                  <option
+                    value="Bachelor in Industrial Technology Major in Automotive Technology"
+                  >
+                    Bachelor in Industrial Technology Major in Automotive
+                    Technology
+                  </option>
+                </optgroup>
+                <optgroup label="College of Forestry">
+                  <option value="Bachelor of Science in Forestry">
+                    Bachelor of Science in Forestry
+                  </option>
+                </optgroup>
+                <optgroup label="College of Agriculture">
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Animal Science"
+                  >
+                    Bachelor of Science in Agriculture Major in Animal Science
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Horticulture"
+                  >
+                    Bachelor of Science in Agriculture Major in Horticulture
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Agronomy"
+                  >
+                    Bachelor of Science in Agriculture Major in Agronomy
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Crop Protection"
+                  >
+                    Bachelor of Science in Agriculture Major in Crop Protection
+                  </option>
+                  <option
+                    value="Bachelor of Science in Agriculture Major in Agricultural Economics"
+                  >
+                    Bachelor of Science in Agriculture Major in Agricultural
+                    Economics
+                  </option>
+                </optgroup>
+                <optgroup label="College of Hospitality Management and Tourism">
+                  <option value="Bachelor of Science in Hospitality Management">
+                    Bachelor of Science in Hospitality Management
+                  </option>
+                  <option value="Bachelor of Science in Tourism">
+                    Bachelor of Science in Tourism
+                  </option>
+                </optgroup>
+              </select>
+            </div>
             </div>
 
             <!-- Faculty Fields Section -->
             <div id="facultyFields" class="hidden flex-col w-full gap-2">
               <div class="flex w-full gap-2">
-                <div class="flex flex-col w-full">
+            <div class="flex flex-col w-full">
                   <label for="department">Department</label>
-                  <input
-                    type="text"
-                    class="w-full rounded-md"
+                <input
+                  type="text"
+                  class="w-full rounded-md"
                     id="department"
                     name="department"
                     placeholder="Enter your department"
-                  />
-                </div>
+                />
+              </div>
                 <div class="flex flex-col w-full">
                   <label for="position">Position</label>
-                  <input
-                    type="text"
-                    class="w-full rounded-md"
+                <input
+                  type="text"
+                  class="w-full rounded-md"
                     id="position"
                     name="position"
                     placeholder="Enter your position"
-                  />
-                </div>
+                />
               </div>
-               <div class="flex flex-col w-full">
+              </div>
+              <div class="flex flex-col w-full">
                   <label for="facultyIdNumber">Faculty ID Number</label>
-                  <input
-                    class="w-full rounded-md"
-                    type="text"
-                    id="facultyIdNumber"
-                    name="idNumber"
-                    maxlength="7"
+                <input
+                  class="w-full rounded-md"
+                  type="text"
+                  id="facultyIdNumber"
+                  name="idNumber"
+                  maxlength="7"
                     placeholder="Enter your Faculty ID number"
-                    pattern="[0-9]{7}"
+                  pattern="[0-9]{7}"
                     title="Please enter a valid 7-digit Faculty ID number"
-                  />
-                </div>
+                />
+              </div>
             </div>
 
             <div class="flex flex-col w-full">
@@ -327,7 +327,7 @@
                       </svg>
                   </button>
               </div>
-            </div>
+                </div>
             <!-- Password Strength Indicator -->
             <div class="w-full mt-2 flex flex-col gap-1">
               <p class="text-sm font-semibold">Password must contain:</p>
@@ -338,7 +338,7 @@
                 <li id="number"><i class="fa-solid fa-circle-check mr-2"></i>At least one number</li>
                 <li id="special"><i class="fa-solid fa-circle-check mr-2"></i>At least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)</li>
               </ul>
-            </div>
+              </div>
             <!-- Password Match Indicator -->
             <div class="w-full mt-2">
               <p id="match" class="text-sm font-semibold text-red-500"><i class="fa-solid fa-circle-xmark mr-2"></i>Passwords do not match</p>
