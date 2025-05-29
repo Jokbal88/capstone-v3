@@ -13,7 +13,7 @@
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QQx4TctnWMn13TZye+giMm8e2LwA=="
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     />
@@ -34,23 +34,26 @@
             </div>
           </div>
           <h2 class="font-bold text-[1.3rem]">Account Registration</h2>
-          <!-- Role Selection -->
-          <div class="flex flex-col w-full mb-4">
-                <label class="text-base">Registering as:</label>
-                <div class="flex gap-4 mt-2">
-                    <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
-                        <span class="ml-2">Student</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
-                        <span class="ml-2">Faculty</span>
-                    </label>
-                </div>
-                 <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
-          </div>
-          <form id="studentForm" class="flex flex-col w-full gap-2" method="POST">
+
+          <form id="registrationForm" class="flex flex-col w-full gap-2" method="POST">
             {% csrf_token %}
+
+            <!-- Role Selection -->
+            <div class="flex flex-col w-full mb-4">
+                  <label class="text-base">Registering as:</label>
+                  <div class="flex gap-4 mt-2">
+                      <label class="inline-flex items-center">
+                          <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
+                          <span class="ml-2">Student</span>
+                      </label>
+                      <label class="inline-flex items-center">
+                          <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
+                          <span class="ml-2">Faculty</span>
+                      </label>
+                  </div>
+                   <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
+            </div>
+
             <div class="flex w-full gap-2">
               <div class="w-full flex flex-col">
                 <label for="firstName" class="w-fit">First Name</label>
@@ -87,161 +90,203 @@
                 />
               </div>
             </div>
-            <!-- Sex, Year Level Section -->
-            <div class="flex w-full gap-2">
+            <!-- Student Fields Section -->
+            <div id="studentFields" class="flex flex-col w-full gap-2">
+              <div class="flex w-full gap-2">
+                <div class="flex flex-col w-full">
+                  <label for="sex">Sex</label>
+                  <select class="w-full rounded-md" name="sex" id="sex" required>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                  </select>
+                </div>
+                <div class="flex flex-col w-full">
+                  <label for="yrLevel">Year Level</label>
+                  <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
+                    <option value="1">First Year</option>
+                    <option value="2">Second Year</option>
+                    <option value="3">Third Year</option>
+                    <option value="4">Fourth Year</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex w-full gap-2">
+                <div class="flex flex-col w-full">
+                  <label for="studentIdNumber">Student ID Number</label>
+                  <input
+                    class="w-full rounded-md"
+                    type="text"
+                    id="studentIdNumber"
+                    name="idNumber"
+                    maxlength="7"
+                    placeholder="Enter your Student ID number"
+                    required
+                    pattern="[0-9]{7}"
+                    title="Please enter a valid 7-digit Student ID number"
+                  />
+                </div>
+                <div class="flex flex-col w-full">
+                  <label for="lrn">LRN</label>
+                  <input
+                    class="w-full rounded-md"
+                    type="text"
+                    id="lrn"
+                    name="lrn"
+                    maxlength="12"
+                    placeholder="Enter your LRN"
+                    required
+                    pattern="[0-9]{12}"
+                    title="Please enter a valid 12-digit LRN"
+                  />
+                </div>
+              </div>
               <div class="flex flex-col w-full">
-                <label for="sex">Sex</label>
-                <select class="w-full rounded-md" name="sex" id="sex" required>
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
+                <label for="course">Course</label>
+                <select class="w-full rounded-md" id="course" name="course" required>
+                  <optgroup label="College of Education">
+                    <option value="Bachelor of Elementary Education">
+                      Bachelor of Elementary Education
+                    </option>
+                    <option value="Bachelor of Secondary Education Major in Math">
+                      Bachelor of Secondary Education Major in Math
+                    </option>
+                    <option
+                      value="Bachelor of Technology and Livelihood Education Major in Home Economics"
+                    >
+                      Bachelor of Technology and Livelihood Education Major in
+                      Home Economics
+                    </option>
+                  </optgroup>
+                  <optgroup label="College of Arts and Science">
+                    <option value="Bachelor of Arts in English Language Studies">
+                      Bachelor of Arts in English Language Studies
+                    </option>
+                    <option value="Bachelor of Arts in Literature">
+                      Bachelor of Arts in Literature
+                    </option>
+                  </optgroup>
+                  <optgroup label="College of Technology and Engineering">
+                    <option value="Bachelor of Science in Industrial Engineering">
+                      Bachelor of Science in Industrial Engineering
+                    </option>
+                    <option value="Bachelor of Science in Information Technology">
+                      Bachelor of Science in Information Technology
+                    </option>
+                    <option
+                      value="Bachelor in Industrial Technology Major in Drafting Technology"
+                    >
+                      Bachelor in Industrial Technology Major in Drafting
+                      Technology
+                    </option>
+                    <option
+                      value="Bachelor in Industrial Technology Major in Electronics Technology"
+                    >
+                      Bachelor in Industrial Technology Major in Electronics
+                      Technology
+                    </option>
+                    <option
+                      value="Bachelor in Industrial Technology Major in Computer Technology"
+                    >
+                      Bachelor in Industrial Technology Major in Computer
+                      Technology
+                    </option>
+                    <option
+                      value="Bachelor in Industrial Technology Major in Garments Technology"
+                    >
+                      Bachelor in Industrial Technology Major in Garments
+                      Technology
+                    </option>
+                    <option
+                      value="Bachelor in Industrial Technology Major in Automotive Technology"
+                    >
+                      Bachelor in Industrial Technology Major in Automotive
+                      Technology
+                    </option>
+                  </optgroup>
+                  <optgroup label="College of Forestry">
+                    <option value="Bachelor of Science in Forestry">
+                      Bachelor of Science in Forestry
+                    </option>
+                  </optgroup>
+                  <optgroup label="College of Agriculture">
+                    <option
+                      value="Bachelor of Science in Agriculture Major in Animal Science"
+                    >
+                      Bachelor of Science in Agriculture Major in Animal Science
+                    </option>
+                    <option
+                      value="Bachelor of Science in Agriculture Major in Horticulture"
+                    >
+                      Bachelor of Science in Agriculture Major in Horticulture
+                    </option>
+                    <option
+                      value="Bachelor of Science in Agriculture Major in Agronomy"
+                    >
+                      Bachelor of Science in Agriculture Major in Agronomy
+                    </option>
+                    <option
+                      value="Bachelor of Science in Agriculture Major in Crop Protection"
+                    >
+                      Bachelor of Science in Agriculture Major in Crop Protection
+                    </option>
+                    <option
+                      value="Bachelor of Science in Agriculture Major in Agricultural Economics"
+                    >
+                      Bachelor of Science in Agriculture Major in Agricultural
+                      Economics
+                    </option>
+                  </optgroup>
+                  <optgroup label="College of Hospitality Management and Tourism">
+                    <option value="Bachelor of Science in Hospitality Management">
+                      Bachelor of Science in Hospitality Management
+                    </option>
+                    <option value="Bachelor of Science in Tourism">
+                      Bachelor of Science in Tourism
+                    </option>
+                  </optgroup>
                 </select>
               </div>
-              <div class="flex flex-col w-full">
-                <label for="yrLevel">Year Level</label>
-                <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
-                  <option value="1">First Year</option>
-                  <option value="2">Second Year</option>
-                  <option value="3">Third Year</option>
-                  <option value="4">Fourth Year</option>
-                </select>
-              </div>
             </div>
-            <div class="flex w-full gap-2">
-              <div class="flex flex-col w-full">
-                <label for="idNumber">ID Number</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="idNumber"
-                  name="idNumber"
-                  maxlength="7"
-                  placeholder="Enter your ID number"
-                  required
-                  pattern="[0-9]{7}"
-                  title="Please enter a valid 7-digit ID number"
-                />
+
+            <!-- Faculty Fields Section -->
+            <div id="facultyFields" class="hidden flex-col w-full gap-2">
+              <div class="flex w-full gap-2">
+                <div class="flex flex-col w-full">
+                  <label for="department">Department</label>
+                  <input
+                    type="text"
+                    class="w-full rounded-md"
+                    id="department"
+                    name="department"
+                    placeholder="Enter your department"
+                  />
+                </div>
+                <div class="flex flex-col w-full">
+                  <label for="position">Position</label>
+                  <input
+                    type="text"
+                    class="w-full rounded-md"
+                    id="position"
+                    name="position"
+                    placeholder="Enter your position"
+                  />
+                </div>
               </div>
-              <div class="flex flex-col w-full">
-                <label for="lrn">LRN</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="lrn"
-                  name="lrn"
-                  maxlength="12"
-                  placeholder="Enter your LRN"
-                  required
-                  pattern="[0-9]{12}"
-                  title="Please enter a valid 12-digit LRN"
-                />
-              </div>
+               <div class="flex flex-col w-full">
+                  <label for="facultyIdNumber">Faculty ID Number</label>
+                  <input
+                    class="w-full rounded-md"
+                    type="text"
+                    id="facultyIdNumber"
+                    name="idNumber"
+                    maxlength="7"
+                    placeholder="Enter your Faculty ID number"
+                    pattern="[0-9]{7}"
+                    title="Please enter a valid 7-digit Faculty ID number"
+                  />
+                </div>
             </div>
-            <div class="flex flex-col w-full">
-              <label for="course">Course</label>
-              <select class="w-full rounded-md" id="course" name="course" required>
-                <optgroup label="College of Education">
-                  <option value="Bachelor of Elementary Education">
-                    Bachelor of Elementary Education
-                  </option>
-                  <option value="Bachelor of Secondary Education Major in Math">
-                    Bachelor of Secondary Education Major in Math
-                  </option>
-                  <option
-                    value="Bachelor of Technology and Livelihood Education Major in Home Economics"
-                  >
-                    Bachelor of Technology and Livelihood Education Major in
-                    Home Economics
-                  </option>
-                </optgroup>
-                <optgroup label="College of Arts and Science">
-                  <option value="Bachelor of Arts in English Language Studies">
-                    Bachelor of Arts in English Language Studies
-                  </option>
-                  <option value="Bachelor of Arts in Literature">
-                    Bachelor of Arts in Literature
-                  </option>
-                </optgroup>
-                <optgroup label="College of Technology and Engineering">
-                  <option value="Bachelor of Science in Industrial Engineering">
-                    Bachelor of Science in Industrial Engineering
-                  </option>
-                  <option value="Bachelor of Science in Information Technology">
-                    Bachelor of Science in Information Technology
-                  </option>
-                  <option
-                    value="Bachelor in Industrial Technology Major in Drafting Technology"
-                  >
-                    Bachelor in Industrial Technology Major in Drafting
-                    Technology
-                  </option>
-                  <option
-                    value="Bachelor in Industrial Technology Major in Electronics Technology"
-                  >
-                    Bachelor in Industrial Technology Major in Electronics
-                    Technology
-                  </option>
-                  <option
-                    value="Bachelor in Industrial Technology Major in Computer Technology"
-                  >
-                    Bachelor in Industrial Technology Major in Computer
-                    Technology
-                  </option>
-                  <option
-                    value="Bachelor in Industrial Technology Major in Garments Technology"
-                  >
-                    Bachelor in Industrial Technology Major in Garments
-                    Technology
-                  </option>
-                  <option
-                    value="Bachelor in Industrial Technology Major in Automotive Technology"
-                  >
-                    Bachelor in Industrial Technology Major in Automotive
-                    Technology
-                  </option>
-                </optgroup>
-                <optgroup label="College of Forestry">
-                  <option value="Bachelor of Science in Forestry">
-                    Bachelor of Science in Forestry
-                  </option>
-                </optgroup>
-                <optgroup label="College of Agriculture">
-                  <option
-                    value="Bachelor of Science in Agriculture Major in Animal Science"
-                  >
-                    Bachelor of Science in Agriculture Major in Animal Science
-                  </option>
-                  <option
-                    value="Bachelor of Science in Agriculture Major in Horticulture"
-                  >
-                    Bachelor of Science in Agriculture Major in Horticulture
-                  </option>
-                  <option
-                    value="Bachelor of Science in Agriculture Major in Agronomy"
-                  >
-                    Bachelor of Science in Agriculture Major in Agronomy
-                  </option>
-                  <option
-                    value="Bachelor of Science in Agriculture Major in Crop Protection"
-                  >
-                    Bachelor of Science in Agriculture Major in Crop Protection
-                  </option>
-                  <option
-                    value="Bachelor of Science in Agriculture Major in Agricultural Economics"
-                  >
-                    Bachelor of Science in Agriculture Major in Agricultural
-                    Economics
-                  </option>
-                </optgroup>
-                <optgroup label="College of Hospitality Management and Tourism">
-                  <option value="Bachelor of Science in Hospitality Management">
-                    Bachelor of Science in Hospitality Management
-                  </option>
-                  <option value="Bachelor of Science in Tourism">
-                    Bachelor of Science in Tourism
-                  </option>
-                </optgroup>
-              </select>
-            </div>
+
             <div class="flex flex-col w-full">
               <label for="email">Email</label>
               <input
@@ -255,589 +300,129 @@
             </div>
             <div class="flex flex-col w-full">
               <label for="password" class="label">Password</label>
-              <div class="relative w-full flex items-center">
-                <input
-                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  type="password"
-                  id="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  required
-                  minlength="8"
-                />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="togglePassword">
-                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
-                </span>
-              </div>
-              <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="length-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least 8 characters</span>
-                </div>
-                <div class="flex items-center gap-2" id="uppercase-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one uppercase letter</span>
-                </div>
-                <div class="flex items-center gap-2" id="lowercase-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one lowercase letter</span>
-                </div>
-                <div class="flex items-center gap-2" id="number-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one number</span>
-                </div>
-                <div class="flex items-center gap-2" id="special-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one special character (!@#$%^&*(),.?":{}|<>)</span>
-                </div>
+              <div class="w-full flex relative">
+                  <input class="w-full" type="password" id="password" name="password" placeholder="Enter your password" required>
+                  <button class="absolute right-[10px] top-[12px]" type="button" id="togglePassword">
+                      <svg id="showIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      </svg>
+                      <svg id="hideIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5" style="display: none;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395m6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                  </button>
               </div>
             </div>
             <div class="flex flex-col w-full">
               <label for="confirmPassword">Confirm Password</label>
-              <div class="relative w-full flex items-center">
-                <input
-                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  required
-                  minlength="8"
-                />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleConfirmPassword">
-                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
-                </span>
-              </div>
-              <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="match-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>Passwords match</span>
-                </div>
+              <div class="w-full flex relative">
+                  <input class="w-full" type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required>
+                   <button class="absolute right-[10px] top-[12px]" type="button" id="toggleConfirmPassword">
+                      <svg id="showConfirmIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      </svg>
+                      <svg id="hideConfirmIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5" style="display: none;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395m6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                  </button>
               </div>
             </div>
-            <button type="submit" class="bg-[#3b82f6] text-white text-[14px] p-3 rounded-md w-full cursor-pointer mt-4">Register</button>
+            <!-- Password Strength Indicator -->
+            <div class="w-full mt-2 flex flex-col gap-1">
+              <p class="text-sm font-semibold">Password must contain:</p>
+              <ul class="text-xs text-gray-600 flex flex-col gap-[2px]">
+                <li id="length" class=""><i class="fa-solid fa-circle-check mr-2"></i>At least 8 characters</li>
+                <li id="uppercase"><i class="fa-solid fa-circle-check mr-2"></i>At least one uppercase letter</li>
+                <li id="lowercase"><i class="fa-solid fa-circle-check mr-2"></i>At least one lowercase letter</li>
+                <li id="number"><i class="fa-solid fa-circle-check mr-2"></i>At least one number</li>
+                <li id="special"><i class="fa-solid fa-circle-check mr-2"></i>At least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)</li>
+              </ul>
+            </div>
+            <!-- Password Match Indicator -->
+            <div class="w-full mt-2">
+              <p id="match" class="text-sm font-semibold text-red-500"><i class="fa-solid fa-circle-xmark mr-2"></i>Passwords do not match</p>
+            </div>
+            <input type="submit" value="Register" class="bg-[#3b82f6] text-white text-[14px] p-2 rounded-md w-fit px-5 cursor-pointer mt-4">
           </form>
-          <form id="facultyForm" class="hidden flex-col w-full gap-2" method="POST">
-            {% csrf_token %}
-            <div class="flex w-full gap-2">
-              <div class="w-full flex flex-col">
-                <label for="firstName" class="w-fit">First Name</label>
-                <input
-                  type="text"
-                  class="w-full rounded-md"
-                  id="facultyFirstName"
-                  name="firstName"
-                  placeholder="Enter your first name"
-                  required
-                />
-              </div>
-              <div class="w-full flex flex-col">
-                <label for="middleInitial" class="w-fit">M.I</label>
-                <input
-                  type="text"
-                  class="w-full rounded-md"
-                  id="facultyMiddleInitial"
-                  name="middleInitial"
-                  maxlength="1"
-                  placeholder="Enter your middle initial"
-                  required
-                />
-              </div>
-              <div class="w-full flex flex-col">
-                <label for="lastName" class="w-fit">Last Name</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="facultyLastName"
-                  name="lastName"
-                  placeholder="Enter your last name"
-                  required
-                />
-              </div>
-            </div>
-            <div class="flex w-full gap-2">
-              <div class="flex flex-col w-full">
-                <label for="sex">Sex</label>
-                <select class="w-full rounded-md" name="sex" id="facultySex" required>
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
-                </select>
-              </div>
-              <div class="w-full flex flex-col">
-                <label for="idNumber">ID Number</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="facultyIdNumber"
-                  name="idNumber"
-                  maxlength="7"
-                  placeholder="Enter your ID number"
-                  required
-                  pattern="[0-9]{7}"
-                  title="Please enter a valid 7-digit ID number"
-                />
-              </div>
-            </div>
-            <div class="flex w-full gap-2">
-              <div class="flex flex-col w-full">
-                <label for="department">Department</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="department"
-                  name="department"
-                  placeholder="Enter your department"
-                  required
-                />
-              </div>
-              <div class="flex flex-col w-full">
-                <label for="position">Position</label>
-                <input
-                  class="w-full rounded-md"
-                  type="text"
-                  id="position"
-                  name="position"
-                  placeholder="Enter your position"
-                  required
-                />
-              </div>
-            </div>
-            <div class="flex flex-col w-full">
-              <label for="email">Email</label>
-              <input
-                class="w-full rounded-md"
-                type="email"
-                id="facultyEmail"
-                name="email"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            <div class="flex flex-col w-full">
-              <label for="password" class="label">Password</label>
-              <div class="relative w-full flex items-center">
-                <input
-                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  type="password"
-                  id="facultyPassword"
-                  name="password"
-                  placeholder="Enter your password"
-                  required
-                  minlength="8"
-                />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleFacultyPassword">
-                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
-                </span>
-              </div>
-              <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="facultyLength-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least 8 characters</span>
-                </div>
-                <div class="flex items-center gap-2" id="facultyUppercase-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one uppercase letter</span>
-                </div>
-                <div class="flex items-center gap-2" id="facultyLowercase-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one lowercase letter</span>
-                </div>
-                <div class="flex items-center gap-2" id="facultyNumber-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one number</span>
-                </div>
-                <div class="flex items-center gap-2" id="facultySpecial-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>At least one special character (!@#$%^&*(),.?":{}|<>)</span>
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col w-full">
-              <label for="confirmPassword">Confirm Password</label>
-              <div class="relative w-full flex items-center">
-                <input
-                  class="w-full pr-10 py-2 px-3 border rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  type="password"
-                  id="facultyConfirmPassword"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  required
-                  minlength="8"
-                />
-                <span class="absolute right-0 pr-3 flex items-center cursor-pointer" id="toggleFacultyConfirmPassword">
-                  <i class="fas fa-eye text-gray-500 hover:text-gray-700"></i>
-                </span>
-              </div>
-              <div class="mt-2 text-sm">
-                <div class="flex items-center gap-2" id="facultyMatch-check">
-                  <i class="fas fa-circle text-gray-300"></i>
-                  <span>Passwords match</span>
-                </div>
-              </div>
-            </div>
-            <button type="submit" class="bg-[#3b82f6] text-white text-[14px] p-3 rounded-md w-full cursor-pointer mt-4">Register</button>
-          </form>
-          <p class="text-center text-[14px] mt-2">
-            Already have an account? <a href="{% url 'main:login' %}" class="underline">Login</a>
-          </p>
+          <p class="text-[14px]">Already have an account? <a href="{% url 'main:login' %}" class="text-blue-500 underline">Login</a></p>
         </div>
       </div>
     </div>
+    {% load static %}
+    <script src="{% static 'scripts/register.js' %}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-      // Get radio buttons and form containers
-      const studentRole = document.getElementById('studentRole');
-      const facultyRole = document.getElementById('facultyRole');
+        document.addEventListener('DOMContentLoaded', function() {
+            const studentRoleRadio = document.getElementById('studentRole');
+            const facultyRoleRadio = document.getElementById('facultyRole');
+            const studentFieldsDiv = document.getElementById('studentFields');
+            const facultyFieldsDiv = document.getElementById('facultyFields');
 
-      const studentForm = document.querySelector('#studentForm');
-      const facultyForm = document.querySelector('#facultyForm');
+            function toggleFields() {
+                if (studentRoleRadio.checked) {
+                    studentFieldsDiv.classList.remove('hidden');
+                    studentFieldsDiv.classList.add('flex', 'flex-col');
+                    facultyFieldsDiv.classList.add('hidden');
+                    facultyFieldsDiv.classList.remove('flex', 'flex-col');
+                    // Set required attribute for student fields
+                    studentFieldsDiv.querySelectorAll('input, select').forEach(input => input.setAttribute('required', ''));
+                    facultyFieldsDiv.querySelectorAll('input, select').forEach(input => input.removeAttribute('required'));
 
-      // LRN validation (only applies to student form)
-      const lrnInput = document.getElementById('lrn');
+                    // Explicitly set required for specific student inputs
+                    document.getElementById('studentIdNumber').setAttribute('required', '');
+                    document.getElementById('lrn').setAttribute('required', '');
+                    document.getElementById('sex').setAttribute('required', '');
+                    document.getElementById('yrLevel').setAttribute('required', '');
+                    document.getElementById('course').setAttribute('required', '');
 
-      // Student form ID Number validation
-      const idNumberInput = document.getElementById('idNumber');
+                    // Ensure faculty-specific inputs are NOT required
+                    document.getElementById('department').removeAttribute('required');
+                    document.getElementById('position').removeAttribute('required');
+                    document.getElementById('facultyIdNumber').removeAttribute('required');
 
-      // Faculty ID Number validation
-      const facultyIdNumberInput = document.getElementById('facultyIdNumber');
+                } else if (facultyRoleRadio.checked) {
+                    studentFieldsDiv.classList.add('hidden');
+                    studentFieldsDiv.classList.remove('flex', 'flex-col');
+                    facultyFieldsDiv.classList.remove('hidden');
+                    facultyFieldsDiv.classList.add('flex', 'flex-col');
+                     // Set required attribute for faculty fields
+                    facultyFieldsDiv.querySelectorAll('input, select').forEach(input => input.setAttribute('required', ''));
+                    studentFieldsDiv.querySelectorAll('input, select').forEach(input => input.removeAttribute('required'));
 
-      // Password validation elements for student form
-      const passwordInput = document.getElementById('password');
-      const confirmPasswordInput = document.getElementById('confirmPassword');
-      const togglePassword = document.getElementById('togglePassword');
-      const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+                    // Explicitly set required for specific faculty inputs
+                    document.getElementById('department').setAttribute('required', '');
+                    document.getElementById('position').setAttribute('required', '');
+                    document.getElementById('facultyIdNumber').setAttribute('required', '');
 
-      const lengthCheck = document.getElementById('length-check');
-      const uppercaseCheck = document.getElementById('uppercase-check');
-      const lowercaseCheck = document.getElementById('lowercase-check');
-      const numberCheck = document.getElementById('number-check');
-      const specialCheck = document.getElementById('special-check');
-      const matchCheck = document.getElementById('match-check');
-
-      // Password validation elements for faculty form
-      const facultyPasswordInput = document.getElementById('facultyPassword');
-      const facultyConfirmPasswordInput = document.getElementById('facultyConfirmPassword');
-      const toggleFacultyPassword = document.getElementById('toggleFacultyPassword');
-      const toggleFacultyConfirmPassword = document.getElementById('toggleFacultyConfirmPassword');
-
-      const facultyLengthCheck = document.getElementById('facultyLength-check');
-      const facultyUppercaseCheck = document.getElementById('facultyUppercase-check');
-      const facultyLowercaseCheck = document.getElementById('facultyLowercase-check');
-      const facultyNumberCheck = document.getElementById('facultyNumber-check');
-      const facultySpecialCheck = document.getElementById('facultySpecial-check');
-      const facultyMatchCheck = document.getElementById('facultyMatch-check');
-
-      // Faculty form specific elements
-      const facultyFirstNameInput = document.getElementById('facultyFirstName');
-      const facultyMiddleInitialInput = document.getElementById('facultyMiddleInitial');
-      const facultyLastNameInput = document.getElementById('facultyLastName');
-      const facultySexSelect = document.getElementById('facultySex');
-      const facultyEmailInput = document.getElementById('facultyEmail');
-      const departmentInput = document.getElementById('department');
-      const positionInput = document.getElementById('position');
-
-
-      // Function to toggle form visibility
-      function toggleForms() {
-          if (studentRole.checked) {
-              studentForm.style.display = 'flex';
-              facultyForm.style.display = 'none';
-               // attachLrnListener(); // Call here as well when switching to student form
-          } else if (facultyRole.checked) {
-              studentForm.style.display = 'none';
-              facultyForm.style.display = 'flex';
-          }
-      }
-
-      // Add event listeners to radio buttons
-      studentRole.addEventListener('change', toggleForms);
-      facultyRole.addEventListener('change', toggleForms);
-
-      // Initial check on page load
-      toggleForms();
-
-      // LRN validation (only applies to student form)
-      function attachLrnListener() {
-          if (studentRole.checked) {
-              lrnInput.addEventListener('input', function(e) {
-                  this.value = this.value.replace(/[^0-9]/g, '');
-              });
-          }
-      }
-
-      // Call on initial load
-      attachLrnListener();
-
-      // Call when role changes
-      studentRole.addEventListener('change', attachLrnListener);
-      facultyRole.addEventListener('change', function() {
-          // Optionally remove listener if needed, though not strictly necessary with the check inside
-          // For simplicity here, we rely on the check inside attachLrnListener
-      });
-
-      // Student form ID Number validation
-       if (idNumberInput) { // Check if element exists
-            idNumberInput.addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
-       }
-
-      // Faculty ID Number validation
-      if (facultyIdNumberInput) { // Check if element exists
-          facultyIdNumberInput.addEventListener('input', function(e) {
-              this.value = this.value.replace(/[^0-9]/g, '');
-          });
-      }
-
-      // Password validation functions
-      function updateValidationUI(element, isValid) {
-          if (!element) return; // Added check
-          const icon = element.querySelector('i');
-          if (isValid) {
-              icon.className = 'fas fa-check-circle text-green-500';
-              element.classList.add('text-green-500');
-              element.classList.remove('text-gray-500');
-          } else {
-              icon.className = 'fas fa-circle text-gray-300';
-              element.classList.add('text-gray-500');
-              element.classList.remove('text-green-500');
-          }
-      }
-
-       function validatePassword(password, lengthElement, uppercaseElement, lowercaseElement, numberElement, specialElement) {
-          const hasLength = password.length >= 8;
-          const hasUppercase = /[A-Z]/.test(password);
-          const hasLowercase = /[a-z]/.test(password);
-          const hasNumber = /\d/.test(password);
-          const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-          updateValidationUI(lengthElement, hasLength);
-          updateValidationUI(uppercaseElement, hasUppercase);
-          updateValidationUI(lowercaseElement, hasLowercase);
-          updateValidationUI(numberElement, hasNumber);
-          updateValidationUI(specialElement, hasSpecial);
-
-          return hasLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
-      }
-
-      function validatePasswordMatch(password, confirmPassword, matchElement) {
-          const isValid = password === confirmPassword && password !== '';
-          updateValidationUI(matchElement, isValid);
-          return isValid;
-      }
-
-
-      // Add event listeners for student password validation
-      if (passwordInput) { // Added check
-            passwordInput.addEventListener('input', function() {
-                validatePassword(this.value, lengthCheck, uppercaseCheck, lowercaseCheck, numberCheck, specialCheck);
-                validatePasswordMatch(this.value, confirmPasswordInput.value, matchCheck);
-            });
-      }
-
-      if (confirmPasswordInput) { // Added check
-           confirmPasswordInput.addEventListener('input', function() {
-                validatePasswordMatch(passwordInput.value, this.value, matchCheck);
-           });
-      }
-
-
-      // Add event listeners for faculty password validation
-      if (facultyPasswordInput) { // Added check
-          facultyPasswordInput.addEventListener('input', function() {
-              validatePassword(this.value, facultyLengthCheck, facultyUppercaseCheck, facultyLowercaseCheck, facultyNumberCheck, facultySpecialCheck);
-              validatePasswordMatch(this.value, facultyConfirmPasswordInput.value, facultyMatchCheck);
-          });
-      }
-
-      if (facultyConfirmPasswordInput) { // Added check
-          facultyConfirmPasswordInput.addEventListener('input', function() {
-              validatePasswordMatch(facultyPasswordInput.value, this.value, facultyMatchCheck);
-          });
-      }
-
-
-      // Toggle password visibility for student form
-      if (togglePassword) { // Added check
-            togglePassword.addEventListener('click', function() {
-                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-                passwordInput.setAttribute('type', type);
-                this.querySelector('i').classList.toggle('fa-eye');
-                this.querySelector('i').classList.toggle('fa-eye-slash');
-            });
-      }
-
-
-      // Toggle password visibility for faculty form
-      if (toggleFacultyPassword) { // Added check
-          toggleFacultyPassword.addEventListener('click', function() {
-              const type = facultyPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-              facultyPasswordInput.setAttribute('type', type);
-              this.querySelector('i').classList.toggle('fa-eye');
-              this.querySelector('i').classList.toggle('fa-eye-slash');
-          });
-      }
-
-
-      // Toggle confirm password visibility for student form
-      if (toggleConfirmPassword) { // Added check
-          toggleConfirmPassword.addEventListener('click', function() {
-              const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-              confirmPasswordInput.setAttribute('type', type);
-              this.querySelector('i').classList.toggle('fa-eye');
-              this.querySelector('i').classList.toggle('fa-eye-slash');
-          });
-      }
-
-
-      // Toggle confirm password visibility for faculty form
-       if (toggleFacultyConfirmPassword) { // Added check
-          toggleFacultyConfirmPassword.addEventListener('click', function() {
-              const type = facultyConfirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-              facultyConfirmPasswordInput.setAttribute('type', type);
-              this.querySelector('i').classList.toggle('fa-eye');
-              this.querySelector('i').classList.toggle('fa-eye-slash');
-          });
-       }
-
-
-      // Student form submission handler
-      if (studentForm) { // Added check
-            studentForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                // Only proceed if the student form is currently displayed
-                if (studentForm.style.display === 'none') {
-                    return; // Stop if the form is hidden
+                    // Ensure student-specific inputs are NOT required
+                    document.getElementById('studentIdNumber').removeAttribute('required');
+                    document.getElementById('lrn').removeAttribute('required');
+                    document.getElementById('sex').removeAttribute('required');
+                    document.getElementById('yrLevel').removeAttribute('required');
+                    document.getElementById('course').removeAttribute('required');
                 }
+            }
 
-                // Get the selected role and add it to FormData
-                const selectedRole = document.querySelector('input[name="role"]:checked').value;
-                const formData = new FormData(this);
-                formData.append('role', selectedRole);
+            // Initial toggle based on checked radio button
+            toggleFields();
 
-                // Validate LRN length
-                if (lrnInput.value.length !== 12) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid LRN',
-                        text: 'LRN must be exactly 12 digits.'
-                    });
-                    return;
-                }
+            // Add event listeners to radio buttons
+            studentRoleRadio.addEventListener('change', toggleFields);
+            facultyRoleRadio.addEventListener('change', toggleFields);
 
-                // Validate student ID Number length
-                if (idNumberInput.value.length !== 7) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid ID Number',
-                        text: 'ID Number must be exactly 7 digits.'
-                    });
-                    return;
-                }
+            // Handle form submission with SweetAlert2
+            const registrationForm = document.getElementById('registrationForm');
+            registrationForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
 
-                 // Validate student password
-                if (!validatePassword(passwordInput.value, lengthCheck, uppercaseCheck, lowercaseCheck, numberCheck, specialCheck) || !validatePasswordMatch(passwordInput.value, confirmPasswordInput.value, matchCheck)) {
-                     Swal.fire({
-                        icon: 'error',
-                        title: 'Password Validation Failed',
-                        text: 'Please ensure your password meets all the requirements and the confirmation matches.'
-                    });
-                    return;
-                }
+                const formData = new FormData(registrationForm);
 
-                // If all student validations pass, submit the form via fetch
-                fetch(this.action, {
+                fetch('', {
                     method: 'POST',
-                    body: new FormData(this),
+                    body: formData,
                     headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Registration Successful!',
-                            text: 'registered successfully, Please proceed to login',
-                            showConfirmButton: false,
-                            timer: 1500
-                        }).then(() => {
-                            window.location.href = "/"; // Redirect after success
-                        });
-                    } else {
-                        let errorMessage = 'Registration failed. Please try again.';
-                        if (data.message) {
-                            if (data.message.includes('Student ID')) {
-                                errorMessage = 'This Student ID is already registered.';
-                            } else if (data.message.includes('Email')) {
-                                errorMessage = 'This email is already registered.';
-                            } else {
-                                errorMessage = data.message;
-                            }
-                        }
-
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Registration Failed',
-                            text: errorMessage
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Registration Failed',
-                        text: 'An error occurred. Please try again.'
-                    });
-                });
-            });
-      }
-
-
-      // Faculty form submission handler
-      if (facultyForm) { // Added check
-            facultyForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                // Only proceed if the faculty form is currently displayed
-                if (facultyForm.style.display === 'none') {
-                    return; // Stop if the form is hidden
-                }
-
-                // Get the selected role and add it to FormData
-                const selectedRole = document.querySelector('input[name="role"]:checked').value;
-                const formData = new FormData(this);
-                formData.append('role', selectedRole);
-
-                // Validate Faculty ID Number length
-                if (facultyIdNumberInput.value.length !== 7) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid ID Number',
-                        text: 'ID Number must be exactly 7 digits.'
-                    });
-                    return;
-                }
-
-                // Validate faculty password
-                if (!validatePassword(facultyPasswordInput.value, facultyLengthCheck, facultyUppercaseCheck, facultyLowercaseCheck, facultyNumberCheck, facultySpecialCheck) || !validatePasswordMatch(facultyPasswordInput.value, facultyConfirmPasswordInput.value, facultyMatchCheck)) {
-                     Swal.fire({
-                        icon: 'error',
-                        title: 'Password Validation Failed',
-                        text: 'Please ensure your password meets all the requirements and the confirmation matches.'
-                    });
-                    return;
-                }
-
-                // If all faculty validations pass, submit the form via fetch
-                fetch(this.action, {
-                    method: 'POST',
-                    body: new FormData(this),
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
                 .then(response => response.json())
@@ -846,28 +431,112 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Success!',
-                            text: 'registered successfully, Please proceed to login'
+                            text: data.message,
                         }).then(() => {
-                            window.location.href = '/'; // Redirect after success
+                            window.location.href = '{% url "main:login" %}'; // Redirect on success
                         });
                     } else {
+                         let errorMessage = data.message || 'An error occurred.';
+                         if (data.errors) {
+                             errorMessage += '<br>' + data.errors.join('<br>');
+                         }
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: data.message
+                            html: errorMessage,
                         });
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: 'An error occurred during registration.'
+                        text: 'An unexpected error occurred.',
                     });
                 });
             });
-      }
+
+            // Password Validation and Visibility Toggle
+            const passwordInput = document.getElementById('password');
+            const confirmPasswordInput = document.getElementById('confirmPassword');
+            const lengthIndicator = document.getElementById('length');
+            const uppercaseIndicator = document.getElementById('uppercase');
+            const lowercaseIndicator = document.getElementById('lowercase');
+            const numberIndicator = document.getElementById('number');
+            const specialIndicator = document.getElementById('special');
+            const matchIndicator = document.getElementById('match');
+
+            const togglePasswordButton = document.getElementById('togglePassword');
+            const showPasswordIcon = document.getElementById('showIcon');
+            const hidePasswordIcon = document.getElementById('hideIcon');
+
+            const toggleConfirmPasswordButton = document.getElementById('toggleConfirmPassword');
+            const showConfirmIcon = document.getElementById('showConfirmIcon');
+            const hideConfirmIcon = document.getElementById('hideConfirmIcon');
+
+            function updateIndicator(element, isValid) {
+                if (isValid) {
+                    element.classList.remove('text-red-500');
+                    element.classList.add('text-green-500');
+                    element.querySelector('i').classList.remove('fa-circle-xmark');
+                    element.querySelector('i').classList.add('fa-circle-check');
+                } else {
+                    element.classList.remove('text-green-500');
+                    element.classList.add('text-red-500');
+                    element.querySelector('i').classList.remove('fa-circle-check');
+                    element.querySelector('i').classList.add('fa-circle-xmark');
+                }
+            }
+
+            function validatePassword() {
+                const password = passwordInput.value;
+                const hasLength = password.length >= 8;
+                const hasUppercase = /[A-Z]/.test(password);
+                const hasLowercase = /[a-z]/.test(password);
+                const hasNumber = /[\d]/.test(password);
+                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+                updateIndicator(lengthIndicator, hasLength);
+                updateIndicator(uppercaseIndicator, hasUppercase);
+                updateIndicator(lowercaseIndicator, hasLowercase);
+                updateIndicator(numberIndicator, hasNumber);
+                updateIndicator(specialIndicator, hasSpecial);
+
+                checkPasswordMatch(); // Also check match when password changes
+            }
+
+            function checkPasswordMatch() {
+                const password = passwordInput.value;
+                const confirmPassword = confirmPasswordInput.value;
+                const isMatch = password === confirmPassword && confirmPassword !== '';
+
+                updateIndicator(matchIndicator, isMatch);
+            }
+
+            function togglePasswordVisibility(passwordField, showIcon, hideIcon) {
+                if (passwordField.type === 'password') {
+                    passwordField.type = 'text';
+                    showIcon.style.display = 'none';
+                    hideIcon.style.display = 'inline-block';
+                } else {
+                    passwordField.type = 'password';
+                    showIcon.style.display = 'inline-block';
+                    hideIcon.style.display = 'none';
+                }
+            }
+
+            passwordInput.addEventListener('input', validatePassword);
+            confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+
+            togglePasswordButton.addEventListener('click', function() {
+                togglePasswordVisibility(passwordInput, showPasswordIcon, hidePasswordIcon);
+            });
+
+            toggleConfirmPasswordButton.addEventListener('click', function() {
+                togglePasswordVisibility(confirmPasswordInput, showConfirmIcon, hideConfirmIcon);
+            });
+
+        });
 
     </script>
   </body>

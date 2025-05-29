@@ -100,26 +100,50 @@ def register(request):
         print("Received POST request in register view.")
         print("POST data:", request.POST)
         try:
-            # Get form data
+            # Get common form data first
             firstName = request.POST.get("firstName")
             middleInitial = request.POST.get("middleInitial")
             lastName = request.POST.get("lastName")
-            sex = request.POST.get("sex")
-            yrLevel = request.POST.get("yrLevel")
-            idNumber = request.POST.get("idNumber")
-            lrn = request.POST.get("lrn")
-            course = request.POST.get("course")
             email = request.POST.get("email")
             password = request.POST.get("password")
             confirmPassword = request.POST.get("confirmPassword")
             role = request.POST.get("role", 'Student') # Get selected role, default to Student
 
             print("Received role:", role)
-            if role == 'Student':
-                 print("Received LRN for student:", lrn)
 
-            # Validate LRN format only for students
+            # Check if email already exists (common validation)
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Email already registered.'
+                })
+
+            # Validate password (common validation)
+            if password != confirmPassword:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Passwords do not match.'
+                })
+
+            # Handle Student registration
             if role == 'Student':
+                # Get student-specific data
+                sex = request.POST.get("sex")
+                yrLevel = request.POST.get("yrLevel")
+                idNumber = request.POST.get("idNumber") # This is student_id for students
+                lrn = request.POST.get("lrn")
+                course = request.POST.get("course")
+
+                print("Received LRN for student:", lrn)
+
+                # Validate required fields for students
+                if not all([firstName, middleInitial, lastName, sex, yrLevel, idNumber, lrn, course, email, password, confirmPassword]):
+                     return JsonResponse({
+                         'status': 'error',
+                         'message': 'Please provide all required student information.'
+                     })
+
+                # Validate LRN format
                 if not lrn or not lrn.isdigit() or len(lrn) != 12:
                     print("LRN validation failed for student.")
                     return JsonResponse({
@@ -127,61 +151,38 @@ def register(request):
                         'message': 'LRN must be exactly 12 digits.'
                     })
 
-                # Validate ID Number format only for students
+                # Validate Student ID Number format
                 if not idNumber or not idNumber.isdigit() or len(idNumber) != 7:
                     return JsonResponse({
                         'status': 'error',
                         'message': 'ID Number must be exactly 7 digits.'
                     })
 
-            # Check if email already exists
-            if User.objects.filter(email=email).exists():
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Email already registered.'
-                })
-
-            # Check if student ID already exists (only for students)
-            if role == 'Student' and Student.objects.filter(student_id=idNumber).exists():
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Student ID already registered.'
-                })
-
-            # Check if LRN already exists (only for students)
-            if role == 'Student' and Student.objects.filter(lrn=lrn).exists():
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'LRN already registered.'
-                })
-
-            # Validate password
-            if password != confirmPassword:
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Passwords do not match.'
-                })
-
-            # Create user
-            user = User.objects.create_user(
-                username=email, # Using email as username
-                email=email,
-                password=password,
-                first_name=firstName, # Use Django's built-in fields
-                last_name=lastName,
-            )
-
-            # Create Profile for the user
-            profile = Profile.objects.create(user=user, role=role)
-
-            # Create Student or Faculty instance based on role
-            if role == 'Student':
-                # Further validate required fields for students
-                if not all([sex, yrLevel, course]):
+                # Check if student ID already exists
+                if Student.objects.filter(student_id=idNumber).exists():
                     return JsonResponse({
                         'status': 'error',
-                        'message': 'Please provide all required student information.'
+                        'message': 'Student ID already registered.'
                     })
+
+                # Check if LRN already exists
+                if Student.objects.filter(lrn=lrn).exists():
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'LRN already registered.'
+                    })
+
+                # Create user
+                user = User.objects.create_user(
+                    username=email, # Using email as username
+                    email=email,
+                    password=password,
+                    first_name=firstName,
+                    last_name=lastName,
+                )
+
+                # Create Profile for the user
+                profile = Profile.objects.create(user=user, role=role)
 
                 # Create Student instance
                 Student.objects.create(
@@ -196,20 +197,25 @@ def register(request):
                     email=email,
                     contact_number='N/A' # Assuming contact number is not collected in this form
                 )
+
+            # Handle Faculty registration
             elif role == 'Faculty': # Explicitly check for Faculty role
+                # Get faculty-specific data
                 department = request.POST.get('department')
                 position = request.POST.get('position')
                 faculty_id = request.POST.get('idNumber') # Get the ID number for faculty
                 sex = request.POST.get('sex') # Get the sex for faculty
                 middlename = request.POST.get('middleInitial') # Get the middle initial for faculty
 
-                if not all([department, position, faculty_id, sex]):
+                # Validate required fields for faculty
+                if not all([firstName, middleInitial, lastName, department, position, faculty_id, sex, email, password, confirmPassword]):
                     return JsonResponse({
                         'status': 'error',
-                        'message': 'Please provide all required faculty information (Department, Position, ID Number, Sex).'
+                        'message': 'Please provide all required faculty information (First Name, Middle Initial, Last Name, Department, Position, ID Number, Sex, Email, Password, Confirm Password).'
                     })
 
                 # Optional validation for faculty ID format (if needed, add here)
+                # Assuming faculty ID is also 7 digits based on the template
                 if not faculty_id.isdigit() or len(faculty_id) != 7:
                      return JsonResponse({
                          'status': 'error',
@@ -223,6 +229,18 @@ def register(request):
                         'message': 'Faculty ID already registered.'
                     })
 
+                # Create user
+                user = User.objects.create_user(
+                    username=email, # Using email as username
+                    email=email,
+                    password=password,
+                    first_name=firstName,
+                    last_name=lastName,
+                )
+
+                # Create Profile for the user
+                profile = Profile.objects.create(user=user, role=role)
+
                 # Create Faculty instance
                 Faculty.objects.create(
                     user=user,
@@ -232,19 +250,14 @@ def register(request):
                     sex=sex,
                     middlename=middlename
                 )
+
             else:
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Invalid role specified.'
                 })
 
-            # Generate OTP and create verification
-            # otp = ''.join(random.choices('0123456789', k=6))
-            # verification = EmailVerification.objects.create(user=user, otp=otp)
-            
-            # Send verification email
-            # send_verification_email(user, verification)
-
+            # If registration is successful for either role
             return JsonResponse({
                 'status': 'success',
                 'message': 'Registration successful. Please log in to verify your email.'
@@ -256,6 +269,7 @@ def register(request):
                 'message': str(e)
             })
 
+    # For GET request, render the registration form
     return render(request, "register.html")
 
 def verify_otp(request):
