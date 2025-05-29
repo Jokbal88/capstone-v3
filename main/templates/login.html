@@ -145,8 +145,10 @@
                                 otpInputs[i].value = pastedData[i];
                             }
                         }
+                        // Remove automatic form submission on paste
                         if (pastedData.length === 6) {
-                            document.getElementById('otpForm').dispatchEvent(new Event('submit'));
+                            // Focus the last input instead of submitting
+                            otpInputs[5].focus();
                         }
                     }
                 });

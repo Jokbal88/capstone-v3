@@ -291,7 +291,8 @@ def verify_otp(request):
                 login(request, user)
                 
                 # Clear the verification session
-                del request.session['verification_email']
+                if 'verification_email' in request.session:
+                    del request.session['verification_email']
                 
                 # Return success response with appropriate redirect URL
                 if user.is_staff or user.is_superuser:
@@ -299,7 +300,7 @@ def verify_otp(request):
                         'status': 'success',
                         'redirect_url': reverse('main:admin_dashboard')
                     })
-                elif user.profile.role == 'Faculty':
+                elif hasattr(user, 'profile') and user.profile.role == 'Faculty':
                     return JsonResponse({
                         'status': 'success',
                         'redirect_url': reverse('main:faculty_dashboard')
