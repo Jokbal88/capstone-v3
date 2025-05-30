@@ -330,11 +330,17 @@ def verify_otp(request):
                 if 'verification_email' in request.session:
                     del request.session['verification_email']
                 
-                # Return success with redirect URL
+                # Determine redirect URL based on user role
+                if user.is_superuser or user.is_staff:
+                    redirect_url = reverse('main:admin_dashboard')
+                else:
+                    redirect_url = reverse('main:main')
+                
+                # Return success with appropriate redirect URL
                 return JsonResponse({
                     'status': 'success',
                     'message': 'OTP verified successfully.',
-                    'redirect_url': reverse('main:main')
+                    'redirect_url': redirect_url
                 })
             else:
                 print(f"OTP mismatch. Stored OTP: {verification.otp}, Received OTP: {otp}")
@@ -825,33 +831,27 @@ def admin_dashboard_view(request):
         approve=True
     ).count()
     
-    # Get all requests with patient and student information
+    # Get all requests with patient and user information
     upcoming_requests = PatientRequest.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).order_by('date_requested')
     
     # Get dental service requests
     dental_requests = DentalRecords.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).filter(appointed=False).order_by('date_requested')
     
-    # DEBUG: Print dental requests
-    print('--- Dental Requests ---')
-    for req in dental_requests:
-        print(f'{req.date_requested} - {req.service_type} - {req.patient.student.firstname}')
-    print('--- End of Dental Requests ---')
-    
-    # Get scheduled appointments for the calendar (include all requests, not just future)
+    # Get scheduled appointments for the calendar
     scheduled_appointments = PatientRequest.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).values(
         'date_requested',
         'approve',
-        'patient__student__firstname',
-        'patient__student__lastname',
+        'patient__user__first_name',
+        'patient__user__last_name',
         'request_type'
     )
     
@@ -860,7 +860,7 @@ def admin_dashboard_view(request):
     for appointment in scheduled_appointments:
         events.append({
             'date': appointment['date_requested'].strftime('%Y-%m-%d'),
-            'student': f"{appointment['patient__student__firstname']} {appointment['patient__student__lastname']}",
+            'student': f"{appointment['patient__user__first_name']} {appointment['patient__user__last_name']}",
             'service': appointment['request_type'],
             'status': 'approved' if appointment['approve'] else 'pending'
         })
@@ -868,25 +868,25 @@ def admin_dashboard_view(request):
     # Example: Urgent cases (patients with allergies or chronic conditions)
     urgent_cases = Patient.objects.filter(allergies__isnull=False).count()
     
-    # Emergency Assistance Requests (example: filter by request_type containing 'Emergency')
+    # Emergency Assistance Requests
     emergency_requests = PatientRequest.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).filter(request_type__icontains='emergency').order_by('date_requested')
     
-    # Mental Health Requests (pending or recently submitted)
+    # Mental Health Requests
     mental_health_requests = MentalHealthRecord.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).order_by('-date_submitted')
     
     # Get prescription requests
     prescription_requests = PrescriptionRecord.objects.select_related(
         'patient',
-        'patient__student'
+        'patient__user'
     ).order_by('-date_prescribed')
     
-    # Notifications (sample)
+    # Notifications
     notifications = []
     if pending_requests > 0:
         notifications.append(f"{pending_requests} new documentary requests pending approval.")
@@ -900,7 +900,6 @@ def admin_dashboard_view(request):
     todays_appointments = []
     for event in events:
         if event['date'] == today_str:
-            # If you have time info, add it here; else, use a placeholder
             appt_time = event.get('time', 'All Day')
             todays_appointments.append({
                 'student': event['student'],

@@ -343,13 +343,20 @@ def eligibilty_form(request, student_id):
 # List of student for patient profile
 def patient_profile(request):
     if request.user.is_superuser or request.user.is_staff:
-        patients = Patient.objects.all().order_by('student__lastname')
+        # Get all patients ordered by user's last name
+        patients = Patient.objects.select_related('user').order_by('user__last_name')
+        
         if request.method == "POST":
             student_id = request.POST.get("student_id")
             try:
-                patient = Patient.objects.filter(student__student_id = student_id)
+                # Try to find a student with this ID
+                student = Student.objects.get(student_id=student_id)
+                # Get the user associated with this student
+                user = User.objects.get(email=student.email)
+                # Get the patient associated with this user
+                patient = Patient.objects.filter(user=user)
                 return render(request, "admin/patientprofile.html", {"patients": patient})
-            except Student.DoesNotExist:
+            except (Student.DoesNotExist, User.DoesNotExist):
                 return render(request, "admin/patientprofile.html", {"patients": patients})
         return render(request, "admin/patientprofile.html", {"patients": patients})
     else:
@@ -1523,7 +1530,83 @@ register.filter('basename', basename)
 
 # Views for handling students request for dental services
 def dental_services(request):
+    # Common variables for both admin and regular users
     id_number = None
+    student = None
+    faculty = None
+
+    # Handle staff/superuser differently - they manage the system
+    if request.user.is_superuser or request.user.is_staff:
+        if request.method == "POST":
+            service_type = request.POST.get("service_type")
+            student_id = request.POST.get("student_id")  # Get the student ID for whom the request is being made
+            
+            if not service_type:
+                messages.error(request, "Please select a service type")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+
+            if not student_id:
+                messages.error(request, "Please enter a student ID")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+
+            try:
+                # Get the student and their associated patient
+                student = Student.objects.get(student_id=student_id)
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
+
+                # Check if the student already has a pending request for this service type
+                dental_service_request = DentalRecords.objects.filter(patient=patient, service_type=service_type)
+                if dental_service_request.exists():
+                    messages.error(request, f"Student {student_id} already has a pending request for this service")
+                    return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+
+                # Create dental service request for the student
+                dental_request = DentalRecords.objects.create(
+                    patient=patient,
+                    service_type=service_type,
+                    date_requested=timezone.now(),
+                    created_by=request.user  # Track which staff member created the request
+                )
+
+                # Send confirmation email to the student
+                email_subject = 'Dental Services Request Submitted'
+                html_message = render_to_string('email/dental_request_confirmation.html', {
+                    'patient_name': f"{student.firstname} {student.lastname}",
+                    'service_type': service_type,
+                })
+
+                send_mail(
+                    email_subject,
+                    '',
+                    settings.EMAIL_HOST_USER,
+                    [student.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+
+                messages.success(request, f"Dental service request created successfully for student {student_id}")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+
+            except Student.DoesNotExist:
+                messages.error(request, f"Student with ID {student_id} not found")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+            except Patient.DoesNotExist:
+                messages.error(request, f"Student {student_id} has not completed their medical profile")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+            except Exception as e:
+                messages.error(request, f"An error occurred: {str(e)}")
+                return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
+
+        # For GET requests from staff/superuser
+        return render(request, "students/dentalrequestform.html", {
+            "id_number": id_number,
+            "student": student,
+            "faculty": faculty,
+            "is_staff": True  # Add this flag to show staff-specific UI elements
+        })
+
+    # Original logic for regular users (students/faculty)
     student = get_student_by_user(request.user)
     faculty = get_faculty_by_user(request.user)
     if faculty:
@@ -1539,28 +1622,24 @@ def dental_services(request):
             patient = Patient.objects.get(user=request.user)
         except Patient.DoesNotExist:
             messages.info(request, "Please complete your medical profile first.")
-            # Redirect to the patient basic info page - need student_id for student route
-            # Check if the user is a student to get the student_id for the redirect
             logged_in_student = get_student_by_user(request.user)
             if logged_in_student:
-                 return redirect('medical:patient_basicinfo', student_id=logged_in_student.student_id)
+                return redirect('medical:patient_basicinfo', student_id=logged_in_student.student_id)
             else:
-                # Handle cases where a non-student user somehow needs a patient profile
-                # This might require a different flow or error message depending on your app's design
                 messages.error(request, "Cannot access dental services without a patient profile.")
-                return redirect('main:main') # Redirect to a safe page or main view
-        transac_type = ""
+                return redirect('main:main')
+
         service_type = request.POST.get("service_type")
+        if not service_type:
+            messages.error(request, "Please select a service type")
+            return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
 
         # Check if the user (patient) already has a pending request for this service type
         dental_service_request = DentalRecords.objects.filter(patient=patient, service_type=service_type)
         if dental_service_request.exists():
             messages.error(request, "You have already requested this type of service")
-            # Render the form with existing data or redirect
             return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
 
-        transac_type = f"Request for dental {service_type}"
-        
         # Create dental service request object linked to the patient
         dental_request = DentalRecords.objects.create(
             patient=patient,
@@ -1568,13 +1647,11 @@ def dental_services(request):
             date_requested=timezone.now()
         )
 
-        # Send confirmation email to the user (using patient's associated user's email)
+        # Send confirmation email to the user
         user_email = request.user.email
-        user_name = request.user.get_full_name() or request.user.username # Use user's full name or username
+        user_name = request.user.get_full_name() or request.user.username
 
         email_subject = 'Dental Services Request Submitted'
-
-        # Render email template
         html_message = render_to_string('email/dental_request_confirmation.html', {
             'patient_name': user_name,
             'service_type': service_type,
@@ -1582,7 +1659,7 @@ def dental_services(request):
 
         send_mail(
             email_subject,
-            '', # Plain text message is empty as we send HTML
+            '',
             settings.EMAIL_HOST_USER,
             [user_email],
             html_message=html_message,
@@ -1590,8 +1667,6 @@ def dental_services(request):
         )
 
         messages.success(request, "Request submitted. A confirmation email has been sent.")
-        # record_transaction(patient, transac_type) # Uncomment if record_transaction is needed here
-        # Render the form again, maybe with a success message or redirect
         return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
 
     # For GET request, render the initial form

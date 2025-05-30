@@ -291,7 +291,7 @@
                             <tbody>
                                 {% for request in upcoming_requests %}
                                 <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
                                     <td class="px-2 py-2">{{ request.request_type }}</td>
                                     <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
                                     <td class="px-2 py-2">
@@ -332,7 +332,7 @@
                             <tbody>
                                 {% for request in dental_requests %}
                                 <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
                                     <td class="px-2 py-2">{{ request.service_type }}</td>
                                     <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
                                     <td class="px-2 py-2">
@@ -415,7 +415,7 @@
                             <tbody>
                                 {% for request in emergency_requests %}
                                 <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
                                     <td class="px-2 py-2">{{ request.request_type }}</td>
                                     <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
                                     <td class="px-2 py-2">
@@ -456,7 +456,7 @@
         <tbody>
                                 {% for request in prescription_requests %}
                                 <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.student.firstname }} {{ request.patient.student.lastname }}</td>
+                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
                                     <td class="px-2 py-2">Prescription</td>
                                     <td class="px-2 py-2">{{ request.date_prescribed|date:"M d, Y" }}</td>
                                     <td class="px-2 py-2">

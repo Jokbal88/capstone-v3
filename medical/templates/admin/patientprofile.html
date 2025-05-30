@@ -35,25 +35,63 @@
         {% for patient in patients %}
         <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.student_id }}</span>
+            <span class="text-black">
+              {% if patient.user.student %}
+                {{ patient.user.student.student_id }}
+              {% elif patient.user.faculty %}
+                {{ patient.user.faculty.faculty_id }}
+              {% else %}
+                {{ patient.user.username }}
+              {% endif %}
+            </span>
           </td>
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.lastname|title }}</span>
+            <span class="text-black">{{ patient.user.last_name|title }}</span>
           </td>
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.firstname|title }}</span>
+            <span class="text-black">{{ patient.user.first_name|title }}</span>
           </td>
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.degree }}</span>
+            <span class="text-black">
+              {% if patient.user.student %}
+                {{ patient.user.student.degree }}
+              {% elif patient.user.faculty %}
+                {{ patient.user.faculty.department }}
+              {% else %}
+                N/A
+              {% endif %}
+            </span>
           </td>
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.year_level }}</span>
+            <span class="text-black">
+              {% if patient.user.student %}
+                {{ patient.user.student.year_level }}
+              {% elif patient.user.faculty %}
+                {{ patient.user.faculty.position }}
+              {% else %}
+                N/A
+              {% endif %}
+            </span>
           </td>
           <td class="text-center p-4">
-            <span class="text-black">{{ patient.student.sex }}</span>
+            <span class="text-black">
+              {% if patient.user.student %}
+                {{ patient.user.student.sex }}
+              {% elif patient.user.faculty %}
+                {{ patient.user.faculty.sex }}
+              {% else %}
+                N/A
+              {% endif %}
+            </span>
           </td>
           <td class="text-center p-4">
-            <a href="{% url 'medical:physical_exam' patient.student.student_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors">View</a>
+            {% if patient.user.student %}
+              <a href="{% url 'medical:physical_exam' patient.user.student.student_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors">View</a>
+            {% elif patient.user.faculty %}
+              <a href="{% url 'medical:physical_exam' patient.user.faculty.faculty_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors">View</a>
+            {% else %}
+              <span class="text-gray-500">N/A</span>
+            {% endif %}
           </td>
         </tr>
         {% empty %}
