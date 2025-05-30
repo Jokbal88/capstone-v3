@@ -2,8 +2,11 @@ services:
   - type: web
     name: medical-system
     env: python
+    plan: free
     buildCommand: "chmod +x build.sh && ./build.sh"
-    startCommand: "gunicorn medicalsytem.wsgi:application --bind 0.0.0.0:$PORT"
+    startCommand: "gunicorn medicalsytem.wsgi:application --config gunicorn_config.py"
+    healthCheckPath: /admin/
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -15,10 +18,17 @@ services:
         fromDatabase:
           name: medical-system-db
           property: connectionString
+      - key: ALLOWED_HOSTS
+        value: medical-system.onrender.com
+      - key: SITE_URL
+        value: https://medical-system.onrender.com
       - key: PORT
         value: 10000
+      - key: NODE_VERSION
+        value: 18.x
 
 databases:
   - name: medical-system-db
+    plan: free
     databaseName: medical_system
     user: medical_system_user 
