@@ -102,6 +102,31 @@
 <div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Upload Medical Requirements</h2>
     
+    <!-- Section for Availing Mental Health Services -->
+    <form method="POST" id="mental-health-form" class="flex flex-col gap-4 w-full">
+        {% csrf_token %}
+        {% if is_faculty %}
+            <input type="hidden" name="faculty_id" value="{{ faculty.faculty_id }}">
+        {% else %}
+            <input type="hidden" name="student_id" value="{{ student.student_id|default:user.username }}">
+        {% endif %}
+        <div class="bg-[#f8fafc] rounded-lg p-4 mb-6 border border-gray-200 w-full">
+            <h3 class="font-semibold text-blue-700 mb-2">Avail Mental Health Services</h3>
+            <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+                <p class="text-sm text-blue-800">Would you like to avail of Mental Health Services?</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <input type="radio" id="avail_mh_yes" name="avail_mental_health" value="yes" class="form-radio text-blue-600" {% if mental_health_record and mental_health_record.is_availing_mental_health %}checked{% endif %}>
+                <label for="avail_mh_yes" class="text-gray-700">Yes</label>
+                <input type="radio" id="avail_mh_no" name="avail_mental_health" value="no" class="form-radio text-red-600" {% if mental_health_record and not mental_health_record.is_availing_mental_health %}checked{% endif %}>
+                <label for="avail_mh_no" class="text-gray-700">No</label>
+            </div>
+             <div class="mt-4 flex justify-center">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Choice</button>
+            </div>
+        </div>
+    </form>
+
     <!-- Single form for all uploads -->
     <form method="POST" enctype="multipart/form-data" id="upload-all-form" class="flex flex-col gap-4 w-full">
         {% csrf_token %}
@@ -203,7 +228,7 @@
             </div>
             
             <!-- Mental Health Documents Section (Integrated) -->
-            <div class="bg-[#f8fafc] rounded-lg p-4 mt-6 mb-2 border border-gray-200 w-full">
+            <div class="bg-[#f8fafc] rounded-lg p-4 mt-6 mb-2 border border-gray-200 w-full" id="mental-health-docs-section">
                 <h3 class="font-semibold text-blue-700 mb-2">Required Documents for Mental Health</h3>
                 <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
                     <p class="text-sm text-blue-800">Please upload your mental health prescription and certification documents here.</p>
@@ -415,6 +440,43 @@
         }
          // You might also want to update a visual indicator of the current zoom level
     }
+
+    // JavaScript for showing/hiding Mental Health Documents section and SweetAlert
+    document.addEventListener('DOMContentLoaded', function () {
+        const availMentalHealthRadios = document.querySelectorAll('input[name="avail_mental_health"]');
+        const mentalHealthDocsSection = document.getElementById('mental-health-docs-section');
+
+        function toggleMentalHealthDocsSection() {
+            const selectedValue = document.querySelector('input[name="avail_mental_health"]:checked').value;
+            if (selectedValue === 'yes') {
+                mentalHealthDocsSection.classList.remove('hidden');
+            } else {
+                mentalHealthDocsSection.classList.add('hidden');
+            }
+        }
+
+        // Add event listeners to radio buttons
+        availMentalHealthRadios.forEach(radio => {
+            radio.addEventListener('change', toggleMentalHealthDocsSection);
+        });
+
+        // Set initial visibility on page load
+        toggleMentalHealthDocsSection();
+
+        // Check for success message and show SweetAlert
+        {% if messages %}
+            {% for message in messages %}
+                {% if 'mental_health_availed' in message.tags %}
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Mental Health Services Availed, please check the necessary documents below to upload',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    });
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    });
 
      // Event listeners for file input change to display filename
      document.addEventListener('change', function(event) {

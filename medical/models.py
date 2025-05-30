@@ -396,6 +396,7 @@ class MentalHealthRecord(models.Model):
     # Link to Patient, make nullable initially
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, null=True, blank=True)
+    is_availing_mental_health = models.BooleanField(default=False)
     
     def mental_health_path(instance, filename, field_name):
         # Use patient's user or faculty's user for path

@@ -102,27 +102,110 @@
 {% block content %}
 <div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Mental Health Records</h2>
-    
+
+    <!-- Mental Health Records List Section -->
+    <div class="bg-[#f8fafc] rounded-lg p-4 mb-6 border border-gray-200 w-full">
+        <h3 class="font-semibold text-blue-700 mb-4">Mental Health Records List</h3>
+        
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200">
+            <button id="student-tab" class="px-4 py-2 -mb-px text-sm font-medium text-center text-blue-700 bg-transparent border-b-2 border-blue-700 sm:text-base dark:text-blue-500 dark:border-blue-500 focus:outline-none" type="button" role="tab" aria-controls="student-list" aria-selected="true">Students</button>
+            <button id="faculty-tab" class="px-4 py-2 -mb-px text-sm font-medium text-center text-gray-500 bg-transparent border-b-2 border-transparent sm:text-base dark:text-gray-400 dark:border-gray-700 hover:text-gray-700 hover:border-gray-300 dark:hover:text-gray-300 focus:outline-none" type="button" role="tab" aria-controls="faculty-list" aria-selected="false">Faculty</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="tab-content" class="mt-4">
+            <!-- Student List -->
+            <div id="student-list" class="tab-pane" role="tabpanel" aria-labelledby="student-tab">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% comment %} Loop through student mental health records here {% endcomment %}
+                            {% for record in student_mhr_list %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.student_id_display }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.student_name_display }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.status|title }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No student mental health records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Faculty List -->
+            <div id="faculty-list" class="tab-pane hidden" role="tabpanel" aria-labelledby="faculty-tab">
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Number</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% comment %} Loop through faculty mental health records here {% endcomment %}
+                             {% for record in faculty_mhr_list %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.faculty.faculty_id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.faculty.user.get_full_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.status|title }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No faculty mental health records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Submitted Records (Existing Search Section) -->
     <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200 w-full">
         <h3 class="font-semibold text-blue-700 mb-2">Submitted Records</h3>
         <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
             <p class="text-sm text-blue-800">Search for a student by ID to review and manage their mental health record. There are <span class="font-bold">{{ pending_count }}</span> pending records overall.</p>
         </div>
         
-        <!-- Student ID Search Form -->
+        <!-- Student/Faculty ID Search Form -->
         <form method="GET" action="{% url 'medical:mental_health' %}" class="mb-4">
             <div class="flex items-center">
-                <input type="text" name="student_id" placeholder="Enter Student ID" class="border border-gray-300 rounded-l-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 flex-grow" value="{{ request.GET.student_id|default:'' }}">
+                <input type="text" name="search_id" placeholder="Enter ID Number" class="border border-gray-300 rounded-l-md py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 flex-grow" value="{{ search_id|default:'' }}">
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 transition-colors">Search</button>
             </div>
         </form>
 
-        {% if student %}
-            <h4 class="font-semibold text-lg text-gray-800 mb-4">Record for: {{ student.firstname }} {{ student.lastname }} ({{ student.student_id }})</h4>
+        {% if fetched_mental_health_record %}
+            {% if fetched_student %}
+                <h4 class="font-semibold text-lg text-gray-800 mb-4">Record for: {{ fetched_student.firstname }} {{ fetched_student.lastname }} ({{ fetched_student.student_id }})</h4>
+            {% elif fetched_faculty %}
+                <h4 class="font-semibold text-lg text-gray-800 mb-4">Record for: {{ fetched_faculty.user.get_full_name }} ({{ fetched_faculty.faculty_id }})</h4>
+            {% endif %}
 
             <form method="POST" action="{% url 'medical:mental_health' %}">
                 {% csrf_token %}
-                <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                <!-- Include search_id to maintain search context after POST -->
+                {% if search_id %}
+                <input type="hidden" name="search_id" value="{{ search_id }}">
+                {% endif %}
+                <!-- Include the primary key of the mental health record for updates -->
+                <input type="hidden" name="record_id" value="{{ fetched_mental_health_record.pk }}">
 
                 <div class="table-container">
                     <div class="overflow-x-auto">
@@ -140,29 +223,29 @@
                                 <tr class="bg-white border-b hover:bg-gray-50">
                                     <td class="p-2 font-medium">Prescription</td>
                                     <td class="p-2 text-center">
-                                        {% if mental_health_record.prescription %}
-                                            <button type="button" onclick="previewFile('{{ mental_health_record.prescription.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Prescription')" class="text-blue-600 hover:underline">Preview</button>
+                                        {% if fetched_mental_health_record.prescription %}
+                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.prescription.url }}', '{{ fetched_student.firstname }} {{ fetched_student.lastname if fetched_student else fetched_faculty.user.get_full_name }}', 'Prescription')" class="text-blue-600 hover:underline">Preview</button>
                                         {% else %}
                                             <span class="text-gray-400">No file uploaded</span>
                                         {% endif %}
                                     </td>
                                     <td class="p-2">
-                                        <textarea name="prescription_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.prescription_remarks | prescription_remarks:'' }}</textarea>
+                                        <textarea name="prescription_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ fetched_mental_health_record.prescription_remarks|default:'' }}</textarea>
                                     </td>
-                                    <td class="p-2 text-center" rowspan="2">{{ mental_health_record.status|title }}</td>
+                                    <td class="p-2 text-center" rowspan="2">{{ fetched_mental_health_record.status|title }}</td>
                                 </tr>
                                 <!-- Certification Row -->
                                 <tr class="bg-white hover:bg-gray-50">
                                     <td class="p-2 font-medium">Certification</td>
                                     <td class="p-2 text-center">
-                                        {% if mental_health_record.certification %}
-                                            <button type="button" onclick="previewFile('{{ mental_health_record.certification.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Certification')" class="text-blue-600 hover:underline">Preview</button>
+                                        {% if fetched_mental_health_record.certification %}
+                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.certification.url }}', '{{ fetched_student.firstname }} {{ fetched_student.lastname if fetched_student else fetched_faculty.user.get_full_name }}', 'Certification')" class="text-blue-600 hover:underline">Preview</button>
                                         {% else %}
                                             <span class="text-gray-400">No file uploaded</span>
                                         {% endif %}
                                     </td>
                                     <td class="p-2">
-                                        <textarea name="certification_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ mental_health_record.certification_remarks | default:'' }}</textarea>
+                                        <textarea name="certification_remarks" class="border border-gray-300 rounded-md p-2 w-full resize-none" rows="3">{{ fetched_mental_health_record.certification_remarks|default:'' }}</textarea>
                                     </td>
                                 </tr>
                             </tbody>
@@ -171,16 +254,19 @@
                 </div>
 
                 <div class="mt-4 flex justify-center space-x-4">
-                    <button type="submit" name="status_action" value="save_remarks" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Remarks</button>
-                    <button type="submit" name="status_action" value="approved" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">Approve Record</button>
-                    <button type="submit" name="status_action" value="rejected" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">Reject Record</button>
+                    <!-- Changed value to save_remarks to match view logic -->
+                    <button type="submit" name="action" value="save_remarks" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Remarks</button>
+                    <!-- Changed value to approved to match view logic -->
+                    <button type="submit" name="action" value="approved" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">Approve Record</button>
+                    <!-- Changed value to rejected to match view logic -->
+                    <button type="submit" name="action" value="rejected" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">Reject Record</button>
                 </div>
             </form>
 
-        {% elif request.GET.student_id %}
-            <p class="text-center text-gray-600">No patient found with student ID: {{ request.GET.student_id }}</p>
+        {% elif search_id %}
+            <p class="text-center text-gray-600">No record found for ID Number: {{ search_id }}</p>
         {% else %}
-            <p class="text-center text-gray-600">Please enter a student ID to search for a mental health record.</p>
+            <p class="text-center text-gray-600">Please enter an ID to search for a mental health record.</p>
         {% endif %}
 
     </div>
@@ -303,6 +389,41 @@
         }
          // You might also want to update a visual indicator of the current zoom level
     }
+
+    // JavaScript for tab switching
+    document.addEventListener('DOMContentLoaded', function () {
+        const studentTab = document.getElementById('student-tab');
+        const facultyTab = document.getElementById('faculty-tab');
+        const studentList = document.getElementById('student-list');
+        const facultyList = document.getElementById('faculty-list');
+
+        function activateTab(tabButton, contentPane) {
+            // Deactivate all tabs and hide all content panes
+            document.querySelectorAll('.flex.border-b button').forEach(btn => {
+                btn.classList.remove('border-blue-700', 'text-blue-700');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.add('hidden');
+            });
+
+            // Activate the selected tab and show the corresponding content pane
+            tabButton.classList.add('border-blue-700', 'text-blue-700');
+            tabButton.classList.remove('border-transparent', 'text-gray-500');
+            contentPane.classList.remove('hidden');
+        }
+
+        studentTab.addEventListener('click', function () {
+            activateTab(studentTab, studentList);
+        });
+
+        facultyTab.addEventListener('click', function () {
+            activateTab(facultyTab, facultyList);
+        });
+
+        // Activate the student tab by default on page load
+        activateTab(studentTab, studentList);
+    });
 
 </script>
 {% endblock %}

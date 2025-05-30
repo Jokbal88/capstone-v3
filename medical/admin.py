@@ -64,6 +64,9 @@ class MedicalRequirementAdmin(admin.ModelAdmin):
     list_display = ('patient', 'faculty', 'status', 'reviewed_by', 'reviewed_date')
     search_fields = ('patient__user__username', 'faculty__faculty_id')
 
+class MentalHealthRecordAdmin(admin.ModelAdmin):
+    list_filter = ('is_availing_mental_health',)
+
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Patient)
 admin.site.register(PhysicalExamination)
@@ -81,4 +84,4 @@ admin.site.register(ObgyneHistory)
 admin.site.register(DentalRecords, DentalRecordsAdmin)
 admin.site.register(EligibilityForm)
 admin.site.register(MedicalCertificate)
-admin.site.register(MentalHealthRecord)
+admin.site.register(MentalHealthRecord, MentalHealthRecordAdmin)

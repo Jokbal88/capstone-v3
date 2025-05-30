@@ -1277,86 +1277,53 @@ def student_medical_requirements_tracker(request):
     student = None
     faculty = None
     patient = None
+    user = None # Explicitly initialize user
     med_requirements = None
 
     # Check for student_id or faculty_id in both POST and GET requests
     id_to_process = request.POST.get("id_number") or request.GET.get("id_number")
 
-    if request.method == "POST":
-        # The id is already obtained above
+    # --- Handle POST requests for saving remarks or updating status ---
+    if request.method == "POST" and id_to_process:
         action = request.POST.get('action')
 
-        if id_to_process:
-            try:
-                # Try to get a Student object first
-                student = Student.objects.filter(student_id=id_to_process).first()
-                faculty = None # Ensure faculty is None if a student is found
-                user = None
-                patient = None
-                med_requirements = None
+        # --- Identify user and fetch record for POST ---
+        try:
+            # Try to find a Student first
+            student = Student.objects.filter(student_id=id_to_process).first()
+            if student:
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
+                med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
+                if not med_requirements:
+                     messages.info(request, f"No medical requirements found for student ID {id_to_process}.")
 
-                if student:
-                    # If a student is found, get the associated User and Patient
-                    user = User.objects.get(email=student.email)
-                    patient = Patient.objects.get(user=user)
-                    # Get the MedicalRequirement object for this patient
-                    med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
+            else:
+                # If not a student, try to find a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
+                if faculty:
+                    user = faculty.user
+                    med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
                     if not med_requirements:
-                         messages.info(request, f"No medical requirements found for student ID {id_to_process}. Please upload the required documents.")
-
+                         messages.info(request, f"No medical requirements found for faculty ID {id_to_process}.")
                 else:
-                    # If not a student, try to get a Faculty object
-                    faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
-                    student = None # Ensure student is None if a faculty is found
-                    if faculty:
-                         # If a faculty is found, get the associated User (Faculty has a direct user link)
-                         user = faculty.user
-                         # Get the MedicalRequirement object for this faculty
-                         med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
-                         if not med_requirements:
-                              messages.info(request, f"No medical requirements found for faculty ID {id_to_process}. Please upload the required documents.")
-                    else:
-                         # If neither student nor faculty is found
-                         messages.error(request, f"No student or faculty found with ID: {id_to_process}.")
+                    # If neither student nor faculty is found
+                    messages.error(request, f"No student or faculty found with ID: {id_to_process}.")
 
-            except User.DoesNotExist:
-                messages.error(request, f"No user account found for ID {id_to_process}.")
-                student = None
-                faculty = None
-                patient = None
-                med_requirements = None
-            except Patient.DoesNotExist:
-                 messages.error(request, f"No patient profile found for student ID {id_to_process}. Please complete the patient profile.")
-                 # Re-fetch student and user to pass to template if needed, but patient is None
-                 student = Student.objects.filter(student_id=id_to_process).first()
-                 faculty = None
-                 if student:
-                      user = User.objects.filter(email=student.email).first()
-                 patient = None
-                 med_requirements = None
-            except Exception as e:
-                messages.error(request, f"An unexpected error occurred: {e}")
-                student = None
-                faculty = None
-                patient = None
-                med_requirements = None
+        except (User.DoesNotExist, Patient.DoesNotExist, AttributeError) as e:
+            messages.error(request, f"Error fetching user or patient for ID {id_to_process}: {e}")
+            user = None # Ensure user is None on error
+            patient = None # Ensure patient is None on error
+            med_requirements = None # Ensure med_requirements is None on error
 
-        # The rest of your POST handling logic (saving remarks, approving/rejecting) goes here,
-        # making sure to use the fetched `med_requirements` object.
-        # You will need to adapt this part to handle both student and faculty requirements
-        # if your MedicalRequirement model differentiates between them for these actions.
-        # Based on your model, MedicalRequirement has both patient and faculty fields,
-        # so you will likely need to check which one is not None.
-
-        # Example of how to access data after fetching:
-        if med_requirements:
-             # Handle actions (approve, reject, save remarks)
-             if action == 'save_all_remarks':
+        # --- Process actions if record and user are found ---
+        if med_requirements and user:
+            try:
+                if action == 'save_all_remarks':
                     x_ray_remarks = request.POST.get("x-ray-remark", "")
                     cbc_remarks = request.POST.get("cbc-remark", "")
                     drug_test_remarks = request.POST.get("drug-test-remark", "")
                     stool_examination_remarks = request.POST.get("stool-examination-remark", "")
-                 # Assuming you have pwd_card_remarks in your template for MedicalRequirement
                     pwd_card_remarks = request.POST.get("pwd-card-remark", "")
 
                     med_requirements.x_ray_remarks = x_ray_remarks
@@ -1365,137 +1332,99 @@ def student_medical_requirements_tracker(request):
                     med_requirements.stool_examination_remarks = stool_examination_remarks
                     med_requirements.pwd_card_remarks = pwd_card_remarks
 
+                    med_requirements.save()
+                    messages.success(request, "Remarks saved successfully.")
+
+                elif action in ['approve_requirements', 'reject_requirements']:
+                    med_requirements.status = action.replace('_requirements', '') # 'approved' or 'rejected'
+                    med_requirements.reviewed_by = request.user
+                    med_requirements.reviewed_date = timezone.now()
+                    med_requirements.save()
+                    messages.success(request, f"Medical requirements marked as {med_requirements.status}.")
+
+                    # Send email notification
+                    recipient_email = user.email # Get email directly from the fetched user
+                    recipient_name = user.get_full_name() or user.username
+
+                    if recipient_email:
+                        subject = f'Medical Requirements {med_requirements.status.capitalize()}'
+                        status_text = "APPROVED" if action == 'approve_requirements' else "REJECTED"
+
+                        email_body = render_to_string('email/medical_requirements_status.html', {
+                            'med_requirements': med_requirements,
+                            'recipient_name': recipient_name,
+                            'status_text': status_text,
+                        })
+
+                        from django.core.mail import send_mail
+                        from django.conf import settings
+
                         try:
-                            med_requirements.save()
-                            messages.success(request, "Remarks saved successfully.")
+                            send_mail(
+                                subject,
+                                '', # Empty plain text message
+                                settings.DEFAULT_FROM_EMAIL,
+                                [recipient_email],
+                                html_message=email_body,
+                                fail_silently=False,
+                            )
+                            messages.info(request, f"Email notification sent to {recipient_email}.")
                         except Exception as e:
-                            messages.error(request, f"Error saving remarks: {e}")
+                            messages.error(request, f"Failed to send email notification to {recipient_email}: {e}")
 
-             elif action in ['approve_requirements', 'reject_requirements']:
-                  med_requirements.status = action.replace('_requirements', '') # 'approved' or 'rejected'
-                        med_requirements.reviewed_by = request.user
-                        med_requirements.reviewed_date = timezone.now()
-                        try:
-                            med_requirements.save()
-                      messages.success(request, f"Medical requirements marked as {med_requirements.status}.")
+                    else:
+                         # More specific message when email is not found for the identified user
+                         messages.warning(request, f"Could not send email notification: Recipient email not found for user {user.username}.")
 
-                      # Send email notification
-                      recipient_email = None
-                      recipient_name = ""
+            except Exception as e:
+                 messages.error(request, f"An error occurred while processing the update: {e}")
 
-                      if med_requirements.patient and med_requirements.patient.user:
-                          recipient_email = med_requirements.patient.user.email
-                          recipient_name = med_requirements.patient.user.get_full_name() or med_requirements.patient.user.username
-                      elif med_requirements.faculty and med_requirements.faculty.user:
-                          recipient_email = med_requirements.faculty.user.email
-                          recipient_name = med_requirements.faculty.user.get_full_name() or med_requirements.faculty.user.username
+        # Redirect to the same page with the ID to show updated data or error messages
+        return redirect(f'{request.path}?id_number={id_to_process}')
 
-                      if recipient_email:
-                          subject = f'Medical Requirements {med_requirements.status.capitalize()}'
+    # --- Handle GET requests for searching or initial load ---
+    if id_to_process and request.method == 'GET':
+        try:
+            # Explicitly try to find student or faculty first
+            student = Student.objects.filter(student_id=id_to_process).first()
+            if student:
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
+                med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
+                if not med_requirements:
+                    messages.info(request, f"No medical requirements found for student ID {id_to_process}. Please upload the required documents.")
 
-                          # Determine explicit status text to pass to template directly from action
-                          status_text = "APPROVED" if action == 'approve_requirements' else "REJECTED"
-
-                          # Render the HTML email body using the template
-                          email_body = render_to_string('email/medical_requirements_status.html', {
-                              'med_requirements': med_requirements,
-                              'recipient_name': recipient_name,
-                              'status_text': status_text, # Pass explicit status text
-                          })
-
-                            from django.core.mail import send_mail
-                            from django.conf import settings
-
-                            try:
-                                send_mail(
-                                    subject,
-                                  '', # Empty plain text message
-                                    settings.DEFAULT_FROM_EMAIL,
-                                  [recipient_email],
-                                    html_message=email_body,
-                                    fail_silently=False,
-                                )
-                              messages.info(request, f"Email notification sent to {recipient_email}.")
-                            except Exception as e:
-                              messages.error(request, f"Failed to send email notification to {recipient_email}: {e}")
-
-                        except Exception as e:
-                      messages.error(request, f"Error updating medical requirements status: {e}")
-
-        # After POST, redirect to the same page with the ID to show updated data
-        if id_to_process:
-            return redirect(f'{request.path}?id_number={id_to_process}')
-        else:
-             return redirect(request.path) # Redirect to empty form if no ID
-
-    # Handle GET requests and re-fetching after POST redirect or initial GET
-    if id_to_process:
-         try:
-             # Try to get a Student object first
-             student = Student.objects.filter(student_id=id_to_process).first()
-             faculty = None # Ensure faculty is None if a student is found
-             user = None
-             patient = None
-             med_requirements = None
-
-                if student:
-                 # If a student is found, get the associated User and Patient
-                 user = User.objects.get(email=student.email)
-                 patient = Patient.objects.get(user=user)
-                 # Get the MedicalRequirement object for this patient
-                 med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
-                 if not med_requirements:
-                      messages.info(request, f"No medical requirements found for student ID {id_to_process}. Please upload the required documents.")
+            else:
+                # If not a student, try to find a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
+                if faculty:
+                    user = faculty.user
+                    med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
+                    if not med_requirements:
+                        messages.info(request, f"No medical requirements found for faculty ID {id_to_process}. Please upload the required documents.")
 
                 else:
-                 # If not a student, try to get a Faculty object
-                 faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
-                 student = None # Ensure student is None if a faculty is found
-                 if faculty:
-                      # If a faculty is found, get the associated User
-                      user = faculty.user
-                      # Get the MedicalRequirement object for this faculty
-                      med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
-                      if not med_requirements:
-                           messages.info(request, f"No medical requirements found for faculty ID {id_to_process}. Please upload the required documents.")
-                 else:
-                      # If neither student nor faculty is found
-                      messages.error(request, f"No student or faculty found with ID: {id_to_process}.")
+                    messages.error(request, f"No student or faculty found with ID Number: {id_to_process}.")
 
-         except User.DoesNotExist:
-             messages.error(request, f"No user account found for ID {id_to_process}.")
-             student = None
-             faculty = None
-             patient = None
-             med_requirements = None
-         except Patient.DoesNotExist:
-              messages.error(request, f"No patient profile found for student ID {id_to_process}. Please complete the patient profile.")
-              # Re-fetch student and user to pass to template if needed, but patient is None
-              student = Student.objects.filter(student_id=id_to_process).first()
-              faculty = None
-              if student:
-                   user = User.objects.filter(email=student.email).first()
-              patient = None
-              med_requirements = None
-         except Exception as e:
-             messages.error(request, f"An unexpected error occurred: {e}")
-             student = None
-             faculty = None
-             patient = None
-             med_requirements = None
-    elif not id_to_process:
-        # If no id_number is provided (e.g., initial GET request to /medicalrequirementstracker/)
-        # we should not try to fetch data, just render the empty form.
-        pass # Variables are already None
+        except (User.DoesNotExist, Patient.DoesNotExist, AttributeError) as e:
+             messages.error(request, f"Error fetching user or patient for ID {id_to_process}: {e}")
+             student = None ; faculty = None; patient = None; user = None; med_requirements = None
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred during search: {e}")
 
-    # Print statements for debugging
+    # If no id_number is provided (e.g., initial GET request to /medicalrequirementstracker/)
+    # variables are already None from initialization, so just render the empty form.
+
+    # Print statements for debugging (optional, remove in production)
     print("Rendering template with:")
     print("Student:", student)
+    print("Faculty:", faculty)
     print("Patient:", patient)
-    print("Medical Requirements (before render):", med_requirements)
-    print("Faculty (before render):", faculty)
+    print("User:", user) # Print user object
+    print("Medical Requirements:", med_requirements)
+    print("ID to process:", id_to_process) # Print id_to_process
 
-    return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient, "faculty": faculty})
+    return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient, "faculty": faculty, "id_number": id_to_process})
 
 # Views for handling the medical requirements uploaded file
 def upload_requirements(request):
@@ -1559,84 +1488,109 @@ def upload_requirements(request):
 
     # Handle POST request for file uploads
     if request.method == "POST":
-        uploaded_files_count = 0
-        failed_uploads = {}
-        allowed_content_types = [
-            'application/pdf',
-            'image/jpeg',
-            'image/png',
-            'image/gif',
-        ]
-        for input_name, file in request.FILES.items():
-            if input_name.startswith('file_'):
-                requirement_slug = input_name.replace('file_', '')
-                valid_medical_slugs = [req['slug'] for req in requirements]
-                if requirement_slug in valid_medical_slugs:
-                    if file.content_type not in allowed_content_types:
-                        failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
-                        messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
-                        continue
-                    try:
-                        # Use md object obtained earlier
-                        old_file = getattr(md, requirement_slug, None)
-                        if old_file and hasattr(old_file, 'name') and old_file.name:
-                            storage = old_file.storage
-                            if storage.exists(old_file.name):
-                                storage.delete(old_file.name)
-                        setattr(md, requirement_slug, file)
-                        uploaded_files_count += 1
-                        messages.success(request, f"{requirement_slug.replace('_', ' ').title()} uploaded successfully.")
-                    except AttributeError:
-                        failed_uploads[file.name] = f"MedicalRequirement model has no field for requirement slug: {requirement_slug}"
-                        messages.error(request, f"Error uploading file for {requirement_slug}: Invalid requirement type.")
-                    except Exception as e:
-                        failed_uploads[file.name] = str(e)
-                        messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
-                elif requirement_slug in ['prescription', 'certification']:
-                    if file.content_type not in allowed_content_types:
-                        failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
-                        messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
-                        continue
-                    try:
-                        # Use mental_health_record object obtained earlier
-                        old_file = getattr(mental_health_record, requirement_slug, None)
-                        if old_file and hasattr(old_file, 'name') and old_file.name:
-                            storage = old_file.storage
-                            if storage.exists(old_file.name):
-                                storage.delete(old_file.name)
-                        setattr(mental_health_record, requirement_slug, file)
-                        uploaded_files_count += 1
-                        messages.success(request, f"Mental Health {requirement_slug.replace('_', ' ').title()} uploaded successfully.")
-                    except AttributeError:
-                        failed_uploads[file.name] = f"MentalHealthRecord model has no field for: {requirement_slug}"
-                        messages.error(request, f"Error uploading file for {requirement_slug}: Invalid document type.")
-                    except Exception as e:
-                        failed_uploads[file.name] = str(e)
-                        messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
-        if uploaded_files_count > 0:
-            try:
-                md_modified = any(name.startswith('file_') and name.replace('file_', '') in [req['slug'] for req in requirements] for name in request.FILES.keys())
-                mhr_modified = any(name.startswith('file_') and name.replace('file_', '') in ['prescription', 'certification'] for name in request.FILES.keys())
-                if md_modified:
-                    md.save()
-                if mhr_modified:
+        # Check if the request is from the mental health availment form
+        if 'avail_mental_health' in request.POST:
+            avail_mental_health = request.POST.get('avail_mental_health')
+            if mental_health_record:
+                if avail_mental_health == 'yes':
+                    mental_health_record.is_availing_mental_health = True
                     mental_health_record.save()
-            except Exception as e:
-                messages.error(request, f"Error saving records: {e}")
-        if not uploaded_files_count and not failed_uploads:
-            messages.info(request, "No files were selected for upload.")
-        elif failed_uploads:
-            messages.warning(request, f"Some files failed to upload: {failed_uploads}")
-        from django.urls import reverse
-        base_url = reverse('medical:upload_requirements')
-        if is_faculty:
-            return redirect(f'{base_url}')
-        elif student:
-            # Use student.student_id from the retrieved student object
-            return redirect(f'{base_url}?student_id={student.student_id}')
+                    messages.success(request, "Your choice to avail Mental Health Services has been saved.", extra_tags='mental_health_availed')
+                elif avail_mental_health == 'no':
+                    mental_health_record.is_availing_mental_health = False
+                    mental_health_record.save()
+                    messages.success(request, "Your choice regarding Mental Health Services has been saved.")
+            # Redirect back to the same page after saving the choice
+            from django.urls import reverse
+            base_url = reverse('medical:upload_requirements')
+            if is_faculty:
+                return redirect(f'{base_url}')
+            elif student:
+                return redirect(f'{base_url}?student_id={student.student_id}')
+            else:
+                 return redirect('main:login'); # Fallback
+
+        # If not from the mental health form, assume it's from the file upload form
         else:
-             # Fallback if neither student nor faculty is found (shouldn't happen if initial checks work)
-             return redirect('main:login'); # Or another appropriate fallback
+            uploaded_files_count = 0
+            failed_uploads = {}
+            allowed_content_types = [
+                'application/pdf',
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+            ]
+
+            for input_name, file in request.FILES.items():
+                if input_name.startswith('file_'):
+                    requirement_slug = input_name.replace('file_', '')
+                    valid_medical_slugs = [req['slug'] for req in requirements]
+                    if requirement_slug in valid_medical_slugs:
+                        if file.content_type not in allowed_content_types:
+                            failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
+                            messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
+                            continue
+                        try:
+                            # Use md object obtained earlier
+                            old_file = getattr(md, requirement_slug, None)
+                            if old_file and hasattr(old_file, 'name') and old_file.name:
+                                storage = old_file.storage
+                                if storage.exists(old_file.name):
+                                    storage.delete(old_file.name)
+                            setattr(md, requirement_slug, file)
+                            uploaded_files_count += 1
+                            messages.success(request, f"{requirement_slug.replace('_', ' ').title()} uploaded successfully.")
+                        except AttributeError:
+                            failed_uploads[file.name] = f"MedicalRequirement model has no field for requirement slug: {requirement_slug}"
+                            messages.error(request, f"Error uploading file for {requirement_slug}: Invalid requirement type.")
+                        except Exception as e:
+                            failed_uploads[file.name] = str(e)
+                            messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
+                    elif requirement_slug in ['prescription', 'certification']:
+                        if file.content_type not in allowed_content_types:
+                            failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
+                            messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
+                            continue
+                        try:
+                            # Use mental_health_record object obtained earlier
+                            old_file = getattr(mental_health_record, requirement_slug, None)
+                            if old_file and hasattr(old_file, 'name') and old_file.name:
+                                storage = old_file.storage
+                                if storage.exists(old_file.name):
+                                    storage.delete(old_file.name)
+                            setattr(mental_health_record, requirement_slug, file)
+                            uploaded_files_count += 1
+                            messages.success(request, f"Mental Health {requirement_slug.replace('_', ' ').title()} uploaded successfully.")
+                        except AttributeError:
+                            failed_uploads[file.name] = f"MentalHealthRecord model has no field for: {requirement_slug}"
+                            messages.error(request, f"Error uploading file for {requirement_slug}: Invalid document type.")
+                        except Exception as e:
+                            failed_uploads[file.name] = str(e)
+                            messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
+            if uploaded_files_count > 0:
+                try:
+                    md_modified = any(name.startswith('file_') and name.replace('file_', '') in [req['slug'] for req in requirements] for name in request.FILES.keys())
+                    mhr_modified = any(name.startswith('file_') and name.replace('file_', '') in ['prescription', 'certification'] for name in request.FILES.keys())
+                    if md_modified:
+                        md.save()
+                    if mhr_modified:
+                        mental_health_record.save()
+                except Exception as e:
+                    messages.error(request, f"Error saving records: {e}")
+            if not uploaded_files_count and not failed_uploads:
+                messages.info(request, "No files were selected for upload.")
+            elif failed_uploads:
+                messages.warning(request, f"Some files failed to upload: {failed_uploads}")
+            from django.urls import reverse
+            base_url = reverse('medical:upload_requirements')
+            if is_faculty:
+                return redirect(f'{base_url}')
+            elif student:
+                # Use student.student_id from the retrieved student object
+                return redirect(f'{base_url}?student_id={student.student_id}')
+            else:
+                 # Fallback if neither student nor faculty is found (shouldn't happen if initial checks work)
+                 return redirect('main:login'); # Or another appropriate fallback
     return render(request, "students/medupload.html", {"requirements": requirements, "md": md, "patient": patient, "mental_health_record": mental_health_record, "student": student, "faculty": faculty, "is_faculty": is_faculty, "id_number": id_number})
 
 # Custom template filter for basename
@@ -1969,6 +1923,51 @@ def pwd_detail(request, student_id):
     md = MedicalRequirement.objects.get(patient=patient)
     return render(request, 'admin/pwddetails.html', {'patient': patient, 'md': md, 'student': student})
 
+@user_passes_test(is_admin)
+def verify_pwd(request, student_id):
+    try:
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
+        
+        # Get or create risk assessment for the patient
+        risk_assessment, created = RiskAssessment.objects.get_or_create(
+            clearance__patient=patient,
+            defaults={'pwd': True}
+        )
+        
+        if not created:
+            risk_assessment.pwd = True
+            risk_assessment.save()
+            
+        messages.success(request, f"Student {student.firstname} {student.lastname} has been verified as PWD.")
+    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist) as e:
+        messages.error(request, f"Error verifying PWD status: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"An unexpected error occurred: {str(e)}")
+        
+    return redirect('medical:pwdlist')
+
+@user_passes_test(is_admin)
+def unverify_pwd(request, student_id):
+    try:
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
+        
+        # Get the risk assessment for the patient
+        risk_assessment = RiskAssessment.objects.get(clearance__patient=patient)
+        risk_assessment.pwd = False
+        risk_assessment.save()
+            
+        messages.success(request, f"PWD status has been removed for {student.firstname} {student.lastname}.")
+    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist, RiskAssessment.DoesNotExist) as e:
+        messages.error(request, f"Error removing PWD status: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"An unexpected error occurred: {str(e)}")
+        
+    return redirect('medical:pwdlist')
+
 # List all record of prescriptions
 def view_prescription_records(request):
     if not request.user.is_superuser and not request.user.is_staff:
@@ -2207,352 +2206,237 @@ def upload_file(request):
 @user_passes_test(is_admin)
 def mental_health_view(request):
     student = None
+    faculty = None
     patient = None
+    user = None
     mental_health_record = None
     pending_count = MentalHealthRecord.objects.filter(status='pending').count()
+    
+    # Get search ID from either GET or POST request
+    search_id = request.GET.get('search_id') or request.POST.get('search_id')
+    
+    # Fetch all student and faculty mental health records for the lists
+    student_mhr_list = MentalHealthRecord.objects.filter(
+        patient__isnull=False, 
+        is_availing_mental_health=True
+    ).select_related('patient__user')
+    
+    faculty_mhr_list = MentalHealthRecord.objects.filter(
+        faculty__isnull=False, 
+        is_availing_mental_health=True
+    ).select_related('faculty__user')
 
-    # Handle GET requests for searching by student ID
-    if request.method == 'GET':
-        student_id = request.GET.get('student_id')
-        if student_id:
+    # If there's a search ID, filter the lists
+    if search_id:
+        # Try to find a student first
+        try:
+            student = Student.objects.get(student_id=search_id)
+            # Filter student list to only show matching student
+            student_mhr_list = student_mhr_list.filter(patient__student=student)
+            faculty_mhr_list = MentalHealthRecord.objects.none()  # Empty faculty list when searching for student
+        except Student.DoesNotExist:
+            # If not a student, try finding as faculty
             try:
-                student = Student.objects.get(student_id=student_id)
-                user = User.objects.get(email=student.email)
-                patient = Patient.objects.get(user=user)
-                # Try to get the existing mental health record or create a new one
-                mental_health_record, created = MentalHealthRecord.objects.get_or_create(patient=patient)
-                if created:
-                    messages.info(request, f"No existing mental health record found for {student.firstname} {student.lastname}. A new one has been created.")
-            except Student.DoesNotExist:
-                messages.error(request, f"No student found with student ID: {student_id}")
-            except Exception as e:
-                messages.error(request, f"An error occurred while fetching the mental health record: {e}")
+                faculty = Faculty.objects.get(faculty_id=search_id)
+                # Filter faculty list to only show matching faculty
+                faculty_mhr_list = faculty_mhr_list.filter(faculty=faculty)
+                student_mhr_list = MentalHealthRecord.objects.none()  # Empty student list when searching for faculty
+            except Faculty.DoesNotExist:
+                # If neither found, show empty lists
+                student_mhr_list = MentalHealthRecord.objects.none()
+                faculty_mhr_list = MentalHealthRecord.objects.none()
+                messages.warning(request, f"No student or faculty found with ID: {search_id}")
+
+    # Attach display details to mental health records lists
+    for record in student_mhr_list:
+        try:
+            if record.patient and record.patient.user:
+                student_obj = Student.objects.get(email=record.patient.user.email)
+                record.id_number_display = student_obj.student_id
+                record.name_display = f'{student_obj.firstname} {student_obj.lastname}'
+            else:
+                record.id_number_display = "N/A"
+                record.name_display = "User/Patient Not Linked"
+        except Student.DoesNotExist:
+            record.id_number_display = "N/A"
+            record.name_display = "Student Not Found"
+
+    for record in faculty_mhr_list:
+        try:
+            if record.faculty and record.faculty.user:
+                record.id_number_display = record.faculty.faculty_id
+                record.name_display = record.faculty.user.get_full_name() or record.faculty.user.username
+            else:
+                record.id_number_display = "N/A"
+                record.name_display = "User/Faculty Not Linked"
+        except Exception as e:
+            record.id_number_display = "Error"
+            record.name_display = f"Error: {e}"
 
     # Handle POST requests for saving remarks or updating status
     if request.method == 'POST':
-        student_id = request.POST.get('student_id')
-        if student_id:
+        record_id = request.POST.get('record_id')
+        if record_id:
             try:
-                student = Student.objects.get(student_id=student_id)
-                user = User.objects.get(email=student.email)
-                patient = Patient.objects.get(user=user)
-                mental_health_record = MentalHealthRecord.objects.get(patient=patient)
-
+                mental_health_record = MentalHealthRecord.objects.get(pk=record_id)
+                
                 # Handle remarks update
                 prescription_remarks = request.POST.get('prescription_remarks')
                 certification_remarks = request.POST.get('certification_remarks')
-
-                if prescription_remarks is not None:
+                
+                mhr_modified = False
+                if prescription_remarks is not None and mental_health_record.prescription_remarks != prescription_remarks:
                     mental_health_record.prescription_remarks = prescription_remarks
-                if certification_remarks is not None:
+                    mhr_modified = True
+                if certification_remarks is not None and mental_health_record.certification_remarks != certification_remarks:
                     mental_health_record.certification_remarks = certification_remarks
-
-                # Handle status update (Approve/Reject buttons)
-                status_action = request.POST.get('status_action') # Name of the status submit button
-                if status_action in ['approved', 'rejected']:
+                    mhr_modified = True
+                
+                # Handle status update
+                status_action = request.POST.get('status_action')
+                if status_action in ['approved', 'rejected'] and mental_health_record.status != status_action:
                     mental_health_record.status = status_action
-
-                # Save remarks and/or updated status
-                mental_health_record.save()
-                messages.success(request, "Mental health record updated successfully.")
-
-                # Send email notification to the student
-                student_email = student.email
-                if mental_health_record.status == 'approved':
-                    subject = 'Your Mental Health Record Has Been Approved'
-                    html_message = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 20px;
-                background-color: #f4f4f4;
-                text-align: center;
-            }}
-            .container {{
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #fff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                text-align: left;
-            }}
-            .title {{
-                text-align: center;
-                font-size: 24px;
-                color: #0056b3;
-                margin-bottom: 20px;
-                padding-bottom: 15px;
-                border-bottom: 1px solid #eee;
-            }}
-             p {{
-                margin-bottom: 15px;
-            }}
-             .footer {{
-                margin-top: 30px;
-                padding-top: 20px;
-                font-size: 12px;
-                color: #999;
-                text-align: center;
-                border-top: 1px solid #eee;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="title">MENTAL HEALTH RECORD APPROVED</div>
-            <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-            <p>We are pleased to inform you that your mental health record has been <strong style='color:green;'>APPROVED</strong>.</p>
-            <div class="remarks-section">
-                <h4>Reviewer Remarks:</h4>
-                 <p><strong>Prescription Remarks:</strong> {mental_health_record.prescription_remarks|default:'None'}</p>
-                 <p><strong>Certification Remarks:</strong> {mental_health_record.certification_remarks|default:'None'}</p>
-            </div>
-            <p>Thank you for submitting your documents. You can view your updated record on the HealthHub Connect portal.</p>
-            <p>Best regards,</p>
-            <p><strong>HealthHub Connect Team</strong></p>
-        </div>
-         <div class="footer">
-            <p>This is an automated message, please do not reply to this email.</p>
-            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-        </div>
-    </body>
-    </html>
-    """
-                elif mental_health_record.status == 'rejected':
-                    subject = 'Update Regarding Your Mental Health Record'
-                    html_message = f"""
-    <html>
-    <head>
-        <style>
-            body {{
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 20px;
-                background-color: #f4f4f4;
-                text-align: center;
-            }}
-            .container {{
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #fff;
-                padding: 30px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                text-align: left;
-            }}
-            .title {{
-                text-align: center;
-                font-size: 24px;
-                color: #d9534f;
-                margin-bottom: 20px;
-                padding-bottom: 15px;
-                border-bottom: 1px solid #eee;
-            }}
-             p {{
-                margin-bottom: 15px;
-            }}
-            .remarks-section {{
-                margin-top: 20px;
-                padding-top: 15px;
-                border-top: 1px solid #eee;
-            }}
-            .remarks-section h4 {{
-                margin-bottom: 10px;
-                color: #555;
-            }}
-             .footer {{
-                margin-top: 30px;
-                padding-top: 20px;
-                font-size: 12px;
-                color: #999;
-                text-align: center;
-                border-top: 1px solid #eee;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="title">MENTAL HEALTH RECORD REJECTED</div>
-            <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-            <p>There has been an update regarding your mental health record. Your record has been marked as <strong style='color:red;'>REJECTED</strong>.</p>
-             <p>Please review the remarks provided on the Mental Health Services page in your portal for details.</p>
-             <div class="remarks-section">
-                <h4>Reviewer Remarks:</h4>
-                 <p><strong>Prescription Remarks:</strong> {mental_health_record.prescription_remarks|default:'None'}</p>
-                 <p><strong>Certification Remarks:</strong> {mental_health_record.certification_remarks|default:'None'}</p>
-            </div>
-            <p>Best regards,</p>
-            <p><strong>HealthHub Connect Team</strong></p>
-        </div>
-        <div class="footer">
-            <p>This is an automated message, please do not reply to this email.</p>
-            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-        </div>
-    </body>
-    </html>
-    """
-
-                try:
-                    send_mail(
-                        subject,
-                        '', # Empty plain text message
-                        settings.DEFAULT_FROM_EMAIL,
-                        [student_email],
-                        html_message=html_message,
-                        fail_silently=False,
-                    )
-                    messages.info(request, f"Email notification sent to {student.email}.")
-                except Exception as e:
-                    messages.error(request, f"Failed to send email notification to {student.email}: {e}")
-
-                # Redirect back to the same page with the student ID
-                return redirect(f'{request.path}?student_id={student_id}')
-
-            except Student.DoesNotExist:
-                messages.error(request, f"No student found with student ID: {student_id}")
+                    mhr_modified = True
+                
+                if mhr_modified:
+                    mental_health_record.save()
+                    messages.success(request, "Mental health record updated successfully.")
+                    
+                    # Send email notification
+                    user_for_email = None
+                    if mental_health_record.patient and mental_health_record.patient.user:
+                        user_for_email = mental_health_record.patient.user
+                    elif mental_health_record.faculty and mental_health_record.faculty.user:
+                        user_for_email = mental_health_record.faculty.user
+                    
+                    if user_for_email and user_for_email.email:
+                        recipient_email = user_for_email.email
+                        recipient_name = user_for_email.get_full_name() or user_for_email.username
+                        
+                        if mental_health_record.status == 'approved':
+                            subject = 'Your Mental Health Record Has Been Approved'
+                            template_name = 'email/mental_health_approved.html'
+                        else:  # rejected
+                            subject = 'Update Regarding Your Mental Health Record'
+                            template_name = 'email/mental_health_rejected.html'
+                        
+                        html_message = render_to_string(template_name, {
+                            'recipient_name': recipient_name,
+                            'mental_health_record': mental_health_record,
+                        })
+                        
+                        try:
+                            send_mail(
+                                subject,
+                                '',
+                                settings.DEFAULT_FROM_EMAIL,
+                                [recipient_email],
+                                html_message=html_message,
+                                fail_silently=False,
+                            )
+                            messages.info(request, f"Email notification sent to {recipient_email}.")
+                        except Exception as e:
+                            messages.error(request, f"Failed to send email notification: {e}")
+                
+                # Redirect to maintain search context if there was a search
+                if search_id:
+                    return redirect(f'{request.path}?search_id={search_id}')
+                return redirect(request.path)
+                
             except MentalHealthRecord.DoesNotExist:
-                messages.error(request, f"Mental health record not found for student ID: {student_id}")
+                messages.error(request, "Mental health record not found.")
             except Exception as e:
-                messages.error(request, f"An error occurred while updating the mental health record: {e}")
-        else:
-            messages.error(request, "Student ID not provided in POST request.")
+                messages.error(request, f"An error occurred: {str(e)}")
 
     context = {
-        'student': student,
-        'patient': patient,
-        'mental_health_record': mental_health_record,
+        'student_mhr_list': student_mhr_list,
+        'faculty_mhr_list': faculty_mhr_list,
         'pending_count': pending_count,
+        'search_id': search_id,  # Pass search_id to template
     }
+
     return render(request, 'admin/mental_health.html', context)
-
-@login_required
-def dashboard_view(request):
-    try:
-        # Get student by student_id (username)
-        student = Student.objects.get(student_id=request.user.username)
-        
-        try:
-            # Get the medical student instance
-            medical_student = medical_models.Student.objects.get(student_id=student.student_id)
-            patient = medical_models.Patient.objects.filter(student=medical_student).first()
-            
-            if patient:
-                context = {
-                    'student': student,
-                    'patient': patient,
-                    'medical_history': medical_models.MedicalHistory.objects.filter(examination=patient.examination).first(),
-                    'family_history': medical_models.FamilyMedicalHistory.objects.filter(examination=patient.examination).first(),
-                    'risk_assessment': medical_models.RiskAssessment.objects.filter(clearance=patient).first(),
-                    'physical_exam': patient.examination,
-                    'patient_requests': PatientRequest.objects.filter(patient=patient).order_by('-date_requested'),
-                    'medical_profile_incomplete': not patient.examination
-                }
-                print("Context:", context)  # Add this debug line
-            else:
-                context = {
-                    'student': student,
-                    'patient': None,
-                    'medical_profile_incomplete': True
-                }
-                messages.info(request, 'Please complete your medical profile.')
-                return redirect('main:patient_form')
-                
-        except medical_models.Student.DoesNotExist:
-            context = {
-                'student': student,
-                'patient': None,
-                'medical_profile_incomplete': True
-            }
-            messages.error(request, 'Medical profile not found.')
-            return redirect('main:patient_form')
-            
-    except Student.DoesNotExist:
-        messages.error(request, 'Student profile not found.')
-        return redirect('main:login')
-
-    return render(request, 'student_dashboard.html', context)
-
-@login_required
-def verify_pwd(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-        if request.method == 'POST':
-            try:
-                student = Student.objects.get(student_id=student_id)
-                user = User.objects.get(email=student.email)
-                patient = Patient.objects.get(user=user)
-                risk_assessment = RiskAssessment.objects.get(clearance=patient)
-                risk_assessment.pwd_verified = True
-                risk_assessment.pwd_verification_date = timezone.now()
-                risk_assessment.pwd_verified_by = request.user
-                risk_assessment.save()
-
-                # Send email notification
-                subject = 'PWD Status Verified'
-                message = f'Dear {patient.student.firstname} {patient.student.lastname},\n\n'
-                message += 'Your PWD status has been verified by the medical staff. '
-                message += 'You can now access PWD-related services and benefits.\n\n'
-                message += 'Best regards,\nHealthHub Connect Team'
-                
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [patient.student.email],
-                    fail_silently=False,
-                )
-
-                messages.success(request, f"PWD status verified for student {student_id}")
-            except Student.DoesNotExist:
-                messages.error(request, "Student not found")
-            except RiskAssessment.DoesNotExist:
-                messages.error(request, "Risk assessment not found")
-        return redirect('medical:pwdlist')
-    return HttpResponseForbidden("You don't have permission to access this page.")
-
-@login_required
-def unverify_pwd(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-        if request.method == 'POST':
-            try:
-                student = Student.objects.get(student_id=student_id)
-                user = User.objects.get(email=student.email)
-                patient = Patient.objects.get(user=user)
-                risk_assessment = RiskAssessment.objects.get(clearance=patient)
-                risk_assessment.pwd_verified = False
-                risk_assessment.pwd_verification_date = None
-                risk_assessment.pwd_verified_by = None
-                risk_assessment.save()
-                messages.success(request, f"PWD status unverified for student {student_id}")
-            except Student.DoesNotExist:
-                messages.error(request, "Student not found")
-            except RiskAssessment.DoesNotExist:
-                messages.error(request, "Risk assessment not found")
-        return redirect('medical:pwdlist')
-    return HttpResponseForbidden("You don't have permission to access this page.")
 
 @user_passes_test(is_admin)
 def update_mental_health_status(request, pk):
-    # Placeholder view for updating mental health record status
-    return HttpResponse(f"Updating mental health record with ID: {pk}")
-
-def get_student_by_user(user):
-    from main.models import Student
-    try:
-        return Student.objects.get(email=user.email)
-    except Student.DoesNotExist:
-        return None
-
-def get_faculty_by_user(user):
-    from main.models import Faculty
-    try:
-        return Faculty.objects.get(user=user)
-    except Faculty.DoesNotExist:
-        return None
+    """
+    View to update the status of a mental health record.
+    This is typically called via AJAX from the mental health list view.
+    """
+    if request.method == 'POST':
+        try:
+            # Get the mental health record
+            mental_health_record = MentalHealthRecord.objects.get(pk=pk)
+            
+            # Get the new status from POST data
+            new_status = request.POST.get('status')
+            if new_status not in ['pending', 'approved', 'rejected']:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid status value'
+                }, status=400)
+            
+            # Update the status
+            mental_health_record.status = new_status
+            mental_health_record.save()
+            
+            # Get user for email notification
+            user_for_email = None
+            if mental_health_record.patient and mental_health_record.patient.user:
+                user_for_email = mental_health_record.patient.user
+            elif mental_health_record.faculty and mental_health_record.faculty.user:
+                user_for_email = mental_health_record.faculty.user
+            
+            # Send email notification if we have a valid user
+            if user_for_email and user_for_email.email:
+                recipient_email = user_for_email.email
+                recipient_name = user_for_email.get_full_name() or user_for_email.username
+                
+                # Prepare email content based on status
+                if new_status == 'approved':
+                    subject = 'Your Mental Health Record Has Been Approved'
+                    template_name = 'email/mental_health_approved.html'
+                else:  # rejected
+                    subject = 'Update Regarding Your Mental Health Record'
+                    template_name = 'email/mental_health_rejected.html'
+                
+                # Render email template
+                html_message = render_to_string(template_name, {
+                    'recipient_name': recipient_name,
+                    'mental_health_record': mental_health_record,
+                })
+                
+                try:
+                    send_mail(
+                        subject,
+                        '',  # Empty plain text message
+                        settings.DEFAULT_FROM_EMAIL,
+                        [recipient_email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    # Log the email error but don't fail the request
+                    print(f"Failed to send email notification: {e}")
+            
+            return JsonResponse({
+                'success': True,
+                'status': new_status,
+                'message': f'Status updated to {new_status}'
+            })
+            
+        except MentalHealthRecord.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Mental health record not found'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)
