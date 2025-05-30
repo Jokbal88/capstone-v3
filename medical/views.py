@@ -37,6 +37,7 @@ import os
 from .forms import UploadFileForm
 from django.template.loader import render_to_string
 from django.urls import reverse
+from main.models import Faculty
 
 # Add this function at the top of the file
 def is_admin(user):
@@ -44,9 +45,11 @@ def is_admin(user):
 
 # Patient's basic information
 def patient_basic_info(request, student_id):
+    from django.contrib.auth.models import User
     student = Student.objects.get(student_id=student_id)
-    if Patient.objects.filter(student__student_id = student_id).exists():
-        patient = Patient.objects.get(student__student_id = student_id)
+    user = User.objects.get(email=student.email)
+    if Patient.objects.filter(user=user).exists():
+        patient = Patient.objects.get(user=user)
         return render(request, "students/basicinfo.html", {"student": student, "patient": patient})
     if request.method == "POST":
         birth_date = request.POST.get("birth_date")
@@ -71,7 +74,7 @@ def patient_basic_info(request, student_id):
         parent_guardian_contact_number = request.POST.get("parent_guardian_contact_number")
 
         Patient.objects.create(
-            student = student,
+            user = user,
             birth_date = birth_date,
             age = age,
             weight = weight,
@@ -106,7 +109,9 @@ def medicalclearance_view(request, student_id):
         #     clearance = MedicalClearance.objects.get(student__student_id = student_id)
         #    med_requirements = MedicalRequirement.objects.get(student__student_id = student_id)
         #     return render(request, "admin/patientclearance_comp.html", {"clearance":clearance, "med_requirements": med_requirements})
-        patient = Patient.objects.get(student__student_id = student_id)
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
         if request.method == "POST":
             # Handle patient basic information
             age = request.POST.get("age")
@@ -263,7 +268,9 @@ def eligibilty_form(request, student_id):
         #     return render(request, "admin/eligibilityformcomp.html", {"eligibility_form": student_eligibilty_form})
 
         #student = Student.objects.get(student_id=student_id)
-        patient = Patient.objects.get(student__student_id=student_id)
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
         # Get data inputted from eligibility form
         if request.method == "POST":
             age = request.POST.get("age")
@@ -546,7 +553,9 @@ def view_request(request):
 # Views for creating Physical Examintaion Reports
 def physical_examination(request, student_id):
     if request.user.is_superuser or request.user.is_staff:
-        patient = Patient.objects.get(student__student_id=student_id)
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
 
         # if PhysicalExamination.objects.filter(student__student_id=student_id).exists():
         #     examination = PhysicalExamination.objects.get(student__student_id=student_id)
@@ -898,39 +907,67 @@ def record_transaction(patient, transac_type):
 
 # Record students request eg. Medical Clearance for OJT/Practicum, Eligibility Form and Medical Certificate
 def submit_request(request):
+    from main.models import Faculty
     if request.method == "POST":
         student_id = request.POST.get("student_id")
-        valid_id = Student.objects.filter(student_id=student_id).exists()
-        if not valid_id:
+        # Try to get student or faculty
+        student = Student.objects.filter(student_id=student_id).first()
+        faculty = Faculty.objects.filter(faculty_id=student_id).first()
+        id_number = ""
+        if student:
+            id_number = student.student_id
+        elif faculty:
+            id_number = faculty.faculty_id
+        else:
+            id_number = student_id or ""
+        if not (student or faculty):
             messages.error(request, "The ID you entered does not exist.")
-            return render(request, "students/requestform.html", {})
-        
-        student = Student.objects.get(student_id=student_id)
-        # Check if student already in the patients database
-        if not Patient.objects.filter(student__student_id = student_id).exists():
+            return render(request, "students/requestform.html", {"student": None, "faculty": None, "id_number": id_number})
+
+        # Get the User associated with this student or faculty
+        from django.contrib.auth.models import User
+        if student:
+            user = User.objects.filter(email=student.email).first()
+        else:
+            user = faculty.user if faculty else None
+        if not user:
+            messages.error(request, "No user account found for this ID.")
+            return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+
+        # Check if patient already exists for this user (for students only)
+        if student and not Patient.objects.filter(user=user).exists():
             messages.info(request, "Fill out this form first before doing any transactions")
             return redirect('medical:patient_basicinfo', student_id)
-            #return render(request, "students/basicinfo.html", {"student": student})
-        
-        request_type = request.POST.get("request_type")
-        
-        if PatientRequest.objects.filter(patient__student__student_id=student_id, request_type=request_type).exists():
-            messages.error(request, "You have already submitted this type of request")
-            return render(request, "students/requestform.html", {})
-        
-        patient = Patient.objects.get(student__student_id=student_id)
-        transac_type = f"Request for {request_type}"
-        
-        # Create the student request object
-        patient_request = PatientRequest.objects.create(
-            patient=patient,
-            request_type=request_type,
-            date_requested=timezone.now()
-        )
 
-        # Send confirmation email to the student
-        patient_name = f"{patient.student.firstname} {patient.student.lastname}"
-        patient_email = patient.student.email
+        # For faculty, you may want to add a similar check if needed
+        request_type = request.POST.get("request_type")
+        if student:
+            patient = Patient.objects.get(user=user)
+        else:
+            patient = None  # Or handle faculty-specific logic if needed
+
+        if student and PatientRequest.objects.filter(patient=patient, request_type=request_type).exists():
+            messages.error(request, "You have already submitted this type of request")
+            return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+
+        # Only create PatientRequest for students
+        if student:
+            transac_type = f"Request for {request_type}"
+            patient_request = PatientRequest.objects.create(
+                patient=patient,
+                request_type=request_type,
+                date_requested=timezone.now()
+            )
+            # Send confirmation email to the student
+            patient_name = f"{student.firstname} {student.lastname}"
+            patient_email = student.email
+        elif faculty:
+            # For faculty, you may want to send a different email or handle differently
+            patient_name = faculty.user.get_full_name()
+            patient_email = faculty.user.email
+        else:
+            patient_name = ""
+            patient_email = ""
         email_subject = 'Request Confirmation'
         email_body = f"""
         <html>
@@ -1006,20 +1043,30 @@ def submit_request(request):
         </body>
         </html>
         """
-
-        send_mail(
-            email_subject,
-            '',
-            settings.EMAIL_HOST_USER,
-            [patient_email],
-            html_message=email_body,
-            fail_silently=False,
-        )
-
+        if patient_email:
+            send_mail(
+                email_subject,
+                '',
+                settings.EMAIL_HOST_USER,
+                [patient_email],
+                html_message=email_body,
+                fail_silently=False,
+            )
         messages.success(request, "Request submitted. A confirmation email has been sent.")
-        # record_transaction(patient, transac_type)
-        return render(request, "students/requestform.html", {})
-    return render(request, "students/requestform.html", {})
+        return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+    # For GET requests, fetch the student or faculty object if possible
+    student = None
+    faculty = None
+    id_number = ""
+    if hasattr(request.user, 'username'):
+        from main.models import Faculty
+        student = Student.objects.filter(email=request.user.username).first() or Student.objects.filter(student_id=request.user.username).first()
+        faculty = Faculty.objects.filter(user__username=request.user.username).first()
+        if student:
+            id_number = student.student_id
+        elif faculty:
+            id_number = faculty.faculty_id
+    return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
 
 # Views for medical requirements tracker
 def student_medical_requirements_tracker(request):
@@ -1325,6 +1372,7 @@ def student_medical_requirements_tracker(request):
 
 # Views for handling the medical requirements uploaded file
 def upload_requirements(request):
+    from main.models import Faculty
     requirements = [
         {'slug': 'chest_xray', 'name': 'Chest X-ray'},
         {'slug': 'cbc', 'name': 'Complete Blood Count (CBC)'},
@@ -1333,22 +1381,39 @@ def upload_requirements(request):
         {'slug': 'pwd_card', 'name': 'PWD Card'}
     ]
     
-    # Get student_id from either GET (initial load/refresh) or POST (form submission)
     student_id = request.GET.get("student_id") or request.POST.get("student_id") or getattr(request.user, 'username', None)
     patient = None
     md = None
-    
+    student = None
+    faculty = None
+    is_faculty = False
+    id_number = None
+    # Use helper functions to get student/faculty
+    student = get_student_by_user(request.user)
+    faculty = get_faculty_by_user(request.user)
+    if faculty:
+        is_faculty = True
+        id_number = faculty.faculty_id
+    elif student:
+        id_number = student.student_id
+    else:
+        id_number = ""
     if not student_id:
          messages.error(request, "Student ID not provided.")
-         return render(request, "students/medupload.html", {"requirements": requirements})
+         return render(request, "students/medupload.html", {"requirements": requirements, "id_number": id_number})
 
     try:
-        patient = Patient.objects.get(student__student_id=student_id)
+        from django.contrib.auth.models import User
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
         md, created = MedicalRequirement.objects.get_or_create(patient=patient)
         mental_health_record, mh_created = MentalHealthRecord.objects.get_or_create(patient=patient)
-    except Patient.DoesNotExist:
+        # Always set id_number from student if found
+        id_number = student.student_id
+    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist):
         messages.error(request, "Patient profile not found for this student.")
-        return render(request, "students/medupload.html", {"requirements": requirements})
+        return render(request, "students/medupload.html", {"requirements": requirements, "student": None, "id_number": id_number})
 
     if request.method == "POST":
         print("Entering POST block in upload_requirements view.")
@@ -1467,7 +1532,7 @@ def upload_requirements(request):
 
     # For GET requests or after POST processing, render the template
     # The patient and md objects should be available if student_id was provided.
-    return render(request, "students/medupload.html", {"requirements": requirements, "md": md, "patient": patient, "mental_health_record": mental_health_record})
+    return render(request, "students/medupload.html", {"requirements": requirements, "md": md, "patient": patient, "mental_health_record": mental_health_record, "student": student, "faculty": faculty, "is_faculty": is_faculty, "id_number": id_number})
 
 # Custom template filter for basename
 def basename(value):
@@ -1480,9 +1545,17 @@ register.filter('basename', basename)
 
 # Views for handling students request for dental services
 def dental_services(request):
+    id_number = None
+    student = get_student_by_user(request.user)
+    faculty = get_faculty_by_user(request.user)
+    if faculty:
+        id_number = faculty.faculty_id
+    elif student:
+        id_number = student.student_id
+    else:
+        id_number = ""
     if request.method == "POST":
         transac_type = ""
-        student_id = request.POST.get("student_id")
         service_type = request.POST.get("service_type")
 
         valid_id = Student.objects.filter(student_id=student_id).exists()
@@ -1534,7 +1607,7 @@ def dental_services(request):
         # record_transaction(patient, transac_type)
         return render(request, "students/dentalrequestform.html", {})
     
-    return render(request, "students/dentalrequestform.html", {})
+    return render(request, "students/dentalrequestform.html", {"id_number": id_number, "student": student, "faculty": faculty})
 
 # Views for appointing students dental requests
 def dental_request(request):
@@ -1707,9 +1780,11 @@ def pwd_list(request):
 
 # View pwd in details
 def pwd_detail(request, student_id):
-    patient = Patient.objects.get(student__student_id=student_id)
-    md = MedicalRequirement.objects.get(patient__student__student_id=student_id)
-    return render(request, 'admin/pwddetails.html', {'patient': patient, "md": md})
+    student = Student.objects.get(student_id=student_id)
+    user = User.objects.get(email=student.email)
+    patient = Patient.objects.get(user=user)
+    md = MedicalRequirement.objects.get(patient=patient)
+    return render(request, 'admin/pwddetails.html', {'patient': patient, 'md': md, 'student': student})
 
 # List all record of prescriptions
 def view_prescription_records(request):
@@ -1854,7 +1929,9 @@ def daily_transactions_view(request):
 def med_cert(request, student_id):
     if not request.user.is_superuser and not request.user.is_staff:
         return HttpResponseForbidden("You don't have permission to access this page.")
-    patient = Patient.objects.get(student__student_id = student_id)
+    student = Student.objects.get(student_id=student_id)
+    user = User.objects.get(email=student.email)
+    patient = Patient.objects.get(user=user)
 
     if request.method == "POST":
         college = request.POST.get("college")
@@ -1956,14 +2033,15 @@ def mental_health_view(request):
         student_id = request.GET.get('student_id')
         if student_id:
             try:
-                patient = Patient.objects.get(student__student_id=student_id)
-                student = patient.student # Assuming Patient has a ForeignKey or OneToOneField to Student
+                student = Student.objects.get(student_id=student_id)
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
                 # Try to get the existing mental health record or create a new one
                 mental_health_record, created = MentalHealthRecord.objects.get_or_create(patient=patient)
                 if created:
                     messages.info(request, f"No existing mental health record found for {student.firstname} {student.lastname}. A new one has been created.")
-            except Patient.DoesNotExist:
-                messages.error(request, f"No patient found with student ID: {student_id}")
+            except Student.DoesNotExist:
+                messages.error(request, f"No student found with student ID: {student_id}")
             except Exception as e:
                 messages.error(request, f"An error occurred while fetching the mental health record: {e}")
 
@@ -1972,8 +2050,9 @@ def mental_health_view(request):
         student_id = request.POST.get('student_id')
         if student_id:
             try:
-                patient = Patient.objects.get(student__student_id=student_id)
-                student = patient.student
+                student = Student.objects.get(student_id=student_id)
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
                 mental_health_record = MentalHealthRecord.objects.get(patient=patient)
 
                 # Handle remarks update
@@ -2154,8 +2233,8 @@ def mental_health_view(request):
                 # Redirect back to the same page with the student ID
                 return redirect(f'{request.path}?student_id={student_id}')
 
-            except Patient.DoesNotExist:
-                messages.error(request, f"No patient found with student ID: {student_id}")
+            except Student.DoesNotExist:
+                messages.error(request, f"No student found with student ID: {student_id}")
             except MentalHealthRecord.DoesNotExist:
                 messages.error(request, f"Mental health record not found for student ID: {student_id}")
             except Exception as e:
@@ -2223,7 +2302,9 @@ def verify_pwd(request, student_id):
     if request.user.is_superuser or request.user.is_staff:
         if request.method == 'POST':
             try:
-                patient = Patient.objects.get(student__student_id=student_id)
+                student = Student.objects.get(student_id=student_id)
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
                 risk_assessment = RiskAssessment.objects.get(clearance=patient)
                 risk_assessment.pwd_verified = True
                 risk_assessment.pwd_verification_date = timezone.now()
@@ -2246,7 +2327,7 @@ def verify_pwd(request, student_id):
                 )
 
                 messages.success(request, f"PWD status verified for student {student_id}")
-            except Patient.DoesNotExist:
+            except Student.DoesNotExist:
                 messages.error(request, "Student not found")
             except RiskAssessment.DoesNotExist:
                 messages.error(request, "Risk assessment not found")
@@ -2258,14 +2339,16 @@ def unverify_pwd(request, student_id):
     if request.user.is_superuser or request.user.is_staff:
         if request.method == 'POST':
             try:
-                patient = Patient.objects.get(student__student_id=student_id)
+                student = Student.objects.get(student_id=student_id)
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
                 risk_assessment = RiskAssessment.objects.get(clearance=patient)
                 risk_assessment.pwd_verified = False
                 risk_assessment.pwd_verification_date = None
                 risk_assessment.pwd_verified_by = None
                 risk_assessment.save()
                 messages.success(request, f"PWD status unverified for student {student_id}")
-            except Patient.DoesNotExist:
+            except Student.DoesNotExist:
                 messages.error(request, "Student not found")
             except RiskAssessment.DoesNotExist:
                 messages.error(request, "Risk assessment not found")
@@ -2276,3 +2359,17 @@ def unverify_pwd(request, student_id):
 def update_mental_health_status(request, pk):
     # Placeholder view for updating mental health record status
     return HttpResponse(f"Updating mental health record with ID: {pk}")
+
+def get_student_by_user(user):
+    from main.models import Student
+    try:
+        return Student.objects.get(email=user.email)
+    except Student.DoesNotExist:
+        return None
+
+def get_faculty_by_user(user):
+    from main.models import Faculty
+    try:
+        return Faculty.objects.get(user=user)
+    except Faculty.DoesNotExist:
+        return None

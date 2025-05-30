@@ -105,13 +105,17 @@
     <!-- Single form for all uploads -->
     <form method="POST" enctype="multipart/form-data" id="upload-all-form" class="flex flex-col gap-4 w-full">
         {% csrf_token %}
-        <input type="hidden" name="student_id" value="{{ user.username }}">
+        <input type="hidden" name="student_id" value="{{ student.student_id|default:user.username }}">
         
         <!-- Required Medical Documents Section (with table) -->
         <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200 w-full">
             <h3 class="font-semibold text-blue-700 mb-2">Required Medical Documents</h3>
             <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
                 <p class="text-sm text-blue-800">Please submit all required medical documents. These are essential for ensuring the health and safety of all students.</p>
+            </div>
+            <div class="mb-4">
+                <label class="font-semibold">ID Number:</label>
+                <input type="text" class="w-full p-2 border rounded-md" value="{{ id_number }}" readonly>
             </div>
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow">
                 <thead class="bg-[#e6e6e6]">
@@ -140,15 +144,15 @@
                         <td class="p-2 text-center">
                             {% if md %}
                                 {% if req.slug == 'chest_xray' and md.chest_xray %}
-                                    <button type="button" onclick="previewFile('{{ md.chest_xray.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.chest_xray.url }}', '{{ student.firstname }} {{ student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'cbc' and md.cbc %}
-                                    <button type="button" onclick="previewFile('{{ md.cbc.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.cbc.url }}', '{{ student.firstname }} {{ student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'drug_test' and md.drug_test %}
-                                    <button type="button" onclick="previewFile('{{ md.drug_test.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.drug_test.url }}', '{{ student.firstname }} {{ student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'stool_examination' and md.stool_examination %}
-                                    <button type="button" onclick="previewFile('{{ md.stool_examination.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.stool_examination.url }}', '{{ student.firstname }} {{ student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% elif req.slug == 'pwd_card' and md.pwd_card %}
-                                    <button type="button" onclick="previewFile('{{ md.pwd_card.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ md.pwd_card.url }}', '{{ student.firstname }} {{ student.lastname }}', '{{ req.name }}')" class="text-blue-600 hover:underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
@@ -212,7 +216,7 @@
                             <td class="p-2 font-medium text-center">Prescription</td>
                             <td class="p-2 text-center">
                                 {% if mental_health_record and mental_health_record.prescription %}
-                                    <button type="button" onclick="previewFile('{{ mental_health_record.prescription.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', 'Mental Health Prescription')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ mental_health_record.prescription.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Mental Health Prescription')" class="text-blue-600 hover:underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}
@@ -239,7 +243,7 @@
                             <td class="p-2 font-medium text-center">Certification</td>
                             <td class="p-2 text-center">
                                 {% if mental_health_record and mental_health_record.certification %}
-                                    <button type="button" onclick="previewFile('{{ mental_health_record.certification.url }}', '{{ patient.student.firstname }} {{ patient.student.lastname }}', 'Mental Health Certification')" class="text-blue-600 hover:underline">Preview</button>
+                                    <button type="button" onclick="previewFile('{{ mental_health_record.certification.url }}', '{{ student.firstname }} {{ student.lastname }}', 'Mental Health Certification')" class="text-blue-600 hover:underline">Preview</button>
                                 {% else %}
                                     <span class="text-gray-400">None</span>
                                 {% endif %}

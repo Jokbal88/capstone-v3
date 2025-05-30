@@ -15,11 +15,11 @@
         {% csrf_token %}
         <div class="flex flex-col">
             <div class="flex bg-[#e6e6e6] p-2">
-                <label class="w-full text-center font-bold xs:text-[14px] md:text-base" for="studentId">Student ID</label>
+                <label class="w-full text-center font-bold xs:text-[14px] md:text-base" for="idNumber">ID Number</label>
                 <label class="w-full text-center font-bold xs:text-[14px] md:text-base" for="requestType">Request Type</label>
             </div>
             <div class="flex gap-2 py-2">
-                <input class="w-full xs:text-[14px] md:text-base" type="text" id="student_id" name="student_id" value="{{ user.username }}" readonly>
+                <input class="w-full xs:text-[14px] md:text-base" type="text" id="student_id" name="student_id" value="{{ id_number }}" readonly>
                 <select class="w-full xs:text-[14px] md:text-base" id="requestType" name="request_type" required>
                     <option value="">Select Request Type</option>
                     <option value="Eligibility Form">Eligibility Form</option>

@@ -46,72 +46,72 @@
             <div class="flex gap-2">
                 <div class="flex flex-col w-full">
                     <label for="id">Student ID:</label>
-                    <input type="text" name="id-number" value="{{ patient.student.student_id }}" required>
+                    <input type="text" name="id-number" value="{{ student.student_id }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="surname">Surname:</label>
-                    <input type="text" name="surname" value="{{ patient.student.lastname }}" required>
+                    <input type="text" name="surname" value="{{ student.lastname }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="fName">First Name:</label>
-                    <input type="text" name="firstname" value="{{ patient.student.firstname }}" required>
+                    <input type="text" name="firstname" value="{{ student.firstname }}" required>
                 </div>
             </div>
             <div class="flex gap-2">
                 <div class="flex flex-col w-full">
                     <label for="mName">Middle Name:</label>
-                    <input type="text" name="middlename" value="{{ patient.student.middlename }}" required>
+                    <input type="text" name="middlename" value="{{ student.middlename }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="age">Age:</label>
-                    <input type="number" name="age" value="{{ patient.age }}" required>
+                    <input type="number" name="age" value="{{ student.age }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="sex">Sex:</label>
-                    <input type="text" name="sex" value="{{ patient.student.sex }}" required>
+                    <input type="text" name="sex" value="{{ student.sex }}" required>
                 </div>
             </div>
             <div class="flex gap-2">
                 <div class="flex flex-col w-full">
                     <label for="contact">Contact Number:</label>
-                    <input type="text" name="contact-number" value="{{ patient.student.contact_number }}" required>
+                    <input type="text" name="contact-number" value="{{ student.contact_number }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="email">Email Address:</label>
-                    <input type="text" name="email" value="{{ patient.student.email }}" required>
+                    <input type="text" name="email" value="{{ student.email }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     {% if clearance.birth_date %}
                         <label for="birthDate">Birth Date:</label>
-                        <input type="text" id="birth-date" name="birth-date" value="{{ patient.birth_date }}" required>
+                        <input type="text" id="birth-date" name="birth-date" value="{{ student.birth_date }}" required>
                     {% else %}
                         <label for="birthDate">Birth Date:</label>
-                        <input type="date" id="birth-date" name="birth-date" value="{{ patient.birth_date }}" required>
+                        <input type="date" id="birth-date" name="birth-date" value="{{ student.birth_date }}" required>
                     {% endif %}
                 </div>
             </div>
             <div class="flex gap-2">
                 <div class="flex flex-col w-full">
                     <label for="address">Address:</label>
-                    <input type="text" name="address" value="{{ patient.home_address }}" required>
+                    <input type="text" name="address" value="{{ student.home_address }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="city">City:</label>
-                    <input type="text" name="city" value="{{ patient.city }}" required>
+                    <input type="text" name="city" value="{{ student.city }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="state">State/Province:</label>
-                    <input type="text" name="state-province" value="{{ patient.state_province }}" required>
+                    <input type="text" name="state-province" value="{{ student.state_province }}" required>
                 </div>
             </div>
             <div class="flex gap-2">
                 <div class="flex flex-col w-full">
                     <label for="zip">Postal/ZIP Code:</label>
-                    <input type="text" name="postal-zip-code" value="{{ patient.postal_zipcode }}" required>
+                    <input type="text" name="postal-zip-code" value="{{ student.postal_zipcode }}" required>
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="country">Country:</label>
-                    <input type="text" name="country" value="{{ patient.country }}" required>
+                    <input type="text" name="country" value="{{ student.country }}" required>
                 </div>
             </div>
         </fieldset>
@@ -242,7 +242,7 @@
                 </table>
             </div>
             <div class="input-box">
-                <input type="text" placeholder="Specify other conditions not listed above" name="other_conditions" value="{{ patient.riskassessment.other_conditions }}">
+                <input type="text" placeholder="Specify other conditions not listed above" name="other_conditions" value="{{ student.riskassessment.other_conditions }}">
             </div>
             {% if clearance.riskassessment.pwd %}
                 <div class="input-box" id="pwd-details">
