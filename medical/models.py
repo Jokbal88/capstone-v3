@@ -1,7 +1,7 @@
 from django.db import models
 import os
 from django.contrib.auth.models import User
-from main.models import Student
+from main.models import Student, Faculty
 from django.utils import timezone
 
 # Helper function for profile picture upload path
@@ -198,7 +198,7 @@ class MedicalRequirement(models.Model):
 
     # Link to Patient, make nullable initially
     patient = models.OneToOneField(Patient, on_delete=models.CASCADE, null=True, blank=True)
-    #clearance = models.OneToOneField(MedicalClearance, on_delete=models.CASCADE)
+    faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, null=True, blank=True)
     vaccination_type = models.CharField(max_length=50, null=True, blank=True)
     vaccinated_1st = models.BooleanField(default=False, null=True, blank=True)
     vaccinated_2nd = models.BooleanField(default=False, null=True, blank=True)
@@ -210,8 +210,13 @@ class MedicalRequirement(models.Model):
     stool_examination_remarks = models.CharField(max_length=100, null=True, blank=True)
 
     def patient_directory_path(instance, filename, field_name):
-        # Updated to use patient's user information for path
-        user_identifier = instance.patient.user.username or instance.patient.user.id # Use username or ID as identifier
+        # Use patient's user or faculty's user for path
+        if instance.patient and instance.patient.user:
+            user_identifier = instance.patient.user.username or instance.patient.user.id
+        elif hasattr(instance, 'faculty') and instance.faculty and instance.faculty.user:
+            user_identifier = instance.faculty.user.username or instance.faculty.user.id
+        else:
+            user_identifier = 'unknown_user'
         return os.path.join('medical', f'{user_identifier}', field_name, filename)
     
     def chest_xray_path(instance, filename):
@@ -340,10 +345,16 @@ class TransactionRecord(models.Model):
 class MentalHealthRecord(models.Model):
     # Link to Patient, make nullable initially
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
+    faculty = models.OneToOneField(Faculty, on_delete=models.CASCADE, null=True, blank=True)
     
     def mental_health_path(instance, filename, field_name):
-        # Updated to use patient's user information for path
-        user_identifier = instance.patient.user.username or instance.patient.user.id # Use username or ID as identifier
+        # Use patient's user or faculty's user for path
+        if instance.patient and instance.patient.user:
+            user_identifier = instance.patient.user.username or instance.patient.user.id
+        elif hasattr(instance, 'faculty') and instance.faculty and instance.faculty.user:
+            user_identifier = instance.faculty.user.username or instance.faculty.user.id
+        else:
+            user_identifier = 'unknown_user'
         return os.path.join('medical', f'{user_identifier}', 'mental_health', field_name, filename)
     
     def prescription_path(instance, filename):

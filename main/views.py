@@ -125,21 +125,16 @@ def register(request):
                     'message': 'Passwords do not match.'
                 })
 
-            # Handle Student registration
             if role == 'Student':
                 # Get student-specific data
                 sex = request.POST.get("sex")
                 yrLevel = request.POST.get("yrLevel")
-                # Handle potential multiple values for idNumber from the form
                 id_numbers = request.POST.getlist("idNumber")
-                # Assuming the correct ID is the first non-empty one, or the last if only one is present
                 idNumber = next((id_num for id_num in id_numbers if id_num), id_numbers[-1] if id_numbers else '')
                 lrn = request.POST.get("lrn")
                 course = request.POST.get("course")
 
                 print("Received LRN for student:", lrn)
-
-                # Add debugging prints for student fields
                 print(f"firstName: {firstName}")
                 print(f"middleInitial: {middleInitial}")
                 print(f"lastName: {lastName}")
@@ -149,15 +144,15 @@ def register(request):
                 print(f"lrn: {lrn}")
                 print(f"course: {course}")
                 print(f"email: {email}")
-                print(f"password: {password}") # Be cautious with printing passwords in real logs
-                print(f"confirmPassword: {confirmPassword}") # Be cautious with printing passwords
+                print(f"password: {password}")
+                print(f"confirmPassword: {confirmPassword}")
 
-                # Validate required fields for students (Keep validation for relevant fields)
+                # Validate required fields for students
                 if not all([firstName, lastName, sex, yrLevel, idNumber, lrn, course, email, password, confirmPassword]):
-                     return JsonResponse({
-                         'status': 'error',
-                         'message': 'Please provide all required student information.'
-                     })
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Please provide all required student information.'
+                    })
 
                 # Validate LRN format
                 if not lrn or not lrn.isdigit() or len(lrn) != 12:
@@ -200,33 +195,30 @@ def register(request):
                 # Create Profile for the user
                 profile = Profile.objects.create(user=user, role=role)
 
-                # Create Student instance (Only create if needed for specific student data)
-                # If Student model is still needed for LRN/student_id, keep this.
-                # Otherwise, this can potentially be removed and move fields to User/Patient/Profile.
+                # Create Student instance
                 student_instance = Student.objects.create(
                     student_id=idNumber,
                     lrn=lrn,
-                    lastname=lastName, # Redundant if User model stores this
-                    firstname=firstName, # Redundant if User model stores this
-                    middlename=middleInitial, # Redundant if User model stores this
+                    lastname=lastName,
+                    firstname=firstName,
+                    middlename=middleInitial,
                     degree=course,
-                    year_level=int(yrLevel), # Convert to integer
-                    sex=sex, # Redundant if Patient/Profile model stores this
-                    email=email, # Redundant if User model stores this
-                    contact_number='N/A' # Assuming contact number is not collected in this form
+                    year_level=int(yrLevel),
+                    sex=sex,
+                    email=email,
+                    contact_number='N/A'
                 )
 
                 # Create Patient instance and link to the User
                 Patient.objects.create(user=user)
 
-            # Handle Faculty registration
-            elif role == 'Faculty': # Explicitly check for Faculty role
+            elif role == 'Faculty':
                 # Get faculty-specific data
                 department = request.POST.get('department')
                 position = request.POST.get('position')
-                faculty_id = request.POST.get('idNumber') # Get the ID number for faculty
-                sex = request.POST.get('sex') # Get the sex for faculty
-                middlename = request.POST.get('middleInitial') # Get the middle initial for faculty
+                faculty_id = request.POST.get('idNumber')
+                sex = request.POST.get('sex')
+                middlename = request.POST.get('middleInitial')
 
                 # Validate required fields for faculty
                 if not all([firstName, middleInitial, lastName, department, position, faculty_id, sex, email, password, confirmPassword]):
@@ -235,13 +227,12 @@ def register(request):
                         'message': 'Please provide all required faculty information (First Name, Middle Initial, Last Name, Department, Position, ID Number, Sex, Email, Password, Confirm Password).'
                     })
 
-                # Optional validation for faculty ID format (if needed, add here)
-                # Assuming faculty ID is also 7 digits based on the template
+                # Optional validation for faculty ID format
                 if not faculty_id.isdigit() or len(faculty_id) != 7:
-                     return JsonResponse({
-                         'status': 'error',
-                         'message': 'Faculty ID Number must be exactly 7 digits.'
-                     })
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Faculty ID Number must be exactly 7 digits.'
+                    })
 
                 # Check if faculty ID already exists
                 if Faculty.objects.filter(faculty_id=faculty_id).exists():
@@ -252,7 +243,7 @@ def register(request):
 
                 # Create user
                 user = User.objects.create_user(
-                    username=email, # Using email as username
+                    username=email,
                     email=email,
                     password=password,
                     first_name=firstName,
@@ -268,11 +259,11 @@ def register(request):
                     faculty_id=faculty_id,
                     department=department,
                     position=position,
-                    sex=sex, # Redundant if Patient/Profile model stores this
+                    sex=sex,
                     middlename=middlename
                 )
 
-                # Create Patient instance and link to the User (Moved outside role check)
+                # Create Patient instance and link to the User
                 Patient.objects.create(user=user)
 
             else:
@@ -598,9 +589,10 @@ def main_view(request):
                 print(f"Error checking medical records: {str(e)}")
                 profile_complete = False
 
-        except medical_models.Patient.DoesNotExist:
-            print(f"No patient record found for user: {request.user.username}")
-            profile_complete = False
+            except medical_models.Patient.DoesNotExist:
+                print(f"No patient record found for user: {request.user.username}")
+                profile_complete = False
+
         except Exception as e:
             print(f"Unexpected error during profile check in main_view: {str(e)}")
             messages.error(request, 'An unexpected error occurred while verifying your profile status.')
@@ -619,7 +611,7 @@ def main_view(request):
                 return redirect('main:student_dashboard')
     else:
         print("User is not authenticated in main_view")
-        return redirect('main:login')
+    return redirect('main:login')
 
 @login_required
 def patient_form(request):
@@ -632,7 +624,6 @@ def patient_form(request):
         patient = medical_models.Patient.objects.create(user=request.user)
         # A message might be helpful here to inform the user that a new record was created
         messages.info(request, "A new medical profile record has been created for your account. Please fill out the form.")
-
 
     if request.method == 'GET':
         profile_complete = True # Assume complete initially, prove otherwise
@@ -669,16 +660,16 @@ def patient_form(request):
             print("PatientForm GET: Patient object does not exist in nested check.")
             profile_complete = False
         except Exception as e:
-             print(f"PatientForm GET: Unexpected error getting patient object: {e}")
-             profile_complete = False # Treat unexpected errors as incomplete
+            print(f"PatientForm GET: Unexpected error getting patient object: {e}")
+            profile_complete = False # Treat unexpected errors as incomplete
 
         if profile_complete:
-             messages.info(request, 'Your medical profile is already complete.')
-             # Redirect based on user role
-             if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
-                 return redirect('main:faculty_dashboard')
-             else:
-                 return redirect('main:student_dashboard')
+            messages.info(request, 'Your medical profile is already complete.')
+            # Redirect based on user role
+            if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
+                return redirect('main:faculty_dashboard')
+            else:
+                return redirect('main:student_dashboard')
 
         # If profile is incomplete, render the form
         today = date.today()
@@ -710,7 +701,7 @@ def patient_form(request):
             patient.number_of_children = int(num_children_str) if num_children_str and num_children_str.isdigit() else None
 
             if not patient.academic_year:
-                 patient.academic_year = f"{timezone.now().year}-{timezone.now().year + 1}"
+                patient.academic_year = f"{timezone.now().year}-{timezone.now().year + 1}"
 
             patient.section = request.POST.get('section', '')
             patient.parent_guardian = request.POST.get('parent_guardian')
@@ -725,15 +716,15 @@ def patient_form(request):
             if exam_date_str:
                 physical_exam.date_of_physical_examination = exam_date_str
             else:
-                 if not physical_exam.date_of_physical_examination:
-                     physical_exam.date_of_physical_examination = timezone.now().strftime('%Y-%m-%d')
+                if not physical_exam.date_of_physical_examination:
+                    physical_exam.date_of_physical_examination = timezone.now().strftime('%Y-%m-%d')
             physical_exam.save()
 
             # Link the examination to the patient if it wasn't already linked
             if not patient.examination:
-                 patient.examination = physical_exam
-                 patient.save() # Save patient again to establish the link
-
+                patient.examination = physical_exam
+                patient.save() # Save patient again to establish the link
+            
             # --- Medical History logic ---
             med_hist_list = request.POST.getlist('medical_history')
             # Get or create MedicalHistory linked to the physical_exam
@@ -792,16 +783,16 @@ def patient_form(request):
                 return redirect('main:faculty_dashboard')
             else:
                 return redirect('main:student_dashboard')
-
+            
         except Exception as e:
             print(f"Error saving patient information: {e}")
             messages.error(request, f'Error saving patient information: {str(e)}')
-            today = date.today()
-            context = {
-                'current_date': today,
-                'patient': patient, # Pass the patient object back to the form on error
-            }
-            return render(request, 'patient_form.html', context)
+        today = date.today()
+        context = {
+            'current_date': today,
+            'patient': patient, # Pass the patient object back to the form on error
+        }
+        return render(request, 'patient_form.html', context)
 
 def calculate_age(birthdate):
     born = datetime.strptime(birthdate, '%Y-%m-%d').date()
@@ -960,9 +951,9 @@ def dashboard_view(request):
             except medical_models.RiskAssessment.DoesNotExist:
                 risk_assessment = None
 
-        # Get patient requests (linked to Patient directly)
-        patient_requests = PatientRequest.objects.filter(patient=patient).order_by('-date_requested')
-
+            # Get patient requests (linked to Patient directly)
+            patient_requests = PatientRequest.objects.filter(patient=patient).order_by('-date_requested')
+            
         # Get student information
         student = None
         try:
@@ -982,9 +973,9 @@ def dashboard_view(request):
             'patient_requests': patient_requests,
             'medical_profile_incomplete': not patient.examination
         }
-
+            
         return render(request, 'student_dashboard.html', context)
-
+            
     except medical_models.Patient.DoesNotExist:
         messages.info(request, 'Your medical profile is incomplete. Please complete it.')
         return render(request, 'student_dashboard.html', {'medical_profile_incomplete': True})
@@ -1136,9 +1127,9 @@ def mental_health_review(request, record_id):
             """
         elif status == 'pending':
             subject = 'Mental Health Record - Status Updated'
-        message = f"""
-        Dear {record.patient.student.firstname},
-        
+            message = f"""
+            Dear {record.patient.student.firstname},
+            
             Your mental health record status has been updated to pending review.
 
             Review Details:
@@ -1155,9 +1146,9 @@ def mental_health_review(request, record_id):
 
             We will notify you once the review is complete.
         
-        Best regards,
-        Medical Services Team
-        """
+            Best regards,
+            Medical Services Team
+            """
         
         try:
             send_mail(
@@ -1264,7 +1255,7 @@ def faculty_dashboard_view(request):
                 medical_models.FamilyMedicalHistory.DoesNotExist,
                 medical_models.RiskAssessment.DoesNotExist):
             pass
-
+    
     context = {
         'faculty': faculty,
         'patient': patient,

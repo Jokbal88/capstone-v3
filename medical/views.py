@@ -1381,157 +1381,131 @@ def upload_requirements(request):
         {'slug': 'pwd_card', 'name': 'PWD Card'}
     ]
     
-    student_id = request.GET.get("student_id") or request.POST.get("student_id") or getattr(request.user, 'username', None)
-    patient = None
-    md = None
-    student = None
-    faculty = None
-    is_faculty = False
-    id_number = None
-    # Use helper functions to get student/faculty
+    # Use helper functions to get student/faculty for the logged-in user
     student = get_student_by_user(request.user)
     faculty = get_faculty_by_user(request.user)
+
+    patient = None
+    md = None
+    is_faculty = False
+    id_number = ""
+    mental_health_record = None
+
     if faculty:
         is_faculty = True
         id_number = faculty.faculty_id
+        try:
+            # Faculty upload logic: get or create medical records linked to faculty
+            md, created_md = MedicalRequirement.objects.get_or_create(faculty=faculty)
+            mental_health_record, created_mhr = MentalHealthRecord.objects.get_or_create(faculty=faculty)
+        except Exception as e:
+            messages.error(request, f"Error fetching/creating faculty medical records: {e}")
+            # Decide how to handle this error, maybe return a different page or render with None
+            return render(request, "students/medupload.html", {"requirements": requirements, "faculty": faculty, "is_faculty": is_faculty, "id_number": id_number})
+
     elif student:
         id_number = student.student_id
+        try:
+            # Student upload logic: find patient linked to the student's user
+            user = request.user # Get the user from the request
+            try:
+                patient = Patient.objects.get(user=user)
+            except Patient.DoesNotExist:
+                messages.info(request, "Please complete your medical profile first.")
+                # Redirect to the basic info page where patient profile can be created
+                return redirect('medical:patient_basicinfo', student_id=student.student_id) 
+                
+            # If patient exists, get or create medical records linked to the patient
+            md, created_md = MedicalRequirement.objects.get_or_create(patient=patient)
+            mental_health_record, created_mhr = MentalHealthRecord.objects.get_or_create(patient=patient)
+
+        except Exception as e:
+            messages.error(request, f"Error fetching/creating student medical records: {e}")
+            # Decide how to handle this error
+            # Render the page with available data, even if some records failed to load
+            pass # Continue to render the form with available data
+
     else:
-        id_number = ""
-    if not student_id:
-         messages.error(request, "Student ID not provided.")
-         return render(request, "students/medupload.html", {"requirements": requirements, "id_number": id_number})
+        # Neither student nor faculty found for the logged-in user
+        messages.error(request, "Profile not found. Please complete your profile first.")
+        return render(request, "students/medupload.html", {"requirements": requirements, "student": None, "faculty": None, "id_number": id_number, "is_faculty": is_faculty}) # Render with empty profile info
 
-    try:
-        from django.contrib.auth.models import User
-        student = Student.objects.get(student_id=student_id)
-        user = User.objects.get(email=student.email)
-        patient = Patient.objects.get(user=user)
-        md, created = MedicalRequirement.objects.get_or_create(patient=patient)
-        mental_health_record, mh_created = MentalHealthRecord.objects.get_or_create(patient=patient)
-        # Always set id_number from student if found
-        id_number = student.student_id
-    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist):
-        messages.error(request, "Patient profile not found for this student.")
-        return render(request, "students/medupload.html", {"requirements": requirements, "student": None, "id_number": id_number})
-
+    # Handle POST request for file uploads
     if request.method == "POST":
-        print("Entering POST block in upload_requirements view.")
-        print("Patient object:", patient)
-        print("MedicalRequirement object:", md)
         uploaded_files_count = 0
         failed_uploads = {}
-
-        # Add print statement to inspect request.FILES
-        print("Request FILES:", request.FILES)
-
-        # Define allowed content types for basic validation
         allowed_content_types = [
             'application/pdf',
             'image/jpeg',
             'image/png',
             'image/gif',
         ]
-
         for input_name, file in request.FILES.items():
-            # Input names are expected to be like 'file_chest_xray', 'file_cbc', etc.
             if input_name.startswith('file_'):
                 requirement_slug = input_name.replace('file_', '')
-
-                # Check if it is a medical requirement file
                 valid_medical_slugs = [req['slug'] for req in requirements]
                 if requirement_slug in valid_medical_slugs:
-
-                    # Basic content type validation
                     if file.content_type not in allowed_content_types:
                         failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
                         messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
-                        continue # Skip this file and move to the next
-
-                    # Get the corresponding field on the MedicalRequirement model
-                    # and save the file
+                        continue
                     try:
-                        # Before setting the new file, check if an old file exists and delete it
+                        # Use md object obtained earlier
                         old_file = getattr(md, requirement_slug, None)
-                        if old_file and old_file.name:
-                            # Check if the old file exists in the storage and delete it
+                        if old_file and hasattr(old_file, 'name') and old_file.name:
                             storage = old_file.storage
                             if storage.exists(old_file.name):
                                 storage.delete(old_file.name)
-                        
-                        # Set the file to the model field
                         setattr(md, requirement_slug, file)
-                        # The actual saving to storage happens when md.save() is called later
                         uploaded_files_count += 1
                         messages.success(request, f"{requirement_slug.replace('_', ' ').title()} uploaded successfully.")
-
                     except AttributeError:
                         failed_uploads[file.name] = f"MedicalRequirement model has no field for requirement slug: {requirement_slug}"
                         messages.error(request, f"Error uploading file for {requirement_slug}: Invalid requirement type.")
                     except Exception as e:
                         failed_uploads[file.name] = str(e)
                         messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
-                        
-                # Check if it is a mental health file
                 elif requirement_slug in ['prescription', 'certification']:
-                    # Basic content type validation for mental health files
                     if file.content_type not in allowed_content_types:
-                         failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
-                         messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
-                         continue # Skip this file
-
+                        failed_uploads[file.name] = f"Invalid file type: {file.content_type}. Only PDF, JPG, JPEG, PNG, GIF are allowed."
+                        messages.error(request, f"Invalid file type for {requirement_slug}: {file.name}.")
+                        continue
                     try:
-                         # Before setting the new file, check if an old file exists and delete it
-                         old_file = getattr(mental_health_record, requirement_slug, None)
-                         if old_file and old_file.name:
-                             # Check if the old file exists in the storage and delete it
-                             storage = old_file.storage
-                             if storage.exists(old_file.name):
-                                 storage.delete(old_file.name)
-
-                         # Set the file to the model field
-                         setattr(mental_health_record, requirement_slug, file)
-                         # The actual saving to storage happens when mental_health_record.save() is called later
-                         uploaded_files_count += 1
-                         messages.success(request, f"Mental Health {requirement_slug.replace('_', ' ').title()} uploaded successfully.")
-
+                        # Use mental_health_record object obtained earlier
+                        old_file = getattr(mental_health_record, requirement_slug, None)
+                        if old_file and hasattr(old_file, 'name') and old_file.name:
+                            storage = old_file.storage
+                            if storage.exists(old_file.name):
+                                storage.delete(old_file.name)
+                        setattr(mental_health_record, requirement_slug, file)
+                        uploaded_files_count += 1
+                        messages.success(request, f"Mental Health {requirement_slug.replace('_', ' ').title()} uploaded successfully.")
                     except AttributeError:
-                         failed_uploads[file.name] = f"MentalHealthRecord model has no field for: {requirement_slug}"
-                         messages.error(request, f"Error uploading file for {requirement_slug}: Invalid document type.")
+                        failed_uploads[file.name] = f"MentalHealthRecord model has no field for: {requirement_slug}"
+                        messages.error(request, f"Error uploading file for {requirement_slug}: Invalid document type.")
                     except Exception as e:
-                         failed_uploads[file.name] = str(e)
-                         messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
-
-        # Save the MedicalRequirement and MentalHealthRecord objects to persist changes
+                        failed_uploads[file.name] = str(e)
+                        messages.error(request, f"Error uploading file for {requirement_slug}: {e}")
         if uploaded_files_count > 0:
             try:
-                # Check if the md object has been modified by any uploaded file
                 md_modified = any(name.startswith('file_') and name.replace('file_', '') in [req['slug'] for req in requirements] for name in request.FILES.keys())
-
-                # Check if the mental_health_record object has been modified by any uploaded file
                 mhr_modified = any(name.startswith('file_') and name.replace('file_', '') in ['prescription', 'certification'] for name in request.FILES.keys())
-
                 if md_modified:
                     md.save()
-                
                 if mhr_modified:
                     mental_health_record.save()
-
             except Exception as e:
                 messages.error(request, f"Error saving records: {e}")
-                
         if not uploaded_files_count and not failed_uploads:
-             messages.info(request, "No files were selected for upload.")
+            messages.info(request, "No files were selected for upload.")
         elif failed_uploads:
-             messages.warning(f"Some files failed to upload: {failed_uploads}")
-
-        # Redirect back to the page to show updated status with student_id as query parameter
+            messages.warning(request, f"Some files failed to upload: {failed_uploads}")
         from django.urls import reverse
         base_url = reverse('medical:upload_requirements')
-        return redirect(f'{base_url}?student_id={student_id}')
-
-    # For GET requests or after POST processing, render the template
-    # The patient and md objects should be available if student_id was provided.
+        if is_faculty:
+            return redirect(f'{base_url}')
+        else:
+            return redirect(f'{base_url}?student_id={student_id}')
     return render(request, "students/medupload.html", {"requirements": requirements, "md": md, "patient": patient, "mental_health_record": mental_health_record, "student": student, "faculty": faculty, "is_faculty": is_faculty, "id_number": id_number})
 
 # Custom template filter for basename
