@@ -42,6 +42,21 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from main.models import Faculty
 
+# Helper functions to get student/faculty by user
+def get_student_by_user(user):
+    """Get the Student object associated with a User, if it exists."""
+    try:
+        return Student.objects.get(email=user.email)
+    except Student.DoesNotExist:
+        return None
+
+def get_faculty_by_user(user):
+    """Get the Faculty object associated with a User, if it exists."""
+    try:
+        return Faculty.objects.get(user=user)
+    except Faculty.DoesNotExist:
+        return None
+
 # Add this function at the top of the file
 def is_admin(user):
     return user.is_superuser or user.is_staff
@@ -2280,6 +2295,19 @@ def mental_health_view(request):
             try:
                 mental_health_record = MentalHealthRecord.objects.get(pk=record_id)
                 
+                # Debugging: Check the fetched record and its links
+                print(f"Fetched MentalHealthRecord PK: {mental_health_record.pk}")
+                print(f"Linked Patient: {mental_health_record.patient}")
+                print(f"Linked Faculty: {mental_health_record.faculty}")
+                if mental_health_record.patient and mental_health_record.patient.user:
+                    print(f"Patient's User: {mental_health_record.patient.user}")
+                    print(f"Patient's User Email: {mental_health_record.patient.user.email}")
+                elif mental_health_record.faculty and mental_health_record.faculty.user:
+                    print(f"Faculty's User: {mental_health_record.faculty.user}")
+                    print(f"Faculty's User Email: {mental_health_record.faculty.user.email}")
+                else:
+                    print("MentalHealthRecord is not linked to a Patient/Faculty with a User.")
+                
                 # Handle remarks update
                 prescription_remarks = request.POST.get('prescription_remarks')
                 certification_remarks = request.POST.get('certification_remarks')
@@ -2293,7 +2321,7 @@ def mental_health_view(request):
                     mhr_modified = True
                 
                 # Handle status update
-                status_action = request.POST.get('status_action')
+                status_action = request.POST.get('action')
                 if status_action in ['approved', 'rejected'] and mental_health_record.status != status_action:
                     mental_health_record.status = status_action
                     mhr_modified = True
@@ -2301,58 +2329,247 @@ def mental_health_view(request):
                 if mhr_modified:
                     mental_health_record.save()
                     messages.success(request, "Mental health record updated successfully.")
-                    
+
                     # Send email notification
                     user_for_email = None
                     if mental_health_record.patient and mental_health_record.patient.user:
                         user_for_email = mental_health_record.patient.user
                     elif mental_health_record.faculty and mental_health_record.faculty.user:
                         user_for_email = mental_health_record.faculty.user
-                    
+
                     if user_for_email and user_for_email.email:
                         recipient_email = user_for_email.email
                         recipient_name = user_for_email.get_full_name() or user_for_email.username
-                        
+
+                        print(f"Attempting to send email to: {recipient_email}")
+
+                        # Debugging: Print remark values before creating email content
+                        print(f"Prescription Remarks: {mental_health_record.prescription_remarks}")
+                        print(f"Certification Remarks: {mental_health_record.certification_remarks}")
+                        print(f"Recipient Name: {recipient_name}")
+                        print(f"Recipient Email: {recipient_email}")
+
+                        # Initialize subject and html_message
+                        subject = None
+                        html_message = None
+
                         if mental_health_record.status == 'approved':
                             subject = 'Your Mental Health Record Has Been Approved'
-                            template_name = 'email/mental_health_approved.html'
+                            # Define HTML content directly
+                            html_message = f"""
+                            <html>
+                            <head>
+                                <style>
+                                    body {{
+                                        font-family: Arial, sans-serif;
+                                        line-height: 1.6;
+                                        color: #333;
+                                        margin: 0;
+                                        padding: 20px;
+                                        background-color: #f4f4f4;
+                                        text-align: center;
+                                    }}
+                                    .container {{
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        background-color: #fff;
+                                        padding: 30px;
+                                        border-radius: 8px;
+                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                        text-align: left;
+                                    }}
+                                    .title {{
+                                        text-align: center;
+                                        font-size: 24px;
+                                        color: #0056b3;
+                                        margin-bottom: 20px;
+                                        padding-bottom: 15px;
+                                        border-bottom: 1px solid #eee;
+                                    }}
+                                     p {{
+                                        margin-bottom: 15px;
+                                    }}
+                                     .footer {{
+                                        margin-top: 30px;
+                                        padding-top: 20px;
+                                        font-size: 12px;
+                                        color: #999;
+                                        text-align: center;
+                                        border-top: 1px solid #eee;
+                                    }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="title">MENTAL HEALTH RECORD APPROVED</div>
+                                    <p>Dear <strong>{recipient_name}</strong>,</p>
+                                    <p>Your Mental Health Record has been <strong style='color:green;'>APPROVED</strong>.</p>
+                                    
+                                    <p><strong>Remarks:</strong></p>
+                                    <ul>
+                                        <li>Prescription: {mental_health_record.prescription_remarks if mental_health_record.prescription_remarks else 'No remarks provided.'}</li>
+                                        <li>Certification: {mental_health_record.certification_remarks if mental_health_record.certification_remarks else 'No remarks provided.'}</li>
+                                    </ul>
+                                    
+                                    <p>You can view the details by logging into your HealthHub Connect account.</p>
+                                    <p>Best Regards,</p>
+                                    <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                                </div>
+                                 <div class="footer">
+                                    <p>This is an automated message, please do not reply to this email.</p>
+                                    <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                                </div>
+                            </body>
+                            </html>
+                            """
                         else:  # rejected
                             subject = 'Update Regarding Your Mental Health Record'
-                            template_name = 'email/mental_health_rejected.html'
-                        
-                        html_message = render_to_string(template_name, {
-                            'recipient_name': recipient_name,
-                            'mental_health_record': mental_health_record,
-                        })
-                        
-                        try:
-                            send_mail(
-                                subject,
-                                '',
-                                settings.DEFAULT_FROM_EMAIL,
-                                [recipient_email],
-                                html_message=html_message,
-                                fail_silently=False,
-                            )
-                            messages.info(request, f"Email notification sent to {recipient_email}.")
-                        except Exception as e:
-                            messages.error(request, f"Failed to send email notification: {e}")
-                
-                # Redirect to maintain search context if there was a search
-                if search_id:
-                    return redirect(f'{request.path}?search_id={search_id}')
-                return redirect(request.path)
-                
+                            # Define HTML content directly for rejected status
+                            html_message = f"""
+                            <html>
+                            <head>
+                                <style>
+                                    body {{
+                                        font-family: Arial, sans-serif;
+                                        line-height: 1.6;
+                                        color: #333;
+                                        margin: 0;
+                                        padding: 20px;
+                                        background-color: #f4f4f4;
+                                        text-align: center;
+                                    }}
+                                    .container {{
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        background-color: #fff;
+                                        padding: 30px;
+                                        border-radius: 8px;
+                                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                        text-align: left;
+                                    }}
+                                    .title {{
+                                        text-align: center;
+                                        font-size: 24px;
+                                        color: #d9534f;
+                                        margin-bottom: 20px;
+                                        padding-bottom: 15px;
+                                        border-bottom: 1px solid #eee;
+                                    }}
+                                    p {{
+                                        margin-bottom: 15px;
+                                    }}
+                                    .footer {{
+                                        margin-top: 30px;
+                                        padding-top: 20px;
+                                        font-size: 12px;
+                                        color: #999;
+                                        text-align: center;
+                                        border-top: 1px solid #eee;
+                                    }}
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="title">MENTAL HEALTH RECORD UPDATE</div>
+                                    <p>Dear <strong>{recipient_name}</strong>,</p>
+                                   <p>Your Mental Health Record status has been updated to: <strong style='color:red;'>REJECTED</strong>.</p>
+                                    
+                                    <p><strong>Remarks:</strong></p>
+                                    <ul>
+                                        <li>Prescription: {mental_health_record.prescription_remarks if mental_health_record.prescription_remarks else 'No remarks provided.'}</li>
+                                        <li>Certification: {mental_health_record.certification_remarks if mental_health_record.certification_remarks else 'No remarks provided.'}</li>
+                                    </ul>
+                                    
+                                    <p>Please log in to your HealthHub Connect account for more details.</p>
+                                    <p>Best Regards,</p>
+                                    <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                                </div>
+                                <div class="footer">
+                                    <p>This is an automated message, please do not reply to this email.</p>
+                                    <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                                </div>
+                            </body>
+                            </html>
+                            """
+
+                        # Send email only if subject and html_message are defined
+                        if subject and html_message:
+                            print(f"Email subject: {subject}")
+                            try:
+                                send_mail(
+                                    subject,
+                                    '', # Empty plain text message
+                                    settings.DEFAULT_FROM_EMAIL,
+                                    [recipient_email],
+                                    html_message=html_message,
+                                    fail_silently=False,
+                                )
+                                print(f"Email notification sent successfully to {recipient_email}.")
+                                messages.info(request, f"Email notification sent to {recipient_email}.")
+                            except Exception as e:
+                                print(f"Exception caught during email sending: {e}")
+                                messages.error(request, f"Failed to send email notification: {e}")
+                        else:
+                             print("Subject or html_message not defined. Email not sent.")
+                             messages.error(request, "Failed to prepare email content.")
+
+                    else:
+                         # More specific message when user or email is not found
+                         print("Could not send email notification: User or User email not found for this record.")
+                         messages.warning(request, "Could not send email notification: User or User email not found for this record.")
+
             except MentalHealthRecord.DoesNotExist:
                 messages.error(request, "Mental health record not found.")
             except Exception as e:
                 messages.error(request, f"An error occurred: {str(e)}")
 
+        # Redirect to maintain search context if there was a search
+        if search_id:
+            return redirect(f'{request.path}?search_id={search_id}')
+        return redirect(request.path)
+
+    # --- Fetch the single record for the Submitted Records section based on search_id ---
+    fetched_student = None
+    fetched_faculty = None
+    fetched_patient = None
+    fetched_mental_health_record = None
+
+    if search_id:
+        try:
+            # Try to find a student first and get their associated patient
+            student_obj = Student.objects.filter(student_id=search_id).first()
+            if student_obj:
+                patient_obj = Patient.objects.filter(user__email=student_obj.email).first()
+                if patient_obj:
+                    fetched_student = student_obj
+                    fetched_patient = patient_obj
+                    # Fetch the mental health record using the patient object
+                    fetched_mental_health_record = MentalHealthRecord.objects.filter(patient=patient_obj).first()
+
+            # If not found as a student, try to find a faculty and their associated mental health record
+            if not fetched_mental_health_record:
+                faculty_obj = Faculty.objects.filter(faculty_id=search_id).first()
+                if faculty_obj:
+                    fetched_faculty = faculty_obj
+                    # Fetch the mental health record using the faculty object
+                    fetched_mental_health_record = MentalHealthRecord.objects.filter(faculty=faculty_obj).first()
+
+            # If a search ID was provided but no record was found (handled in template)
+            # messages.warning(request, f"No record found for ID Number: {search_id}")
+
+        except Exception as e:
+            # Handle potential errors during fetching
+            messages.error(request, f"Error fetching record for ID {search_id}: {e}")
+
     context = {
         'student_mhr_list': student_mhr_list,
         'faculty_mhr_list': faculty_mhr_list,
         'pending_count': pending_count,
-        'search_id': search_id,  # Pass search_id to template
+        'search_id': search_id,
+        'fetched_student': fetched_student,
+        'fetched_faculty': fetched_faculty,
+        'fetched_patient': fetched_patient, # Although not strictly needed in template now, keep for completeness
+        'fetched_mental_health_record': fetched_mental_health_record,
     }
 
     return render(request, 'admin/mental_health.html', context)

@@ -180,7 +180,7 @@
     <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200 w-full">
         <h3 class="font-semibold text-blue-700 mb-2">Submitted Records</h3>
         <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-            <p class="text-sm text-blue-800">Search for a student by ID to review and manage their mental health record. There are <span class="font-bold">{{ pending_count }}</span> pending records overall.</p>
+            <p class="text-sm text-blue-800">Search for a student or faculty by ID to review and manage their mental health record. There are <span class="font-bold">{{ pending_count }}</span> pending records overall.</p>
         </div>
         
         <!-- Student/Faculty ID Search Form -->
@@ -224,7 +224,7 @@
                                     <td class="p-2 font-medium">Prescription</td>
                                     <td class="p-2 text-center">
                                         {% if fetched_mental_health_record.prescription %}
-                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.prescription.url }}', '{{ fetched_student.firstname }} {{ fetched_student.lastname if fetched_student else fetched_faculty.user.get_full_name }}', 'Prescription')" class="text-blue-600 hover:underline">Preview</button>
+                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.prescription.url }}', '{% if fetched_student %}{{ fetched_student.firstname }} {{ fetched_student.lastname }}{% elif fetched_faculty %}{{ fetched_faculty.user.get_full_name }}{% endif %}', 'Prescription')" class="text-blue-600 hover:underline">Preview</button>
                                         {% else %}
                                             <span class="text-gray-400">No file uploaded</span>
                                         {% endif %}
@@ -239,7 +239,7 @@
                                     <td class="p-2 font-medium">Certification</td>
                                     <td class="p-2 text-center">
                                         {% if fetched_mental_health_record.certification %}
-                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.certification.url }}', '{{ fetched_student.firstname }} {{ fetched_student.lastname if fetched_student else fetched_faculty.user.get_full_name }}', 'Certification')" class="text-blue-600 hover:underline">Preview</button>
+                                            <button type="button" onclick="previewFile('{{ fetched_mental_health_record.certification.url }}', '{% if fetched_student %}{{ fetched_student.firstname }} {{ fetched_student.lastname }}{% elif fetched_faculty %}{{ fetched_faculty.user.get_full_name }}{% endif %}', 'Certification')" class="text-blue-600 hover:underline">Preview</button>
                                         {% else %}
                                             <span class="text-gray-400">No file uploaded</span>
                                         {% endif %}
