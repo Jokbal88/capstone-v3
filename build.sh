@@ -32,8 +32,10 @@ python manage.py collectstatic --noinput
 echo "Running database migrations..."
 python manage.py migrate --noinput || {
     echo "Migration failed. Attempting to fix migration issues..."
-    # Try to fake the problematic migration
+    # Try to fake the problematic migrations
     python manage.py migrate medical 0020_facultyrequest_is_mental_health_request_and_more --fake
+    python manage.py migrate medical 0021_rename_service_availed_admin_mentalhealthrecord_is_availing_mental_health_and_more --fake
+    python manage.py migrate medical 0022_auto_20250530_1426 --fake
     # Then run the new migration
     python manage.py migrate
 }

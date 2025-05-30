@@ -1,4 +1,4 @@
-from django.db import migrations
+from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -11,11 +11,23 @@ class Migration(migrations.Migration):
             sql="""
             DO $$
             BEGIN
-                IF NOT EXISTS (
+                -- Drop the duplicate column if it exists
+                IF EXISTS (
                     SELECT 1 
                     FROM information_schema.columns 
                     WHERE table_name='medical_mentalhealthrecord' 
                     AND column_name='is_availing_mental_health'
+                ) THEN
+                    ALTER TABLE medical_mentalhealthrecord 
+                    DROP COLUMN is_availing_mental_health;
+                END IF;
+
+                -- Rename the original column if it exists
+                IF EXISTS (
+                    SELECT 1 
+                    FROM information_schema.columns 
+                    WHERE table_name='medical_mentalhealthrecord' 
+                    AND column_name='service_availed_admin'
                 ) THEN
                     ALTER TABLE medical_mentalhealthrecord 
                     RENAME COLUMN service_availed_admin TO is_availing_mental_health;
