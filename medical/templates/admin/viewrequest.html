@@ -112,7 +112,7 @@
                                     <td class="text-center p-4">{{ request.student_first_name|title }}</td>
                                     <td class="text-center p-4">
                                          {% comment %} Link only if relevant and student exists {% endcomment %}
-                                         {% if request.student_id|length > 0 and request.student_id|isdigit %}
+                                         {% if request.student_id and request.student_id|length > 0 %}
                                              {% if request.request_type == 'Eligibility Form' %}<a href="{% url 'medical:eligibility_form' request.student_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>
                                              {% elif request.request_type == 'Medical Clearance for OJT/Practicum' %}<a href="{% url 'medical:medicalclearance' request.student_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>
                                              {% elif request.request_type == 'Medical Certificate for Intramurals' %}<a href="{% url 'medical:med_cert_for_intrams' request.student_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>

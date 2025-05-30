@@ -1763,69 +1763,35 @@ def dental_services(request):
 
 # Views for appointing students dental requests
 def dental_request(request):
-    if not request.user.is_superuser and not request.user.is_staff:
-        return HttpResponseForbidden("You don't have permission to access this page.")
+    if request.user.is_superuser or request.user.is_staff:
+        service_request = DentalRecords.objects.filter(appointed=False).select_related('patient__user')
+        
+        # Fetch and attach ID and name to each request for either student or faculty
+        for request_item in service_request:
+            request_item.user_id = "N/A"
+            request_item.user_name = "N/A"
 
-    service_request = DentalRecords.objects.all()
-
-    if request.method == "POST":
-        try:
-            request_id = request.POST.get("request_id")
-            patient_dental_request = DentalRecords.objects.get(id=request_id)
-            str_appointment_date = request.POST.get("appointment_date")
-            str_appointment_time = request.POST.get("appointment_time")
-            
-            if not str_appointment_date or not str_appointment_time:
-                raise ValueError("Appointment date and time are required")
-
-            # Combine date and time strings into a datetime object
-            appointment_datetime = datetime.strptime(f"{str_appointment_date} {str_appointment_time}", "%Y-%m-%d %H:%M")
-
-            # Convert appointment datetime to the current timezone
-            appointment_datetime = timezone.make_aware(appointment_datetime)
-
-            patient_dental_request.date_appointed = appointment_datetime
-            patient_dental_request.appointed = True
-            patient_dental_request.save()
-
-            # Send confirmation email to the student
-            patient = patient_dental_request.patient
-            patient_name = f"{patient.student.firstname} {patient.student.lastname}"
-            patient_email = patient.student.email
-            service_type = patient_dental_request.service_type
-
-            email_subject = f'Dental Appointment Scheduled'
-            email_body = f"""
-            <html>
-            <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-                <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 10px; background-color: #f9f9f9;'>
-                    <h2 style='text-align: center; color: #0056b3;'>Appointment Date Set</h2>
-                    <p>Dear <strong>{patient_name}</strong>,</p>
-                    <p>We're pleased to inform you that your appointment date has been set for {appointment_datetime.strftime("%B %d, %Y")} at {appointment_datetime.strftime("%I:%M %p")}.</p>
-                    <p>Please make sure to attend the appointment on time.</p>
-                    <p>Best Regards,</p>
-                    <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
-                </div>
-            </body>
-            </html>
-            """
-
-            send_mail(
-                email_subject,
-                '',
-                settings.EMAIL_HOST_USER,
-                [patient_email],
-                html_message=email_body,
-                fail_silently=False,
-            )
-
-            messages.success(request, "Date appointed successfully. Confirmation email sent.")
-        except DentalRecords.DoesNotExist:
-            messages.error(request, "Dental record not found.")
-        except ValueError as e:
-            messages.error(request, str(e))
-        except Exception as e:
-            messages.error(request, f"An error occurred: {str(e)}")
+            if request_item.patient and request_item.patient.user:
+                user = request_item.patient.user
+                
+                # Try to get Student info
+                try:
+                    student = Student.objects.get(email=user.email)
+                    request_item.user_id = student.student_id
+                    request_item.user_name = f"{student.lastname}, {student.firstname}"
+                except Student.DoesNotExist:
+                    # If not a student, try to get Faculty info
+                    try:
+                        faculty = Faculty.objects.get(user=user)
+                        request_item.user_id = faculty.faculty_id
+                        request_item.user_name = f"{faculty.user.last_name}, {faculty.user.first_name}"
+                    except Faculty.DoesNotExist:
+                        # User is neither student nor faculty (or not linked properly)
+                        request_item.user_id = "User ID N/A"
+                        request_item.user_name = user.get_full_name() or user.username or "Unknown User"
+            else:\n                 # Handle cases where patient or user might be missing on DentalRecord
+                 request_item.user_id = "N/A"
+                 request_item.user_name = "Patient/User Missing"
 
     return render(request, "admin/dentalrequest.html", {"service_request": service_request})
 

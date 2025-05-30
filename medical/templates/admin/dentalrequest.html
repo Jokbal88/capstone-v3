@@ -26,9 +26,8 @@
             <table class="w-full table-auto border-separate border-spacing-0">
                 <thead class="bg-[#e6e6e6] w-full">
                     <tr class="tr-header">
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Lastname</th>
-                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Firstname</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">ID Number</th>
+                        <th class="text-center p-2 xs:text-[14px] sm:text-base">Name</th>
                         <th class="text-center p-2 xs:text-[14px] sm:text-base">Service Type</th>
                         <th class="text-center p-2 xs:text-[14px] sm:text-base">Date Requested</th>
                         <th class="text-center p-2 xs:text-[14px] sm:text-base">Action</th>
@@ -39,9 +38,8 @@
                         {% if not request.date_appointed %}
                         <tr class="tr-td">
                             <input type="hidden" id="request_id" name="request_id" value="{{ request.id }}">
-                            <td class="text-center"><a href="#">{{ request.patient.student.student_id }}</a></td>
-                            <td class="text-center"><a href="#">{{ request.patient.student.lastname|title }}</a></td>
-                            <td class="text-center"><a href="#">{{ request.patient.student.firstname|title }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.user_id }}</a></td>
+                            <td class="text-center"><a href="#">{{ request.user_name|title }}</a></td>
                             <td class="text-center"><a href="#">{{ request.service_type }}</a></td>
                             <td class="text-center"><a href="#">{{ request.date_requested }}</a></td>
                             <td>
