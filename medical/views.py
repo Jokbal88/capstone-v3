@@ -730,7 +730,7 @@ def view_request(request):
                 if request_type_model == 'PatientRequest' and request_obj.patient:
                     TransactionRecord.objects.create(
                         patient=request_obj.patient,
-                        transac_type=f"Medical Document Request: {request_obj.request_type}",
+                        transac_type="Medical Document Request",  # Changed to match dropdown
                         transac_date=timezone.now()
                     )
                 elif request_type_model == 'FacultyRequest' and request_obj.faculty:
@@ -2043,37 +2043,85 @@ def check_insurance_availability(request):
 # Views for handling transactions
 def transactions_view(request):
     transaction_type = request.GET.get('type', 'all')
-    transaction_records = TransactionRecord.objects.all()
+    # Only select_related for patient and user
+    transaction_records = TransactionRecord.objects.all().select_related('patient__user')
 
     if transaction_type != 'all':
-        transaction_records = transaction_records.filter(transac_type=transaction_type)
+        if transaction_type == 'Medical Document Request':
+            transaction_records = transaction_records.filter(transac_type__startswith='Medical Document Request')
+        else:
+            transaction_records = transaction_records.filter(transac_type=transaction_type)
 
-    return render(request, 'admin/transactions.html', {'transaction_records': transaction_records})
+    # Order by date, most recent first
+    transaction_records = transaction_records.order_by('-transac_date')
+
+    # Get IDs for each record
+    for record in transaction_records:
+        if record.patient and record.patient.user:
+            try:
+                # Try to get student first
+                student = Student.objects.filter(email=record.patient.user.email).first()
+                if student:
+                    record.student_id = student.student_id
+                else:
+                    # If not a student, try to get faculty
+                    faculty = Faculty.objects.filter(user=record.patient.user).first()
+                    if faculty:
+                        record.student_id = faculty.faculty_id
+                    else:
+                        record.student_id = "N/A"
+            except Exception:
+                record.student_id = "N/A"
+
+    return render(request, 'admin/transactions.html', {
+        'transaction_records': transaction_records,
+        'transaction_type': transaction_type,
+        'filter_option': 'all'
+    })
 
 def monthly_transactions_view(request):
     if request.method == 'POST':
-        # Handle POST request
         selected_month = request.POST.get('selected_month')
         selected_year = request.POST.get('selected_year')
         transaction_type = request.POST.get('type', 'all')
 
-        # Initialize the query set
+        # Only select_related for patient and user
+        transaction_records = TransactionRecord.objects.all().select_related('patient__user')
+
         if selected_month and selected_year:
-            # Convert selected month and year to integer
             selected_month = int(selected_month)
             selected_year = int(selected_year)
-
-            # Filter transactions by the selected month and year
-            transaction_records = TransactionRecord.objects.filter(
+            transaction_records = transaction_records.filter(
                 transac_date__month=selected_month,
                 transac_date__year=selected_year
             )
-        else:
-            transaction_records = TransactionRecord.objects.all()
 
-        # Filter by transaction type if not 'all'
         if transaction_type != 'all':
-            transaction_records = transaction_records.filter(transac_type=transaction_type)
+            if transaction_type == 'Medical Document Request':
+                transaction_records = transaction_records.filter(transac_type__startswith='Medical Document Request')
+            else:
+                transaction_records = transaction_records.filter(transac_type=transaction_type)
+
+        # Order by date, most recent first
+        transaction_records = transaction_records.order_by('-transac_date')
+
+        # Get IDs for each record
+        for record in transaction_records:
+            if record.patient and record.patient.user:
+                try:
+                    # Try to get student first
+                    student = Student.objects.filter(email=record.patient.user.email).first()
+                    if student:
+                        record.student_id = student.student_id
+                    else:
+                        # If not a student, try to get faculty
+                        faculty = Faculty.objects.filter(user=record.patient.user).first()
+                        if faculty:
+                            record.student_id = faculty.faculty_id
+                        else:
+                            record.student_id = "N/A"
+                except Exception:
+                    record.student_id = "N/A"
 
         return render(request, 'admin/transactions.html', {
             'transaction_records': transaction_records,
@@ -2083,32 +2131,47 @@ def monthly_transactions_view(request):
             'transaction_type': transaction_type,
         })
     else:
-        # Handle GET request
-        print(request.GET)
         selected_month = request.GET.get('month')
         selected_year = request.GET.get('year')
         transaction_type = request.GET.get('type', 'all')
-        print("This is a line break")
-        print(selected_month)
-        print(selected_year)
-        print(transaction_type)
-        # Initialize the query set
+
+        # Only select_related for patient and user
+        transaction_records = TransactionRecord.objects.all().select_related('patient__user')
+
         if selected_month and selected_year:
-            # Convert selected month and year to integer
             selected_month = int(selected_month)
             selected_year = int(selected_year)
-
-            # Filter transactions by the selected month and year
-            transaction_records = TransactionRecord.objects.filter(
+            transaction_records = transaction_records.filter(
                 transac_date__month=selected_month,
                 transac_date__year=selected_year
             )
-        else:
-            transaction_records = TransactionRecord.objects.all()
 
-        # Filter by transaction type if not 'all'
         if transaction_type != 'all':
-            transaction_records = transaction_records.filter(transac_type=transaction_type)
+            if transaction_type == 'Medical Document Request':
+                transaction_records = transaction_records.filter(transac_type__startswith='Medical Document Request')
+            else:
+                transaction_records = transaction_records.filter(transac_type=transaction_type)
+
+        # Order by date, most recent first
+        transaction_records = transaction_records.order_by('-transac_date')
+
+        # Get IDs for each record
+        for record in transaction_records:
+            if record.patient and record.patient.user:
+                try:
+                    # Try to get student first
+                    student = Student.objects.filter(email=record.patient.user.email).first()
+                    if student:
+                        record.student_id = student.student_id
+                    else:
+                        # If not a student, try to get faculty
+                        faculty = Faculty.objects.filter(user=record.patient.user).first()
+                        if faculty:
+                            record.student_id = faculty.faculty_id
+                        else:
+                            record.student_id = "N/A"
+                except Exception:
+                    record.student_id = "N/A"
 
         month_name = calendar.month_name[selected_month]
         return render(request, 'admin/transactions.html', {
@@ -2121,19 +2184,47 @@ def monthly_transactions_view(request):
             'monthly': True
         })
 
-
 def daily_transactions_view(request):
     transaction_type = request.GET.get('type', 'all')
-    transaction_records = TransactionRecord.objects.filter(transac_date__date=date.today())
+    
+    # Only select_related for patient and user
+    transaction_records = TransactionRecord.objects.filter(
+        transac_date__date=date.today()
+    ).select_related('patient__user')
 
     if transaction_type != 'all':
-        transaction_records = transaction_records.filter(transac_type=transaction_type)
+        if transaction_type == 'Medical Document Request':
+            transaction_records = transaction_records.filter(transac_type__startswith='Medical Document Request')
+        else:
+            transaction_records = transaction_records.filter(transac_type=transaction_type)
+
+    # Order by date, most recent first
+    transaction_records = transaction_records.order_by('-transac_date')
+
+    # Get IDs for each record
+    for record in transaction_records:
+        if record.patient and record.patient.user:
+            try:
+                # Try to get student first
+                student = Student.objects.filter(email=record.patient.user.email).first()
+                if student:
+                    record.student_id = student.student_id
+                else:
+                    # If not a student, try to get faculty
+                    faculty = Faculty.objects.filter(user=record.patient.user).first()
+                    if faculty:
+                        record.student_id = faculty.faculty_id
+                    else:
+                        record.student_id = "N/A"
+            except Exception:
+                record.student_id = "N/A"
+
     today = date.today()
     month_name = calendar.month_name[today.month]
 
     return render(request, 'admin/transactions.html', {
-        'transaction_records': transaction_records, 
-        'transaction_type': transaction_type, 
+        'transaction_records': transaction_records,
+        'transaction_type': transaction_type,
         'month_name': month_name,
         'date_today': today.day,
         'year': today.year,
@@ -2355,6 +2446,48 @@ def mental_health_view(request):
                 if status_action in ['approved', 'rejected'] and mental_health_record.status != status_action:
                     mental_health_record.status = status_action
                     mhr_modified = True
+                    
+                    # Create transaction record when mental health service is approved
+                    if status_action == 'approved' and mental_health_record.is_availing_mental_health:
+                        # Get the patient from either student or faculty
+                        patient = None
+                        if mental_health_record.patient:
+                            patient = mental_health_record.patient
+                        elif mental_health_record.faculty:
+                            # Create a patient record for faculty if it doesn't exist
+                            try:
+                                patient = Patient.objects.get(user=mental_health_record.faculty.user)
+                            except Patient.DoesNotExist:
+                                patient = Patient.objects.create(
+                                    user=mental_health_record.faculty.user,
+                                    birth_date=None,  # Required field, set to None initially
+                                    age=0,  # Required field, set to 0 initially
+                                    weight=0,  # Required field, set to 0 initially
+                                    height=0,  # Required field, set to 0 initially
+                                    bloodtype='Unknown',  # Required field, set to default
+                                    allergies='None',  # Required field, set to default
+                                    medications='None',  # Required field, set to default
+                                    home_address='',  # Required field, set to empty
+                                    city='',  # Required field, set to empty
+                                    state_province='',  # Required field, set to empty
+                                    postal_zipcode='',  # Required field, set to empty
+                                    country='',  # Required field, set to empty
+                                    nationality='',  # Required field, set to empty
+                                    religion='',  # Required field, set to empty
+                                    civil_status='',  # Required field, set to empty
+                                    number_of_children=0,  # Required field, set to 0
+                                    academic_year='',  # Required field, set to empty
+                                    section='',  # Required field, set to empty
+                                    parent_guardian='',  # Required field, set to empty
+                                    parent_guardian_contact_number=''  # Required field, set to empty
+                                )
+                        
+                        if patient:
+                            TransactionRecord.objects.create(
+                                patient=patient,
+                                transac_type="Mental Health Services",
+                                transac_date=timezone.now()
+                            )
                 
                 if mhr_modified:
                     mental_health_record.save()

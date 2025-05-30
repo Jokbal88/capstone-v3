@@ -72,6 +72,7 @@
                 <option value="Dental Service">Dental Service</option>
                 <option value="Prescription Issuance">Prescription Issuance</option>
                 <option value="Emergency Health Assistance">Emergency Health Assistance</option>
+                <option value="Mental Health Services">Mental Health Services</option>
             </select>
             <!-- Button to confirm transaction search -->
              <div class="flex gap-1 w-[50%]">
@@ -85,7 +86,8 @@
             <thead class="bg-[#e6e6e6] w-full">
                 <tr class="tr-header">
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">No</th>  <!-- Table column headers -->
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Student Name</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">ID Number</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Name</th>
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Type of Transaction</th>
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Date of Transaction</th>
                 </tr>
@@ -94,7 +96,8 @@
                 {% for record in transaction_records %}
                     <tr>
                         <td class="text-center">{{ forloop.counter }}</td>  <!-- Displays the counter (record number) -->
-                        <td class="text-center">{{ record.patient }}</td>  <!-- Displays the full name of the student -->
+                        <td class="text-center">{{ record.student_id }}</td>
+                        <td class="text-center">{{ record.patient.user.first_name }} {{ record.patient.user.last_name }}</td>  <!-- Displays the full name of the student -->
                         <td class="text-center">{{ record.transac_type }}</td>  <!-- Displays the type of transaction -->
                         <td class="text-center">{{ record.transac_date }}</td>  <!-- Displays the date of transaction -->
                     </tr>
