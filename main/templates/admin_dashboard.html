@@ -289,22 +289,21 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for request in upcoming_requests %}
-                                <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
-                                    <td class="px-2 py-2">{{ request.request_type }}</td>
-                                    <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
-                                    <td class="px-2 py-2">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                                            {% if not request.approve %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
-                                            {% if request.approve %}Approved{% else %}Pending{% endif %}
+                                {% for request_data in upcoming_requests %}
+                                <tr class="{% if request_data.request.status == 'approved' %}table-success{% elif request_data.request.status == 'pending' %}table-warning{% endif %}">
+                                    <td class="text-center">{{ request_data.user_info.id }}</td>
+                                    <td>{{ request_data.user_info.name }}</td>
+                                    <td>{{ request_data.request.request_type }}</td>
+                                    <td>{{ request_data.request.date_requested|date:"F d, Y" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if request_data.request.status == 'approved' %}bg-success{% elif request_data.request.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ request_data.request.status|title }}
                                         </span>
                                     </td>
                                 </tr>
                                 {% empty %}
-                                <tr style="min-height: 48px;">
-                                    <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
+                                <tr>
+                                    <td colspan="5" class="text-center">No requests found</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -330,22 +329,21 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for request in dental_requests %}
-                                <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
-                                    <td class="px-2 py-2">{{ request.service_type }}</td>
-                                    <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
-                                    <td class="px-2 py-2">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                                            {% if not request.appointed %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
-                                            {% if request.appointed %}Appointed{% else %}Pending{% endif %}
+                                {% for request_data in dental_requests %}
+                                <tr>
+                                    <td class="text-center">{{ request_data.user_info.id }}</td>
+                                    <td>{{ request_data.user_info.name }}</td>
+                                    <td>{{ request_data.request.service_type }}</td>
+                                    <td>{{ request_data.request.date_requested|date:"F d, Y" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if request_data.request.status == 'appointed' %}bg-success{% elif request_data.request.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ request_data.request.status|title }}
                                         </span>
                                     </td>
                                 </tr>
                                 {% empty %}
-                                <tr style="min-height: 48px;">
-                                    <td colspan="4" class="px-2 py-6 text-center text-gray-400">No requests found</td>
+                                <tr>
+                                    <td colspan="5" class="text-center">No dental requests found</td>
                                 </tr>
                                 {% endfor %}
                                 <!-- Hidden placeholder row for alignment -->
@@ -413,22 +411,21 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for request in emergency_requests %}
-                                <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
-                                    <td class="px-2 py-2">{{ request.request_type }}</td>
-                                    <td class="px-2 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
-                                    <td class="px-2 py-2">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full
-                                            {% if not request.approve %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
-                                            {% if request.approve %}Approved{% else %}Pending{% endif %}
+                                {% for request_data in emergency_requests %}
+                                <tr>
+                                    <td class="text-center">{{ request_data.user_info.id }}</td>
+                                    <td>{{ request_data.user_info.name }}</td>
+                                    <td>{{ request_data.request.emergency_type }}</td>
+                                    <td>{{ request_data.request.date_requested|date:"F d, Y" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if request_data.request.status == 'approved' %}bg-success{% elif request_data.request.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ request_data.request.status|title }}
                                         </span>
                                     </td>
                                 </tr>
                                 {% empty %}
-                                <tr style="min-height: 48px;">
-                                    <td colspan="4" class="px-2 py-6 text-center text-gray-400">No records found</td>
+                                <tr>
+                                    <td colspan="5" class="text-center">No emergency requests found</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -454,18 +451,21 @@
           </tr>
         </thead>
         <tbody>
-                                {% for request in prescription_requests %}
-                                <tr class="hover:bg-blue-50 transition-colors {% if forloop.counter0|divisibleby:2 %}bg-gray-100{% endif %}" style="min-height: 48px;">
-                                    <td class="px-2 py-2">{{ request.patient.user.first_name }} {{ request.patient.user.last_name }}</td>
-                                    <td class="px-2 py-2">Prescription</td>
-                                    <td class="px-2 py-2">{{ request.date_prescribed|date:"M d, Y" }}</td>
-                                    <td class="px-2 py-2">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Completed</span>
-            </td>
-          </tr>
+                                {% for request_data in prescription_requests %}
+                                <tr>
+                                    <td class="text-center">{{ request_data.user_info.id }}</td>
+                                    <td>{{ request_data.user_info.name }}</td>
+                                    <td>{{ request_data.request.medicine_name }}</td>
+                                    <td>{{ request_data.request.date_requested|date:"F d, Y" }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if request_data.request.status == 'approved' %}bg-success{% elif request_data.request.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ request_data.request.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
                                 {% empty %}
-                                <tr style="min-height: 48px;">
-                                    <td colspan="4" class="px-2 py-6 text-center text-gray-400">No records found</td>
+                                <tr>
+                                    <td colspan="5" class="text-center">No prescription requests found</td>
           </tr>
                                 {% endfor %}
         </tbody>
