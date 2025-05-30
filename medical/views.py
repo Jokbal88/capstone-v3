@@ -1789,7 +1789,7 @@ def dental_request(request):
                         # User is neither student nor faculty (or not linked properly)
                         request_item.user_id = "User ID N/A"
                         request_item.user_name = user.get_full_name() or user.username or "Unknown User"
-            else:\n                 # Handle cases where patient or user might be missing on DentalRecord
+            else:  # Handle cases where patient or user might be missing on DentalRecord
                  request_item.user_id = "N/A"
                  request_item.user_name = "Patient/User Missing"
 
@@ -1798,28 +1798,81 @@ def dental_request(request):
 # View dental schedules
 def dental_schedule(request):
     if request.user.is_superuser or request.user.is_staff:
-        schedules = DentalRecords.objects.filter(appointed=True)
+        schedules = DentalRecords.objects.filter(appointed=True).select_related('patient__user')
+        
+        # Attach ID and name to each schedule for either student or faculty
+        for schedule in schedules:
+            schedule.id_number = "N/A"
+            schedule.name = "N/A"
+
+            if schedule.patient and schedule.patient.user:
+                user = schedule.patient.user
+                
+                # Try to get Student info
+                try:
+                    student = Student.objects.get(email=user.email)
+                    schedule.id_number = student.student_id
+                    schedule.name = f"{student.lastname}, {student.firstname}"
+                except Student.DoesNotExist:
+                    # If not a student, try to get Faculty info
+                    try:
+                        faculty = Faculty.objects.get(user=user)
+                        schedule.id_number = faculty.faculty_id
+                        schedule.name = f"{faculty.user.last_name}, {faculty.user.first_name}"
+                    except Faculty.DoesNotExist:
+                        # User is neither student nor faculty (or not linked properly)
+                        schedule.id_number = "User ID N/A"
+                        schedule.name = user.get_full_name() or user.username or "Unknown User"
+            else:  # Handle cases where patient or user might be missing on DentalRecord
+                schedule.id_number = "N/A"
+                schedule.name = "Patient/User Missing"
+
         if request.method == "POST":
             action = request.POST.get("action")
 
             if action == "done":
-                student_id = request.POST.get("student_id")
+                id_number = request.POST.get("id_number")  # Changed from student_id to id_number
                 service_type = request.POST.get("service_type")
                 
-                # Retrieve the DentalRecord object
-                dental_record = DentalRecords.objects.get(patient__student__student_id=student_id, service_type=service_type)
-                
-                # Create a TransactionRecord
-                TransactionRecord.objects.create(
-                    patient=dental_record.patient,
-                    transac_type="Dental Service",
-                    transac_date=timezone.now()
-                )
-                
-                # Delete the dental record
-                dental_record.delete()
-                
-                messages.success(request, "Marked As Done")
+                try:
+                    # Try to find the dental record by checking both student and faculty
+                    dental_record = None
+                    try:
+                        # First try to find by student
+                        student = Student.objects.get(student_id=id_number)
+                        dental_record = DentalRecords.objects.get(
+                            patient__student=student,
+                            service_type=service_type
+                        )
+                    except Student.DoesNotExist:
+                        # If not a student, try to find by faculty
+                        faculty = Faculty.objects.get(faculty_id=id_number)
+                        dental_record = DentalRecords.objects.get(
+                            patient__faculty=faculty,
+                            service_type=service_type
+                        )
+                    
+                    if dental_record:
+                        # Create a TransactionRecord
+                        TransactionRecord.objects.create(
+                            patient=dental_record.patient,
+                            transac_type="Dental Service",
+                            transac_date=timezone.now()
+                        )
+                        
+                        # Delete the dental record
+                        dental_record.delete()
+                        
+                        messages.success(request, "Marked As Done")
+                    else:
+                        messages.error(request, "Dental record not found")
+                except (Student.DoesNotExist, Faculty.DoesNotExist):
+                    messages.error(request, f"No student or faculty found with ID: {id_number}")
+                except DentalRecords.DoesNotExist:
+                    messages.error(request, "Dental record not found")
+                except Exception as e:
+                    messages.error(request, f"An error occurred: {str(e)}")
+
                 return render(request, "admin/dentalschedule.html", {"schedules": schedules})
 
             elif action == "reschedule":
@@ -1842,33 +1895,44 @@ def dental_schedule(request):
                     dental_record.date_appointed = new_appointment_datetime
                     dental_record.save()
 
-                    # Send rescheduling email to the student
-                    patient = dental_record.patient
-                    patient_name = f"{patient.student.firstname} {patient.student.lastname}"
-                    patient_email = patient.student.email
-                    service_type = dental_record.service_type
+                    # Get user info for email
+                    user = None
+                    recipient_name = ""
+                    recipient_email = ""
+                    
+                    if dental_record.patient and dental_record.patient.user:
+                        user = dental_record.patient.user
+                        try:
+                            student = Student.objects.get(email=user.email)
+                            recipient_name = f"{student.firstname} {student.lastname}"
+                            recipient_email = student.email
+                        except Student.DoesNotExist:
+                            try:
+                                faculty = Faculty.objects.get(user=user)
+                                recipient_name = faculty.user.get_full_name()
+                                recipient_email = faculty.user.email
+                            except Faculty.DoesNotExist:
+                                recipient_name = user.get_full_name() or user.username
+                                recipient_email = user.email
 
-                    email_subject = 'Dental Appointment Rescheduled'
+                    if recipient_email:
+                        email_subject = 'Dental Appointment Rescheduled'
+                        html_message = render_to_string('email/dental_reschedule_email.html', {
+                            'patient_name': recipient_name,
+                            'service_type': dental_record.service_type,
+                            'new_appointment_datetime': new_appointment_datetime,
+                        })
 
-                    # Render email template
-                    html_message = render_to_string('email/dental_reschedule_email.html', {
-                        'patient_name': patient_name,
-                        'service_type': service_type,
-                        'new_appointment_datetime': new_appointment_datetime,
-                    })
-
-                    send_mail(
-                        email_subject,
-                        '', # Plain text message is empty as we send HTML
-                        settings.EMAIL_HOST_USER,
-                        [patient_email],
-                        html_message=html_message,
-                        fail_silently=False,
-                    )
+                        send_mail(
+                            email_subject,
+                            '', # Plain text message is empty as we send HTML
+                            settings.EMAIL_HOST_USER,
+                            [recipient_email],
+                            html_message=html_message,
+                            fail_silently=False,
+                        )
 
                     messages.success(request, "Appointment rescheduled successfully. Email sent.")
-                    return render(request, "admin/dentalschedule.html", {"schedules": schedules})
-
                 except DentalRecords.DoesNotExist:
                     messages.error(request, "Dental record not found.")
                 except ValueError as e:
