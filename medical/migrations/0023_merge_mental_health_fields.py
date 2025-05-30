@@ -50,4 +50,9 @@ class Migration(migrations.Migration):
             END $$;
             """
         ),
+        migrations.AlterField(
+            model_name='mentalhealthrecord',
+            name='is_availing_mental_health',
+            field=models.BooleanField(default=False, verbose_name='Is Availing Mental Health'),
+        ),
     ] 
