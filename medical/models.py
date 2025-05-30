@@ -244,8 +244,12 @@ class MedicalRequirement(models.Model):
     reviewed_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        # Updated to use patient's user information
-        return f"Medical Requirements for {self.patient.user.get_full_name() or self.patient.user.username}"
+        if self.patient:
+            return f"Medical Requirements for {self.patient.user.get_full_name() or self.patient.user.username}"
+        elif self.faculty:
+            return f"Medical Requirements for Faculty {self.faculty.user.get_full_name() or self.faculty.user.username}"
+        else:
+            return "Medical Requirements (No patient or faculty linked)"
 
     # def delete(self, *args, **kwargs):
     #     self.chest_xray.delete(save=False)
@@ -290,18 +294,64 @@ class MedicalCertificate(models.Model):
     physically_not_able = models.BooleanField(default=False)
 
 class PatientRequest(models.Model):
+    REQUEST_STATUS = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed')
+    ]
+    
     request_id = models.AutoField(primary_key=True)
     # Link to Patient, make nullable initially
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, null=True, blank=True)
     request_type = models.CharField(max_length=100)
-    approve = models.BooleanField(default=False)
-    date_requested = models.DateTimeField()
-    date_approved = models.DateTimeField(max_length=100, blank=True, null=True)
-    is_completed = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='pending')
+    date_requested = models.DateTimeField(auto_now_add=True)
+    date_responded = models.DateTimeField(null=True, blank=True)
+    responded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='responded_requests')
+    remarks = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.request_type} request for {self.patient.user.get_full_name() or self.patient.user.username}"
+        if self.patient:
+            return f"{self.request_type} request for {self.patient.user.get_full_name() or self.patient.user.username}"
+        elif self.faculty:
+            return f"{self.request_type} request for {self.faculty.user.get_full_name() or self.faculty.user.username}"
+        else:
+            return f"{self.request_type} request for unknown user"
+
+class FacultyRequest(models.Model):
+    REQUEST_STATUS = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed')
+    ]
     
+    request_id = models.AutoField(primary_key=True)
+    faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE)
+    request_type = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='pending')
+    date_requested = models.DateTimeField(auto_now_add=True)
+    date_responded = models.DateTimeField(null=True, blank=True)
+    responded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='responded_faculty_requests')
+    remarks = models.TextField(blank=True, null=True)
+    is_urgent = models.BooleanField(default=False)
+    priority_level = models.CharField(max_length=20, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High')
+    ], default='medium')
+
+    def __str__(self):
+        return f"{self.request_type} request from {self.faculty.user.get_full_name() or self.faculty.user.username}"
+
+    class Meta:
+        verbose_name = "Faculty Request"
+        verbose_name_plural = "Faculty Requests"
+        ordering = ['-date_requested', 'is_urgent']
+
 class PrescriptionRecord(models.Model):
     # Link to Patient, make nullable initially
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)

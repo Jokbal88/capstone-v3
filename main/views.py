@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.db import models
 from main.models import Student, EmailVerification, Profile, Faculty
 from medical.models import (
     PhysicalExamination,
@@ -14,7 +15,8 @@ from medical.models import (
     PatientRequest,
     TransactionRecord,
     DentalRecords,
-    PrescriptionRecord
+    PrescriptionRecord,
+    FacultyRequest
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -816,104 +818,134 @@ def process_checkboxes(checkbox_list, other_value):
 @user_passes_test(is_admin)
 def admin_dashboard_view(request):
     # Get total patients count
-    total_patients = Patient.objects.count()
+    total_patients = medical_models.Patient.objects.count()
     
-    # Get total medical records
-    total_records = PhysicalExamination.objects.count()
+    # Get total medical records (assuming PhysicalExamination is a good proxy)
+    total_records = medical_models.PhysicalExamination.objects.count()
     
-    # Get pending requests (not approved)
-    pending_requests = PatientRequest.objects.filter(approve=False).count()
+    # Get pending requests for both PatientRequest and FacultyRequest
+    pending_patient_requests_count = medical_models.PatientRequest.objects.filter(status='pending').count()
+    pending_faculty_requests_count = medical_models.FacultyRequest.objects.filter(status='pending').count()
+    pending_requests_total = pending_patient_requests_count + pending_faculty_requests_count
     
-    # Get today's schedule count
+    # Get today's accepted requests schedule count for both models
     today = timezone.now().date()
-    todays_schedule = PatientRequest.objects.filter(
-        date_requested__date=today,
-        approve=True
+    todays_patient_schedule_count = medical_models.PatientRequest.objects.filter(
+        status='accepted',
+        date_responded__date=today
     ).count()
+    todays_faculty_schedule_count = medical_models.FacultyRequest.objects.filter(
+        status='accepted',
+        date_responded__date=today
+    ).count()
+    todays_schedule_total = todays_patient_schedule_count + todays_faculty_schedule_count
     
-    # Get all requests with patient and user information
-    upcoming_requests = PatientRequest.objects.select_related(
-        'patient',
+    # Get all requests that are not completed or rejected for upcoming requests section
+    upcoming_patient_requests = medical_models.PatientRequest.objects.select_related(
         'patient__user'
-    ).order_by('date_requested')
+    ).exclude(status__in=['completed', 'rejected']).order_by('date_requested')
+
+    upcoming_faculty_requests = medical_models.FacultyRequest.objects.select_related(
+        'faculty__user'
+    ).exclude(status__in=['completed', 'rejected']).order_by('date_requested')
+
+    # Combine and sort upcoming requests
+    all_upcoming_requests = sorted(
+        list(upcoming_patient_requests) + list(upcoming_faculty_requests),
+        key=lambda req: req.date_requested
+    )
     
-    # Get dental service requests
-    dental_requests = DentalRecords.objects.select_related(
-        'patient',
+    # Get dental service requests (pending) for dashboard display
+    dental_requests = medical_models.DentalRecords.objects.select_related(
         'patient__user'
     ).filter(appointed=False).order_by('date_requested')
     
-    # Get scheduled appointments for the calendar
-    scheduled_appointments = PatientRequest.objects.select_related(
-        'patient',
+    # Get scheduled appointments for the calendar (Accepted Patient and Faculty Requests)
+    scheduled_patient_appointments = medical_models.PatientRequest.objects.select_related(
         'patient__user'
-    ).values(
-        'date_requested',
-        'approve',
+    ).filter(status='accepted').values(
+        'date_responded',
+        'request_type',
         'patient__user__first_name',
         'patient__user__last_name',
-        'request_type'
+    )
+    
+    scheduled_faculty_appointments = medical_models.FacultyRequest.objects.select_related(
+        'faculty__user'
+    ).filter(status='accepted').values(
+        'date_responded',
+        'request_type',
+        'faculty__user__first_name',
+        'faculty__user__last_name',
     )
     
     # Format appointments for the calendar
     events = []
-    for appointment in scheduled_appointments:
-        events.append({
-            'date': appointment['date_requested'].strftime('%Y-%m-%d'),
-            'student': f"{appointment['patient__user__first_name']} {appointment['patient__user__last_name']}",
-            'service': appointment['request_type'],
-            'status': 'approved' if appointment['approve'] else 'pending'
-        })
-    
+    for appointment in scheduled_patient_appointments:
+        if appointment['date_responded']:
+            events.append({
+                'date': appointment['date_responded'].strftime('%Y-%m-%d'),
+                'title': f"{appointment['request_type']} for {appointment['patient__user__first_name']} {appointment['patient__user__last_name']}",
+                'type': 'patient'
+            })
+
+    for appointment in scheduled_faculty_appointments:
+        if appointment['date_responded']:
+            events.append({
+                'date': appointment['date_responded'].strftime('%Y-%m-%d'),
+                'title': f"{appointment['request_type']} for {appointment['faculty__user__first_name']} {appointment['faculty__user__last_name']}",
+                'type': 'faculty'
+            })
+
     # Example: Urgent cases (patients with allergies or chronic conditions)
-    urgent_cases = Patient.objects.filter(allergies__isnull=False).count()
+    urgent_cases_count = medical_models.Patient.objects.filter(
+        models.Q(allergies__isnull=False) | 
+        models.Q(physical_examination__medicalhistory__heart_disease=True)
+    ).distinct().count()
     
     # Emergency Assistance Requests
-    emergency_requests = PatientRequest.objects.select_related(
-        'patient',
+    emergency_requests = medical_models.PatientRequest.objects.select_related(
         'patient__user'
-    ).filter(request_type__icontains='emergency').order_by('date_requested')
+    ).filter(request_type__icontains='emergency').exclude(status__in=['completed', 'rejected']).order_by('date_requested')
     
     # Mental Health Requests
-    mental_health_requests = MentalHealthRecord.objects.select_related(
-        'patient',
-        'patient__user'
-    ).order_by('-date_submitted')
+    mental_health_requests = medical_models.MentalHealthRecord.objects.select_related(
+        'patient__user', 'faculty__user'
+    ).filter(status='pending').order_by('-date_submitted')
     
     # Get prescription requests
-    prescription_requests = PrescriptionRecord.objects.select_related(
-        'patient',
+    prescription_requests = medical_models.PrescriptionRecord.objects.select_related(
         'patient__user'
     ).order_by('-date_prescribed')
     
     # Notifications
     notifications = []
-    if pending_requests > 0:
-        notifications.append(f"{pending_requests} new documentary requests pending approval.")
-    if urgent_cases > 0:
-        notifications.append(f"{urgent_cases} urgent cases require attention.")
+    if pending_requests_total > 0:
+        notifications.append(f"{pending_requests_total} new requests pending (Students and Faculty).")
+    if urgent_cases_count > 0:
+        notifications.append(f"{urgent_cases_count} urgent cases require attention.")
     if emergency_requests.count() > 0:
         notifications.append(f"{emergency_requests.count()} emergency assistance requests pending.")
+    if mental_health_requests.count() > 0:
+        notifications.append(f"{mental_health_requests.count()} mental health records pending review.")
     
     # Today's Appointments
     today_str = timezone.now().strftime('%Y-%m-%d')
     todays_appointments = []
     for event in events:
         if event['date'] == today_str:
-            appt_time = event.get('time', 'All Day')
             todays_appointments.append({
-                'student': event['student'],
-                'service': event['service'],
-                'time': appt_time
+                'title': event['title'],
+                'type': event['type']
             })
     
     context = {
         'total_patients': total_patients,
         'total_records': total_records,
-        'pending_requests': pending_requests,
-        'todays_schedule': todays_schedule,
-        'urgent_cases': urgent_cases,
-        'upcoming_requests': upcoming_requests,
+        'pending_requests': pending_requests_total,
+        'todays_schedule': todays_schedule_total,
+        'urgent_cases': urgent_cases_count,
+        'upcoming_requests': all_upcoming_requests,
         'dental_requests': dental_requests,
         'emergency_requests': emergency_requests,
         'mental_health_requests': mental_health_requests,
@@ -1196,77 +1228,95 @@ def faculty_dashboard_view(request):
         # Get faculty information
         faculty = Faculty.objects.get(user=request.user)
         
-        # Get the Patient record for the faculty user
-        patient = medical_models.Patient.objects.get(user=request.user)
-        medical_profile_incomplete = not patient.examination
-    except (Faculty.DoesNotExist, medical_models.Patient.DoesNotExist):
+        # Get the Patient record for the faculty user (may not exist or be complete)
+        patient = medical_models.Patient.objects.filter(user=request.user).first()
+        medical_profile_incomplete = patient is None or not patient.examination
+    except Faculty.DoesNotExist:
         messages.error(request, 'Faculty profile not found.')
         return redirect('main:login')
 
-    # Get total students count
+    # Get total students count (assuming this is relevant for a faculty dashboard)
     total_students = Student.objects.count()
     
-    # Get pending requests
-    pending_requests = PatientRequest.objects.filter(approve=False).count()
+    # Get pending requests (assuming this includes both student and faculty requests)
+    pending_requests = PatientRequest.objects.filter(status='pending').count()
     
-    # Get today's appointments
+    # Get today's appointments (assuming this might include faculty-related appointments if implemented)
     today = timezone.now().date()
-    todays_appointments = PatientRequest.objects.filter(
+    # This currently only counts PatientRequest with status='accepted', which are student requests based on current implementation
+    # If faculty appointments are stored elsewhere, this needs adjustment.
+    todays_appointments_count = PatientRequest.objects.filter(
         date_requested__date=today,
-        approve=True
+        status='accepted'
     ).count()
-    
-    # Get recent requests with student information
+
+    # Get recent requests (both student and faculty), optimizing related lookups
     recent_requests = PatientRequest.objects.select_related(
-        'patient__user'
+        'patient__user', 'faculty__user'
     ).order_by('-date_requested')[:10]
     
-    # Get appointments for calendar
+    # Get appointments for calendar (both student and faculty)
+    # This currently only fetches PatientRequest with status='accepted', which are student requests
     appointments = PatientRequest.objects.select_related(
-        'patient__user'
-    ).filter(approve=True).order_by('date_requested')
+        'patient__user', 'faculty__user'
+    ).filter(status='accepted').order_by('date_requested')
     
     # Format appointments for the calendar
     calendar_events = []
     for appointment in appointments:
-        try:
-            student = Student.objects.get(email=appointment.patient.user.email)
-            calendar_events.append({
-                'title': f"{student.firstname} {student.lastname}",
-                'start': appointment.date_requested.strftime('%Y-%m-%d'),
-                'description': appointment.request_type
-            })
-        except Student.DoesNotExist:
-            continue  # Skip if student not found
+        user_name = "Unknown User"
+        if appointment.patient:
+            user_name = f"{appointment.patient.user.first_name} {appointment.patient.user.last_name}"
+        elif appointment.faculty:
+            user_name = f"{appointment.faculty.user.first_name} {appointment.faculty.user.last_name}"
+
+        calendar_events.append({
+            'title': f"{user_name} - {appointment.request_type}",
+            'start': appointment.date_requested.strftime('%Y-%m-%d'),
+            'description': appointment.request_type
+        })
     
-    # Get faculty's medical information
-    physical_exam = patient.examination if patient.examination else None
+    # Get faculty's medical information (handle cases where patient or examination might not exist)
+    physical_exam = None
     medical_history = None
     family_history = None
     risk_assessment = None
 
-    if physical_exam:
+    if patient and patient.examination:
         try:
-            medical_history = medical_models.MedicalHistory.objects.get(examination=physical_exam)
-            family_history = medical_models.FamilyMedicalHistory.objects.get(examination=physical_exam)
-            risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+            physical_exam = patient.examination
+            medical_history = medical_models.MedicalHistory.objects.filter(examination=physical_exam).first()
+            family_history = medical_models.FamilyMedicalHistory.objects.filter(examination=physical_exam).first()
         except (medical_models.MedicalHistory.DoesNotExist, 
-                medical_models.FamilyMedicalHistory.DoesNotExist,
-                medical_models.RiskAssessment.DoesNotExist):
-            pass
-    
+                medical_models.FamilyMedicalHistory.DoesNotExist):
+            pass # Handle gracefully if history records are missing
+
+    if patient:
+         try:
+             # Risk assessment is linked to Patient through clearance field
+             risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+         except medical_models.RiskAssessment.DoesNotExist:
+             pass # Handle gracefully if risk assessment is missing
+
+    # Assuming you might also want to display faculty's own medical requirements or mental health records
+    # These are linked directly to the Faculty model
+    faculty_medical_requirements = medical_models.MedicalRequirement.objects.filter(faculty=faculty).first()
+    faculty_mental_health_record = medical_models.MentalHealthRecord.objects.filter(faculty=faculty).first()
+
     context = {
         'faculty': faculty,
-        'patient': patient,
+        'patient': patient, # Include patient object for potentially incomplete medical info
         'medical_history': medical_history,
         'family_history': family_history,
         'risk_assessment': risk_assessment,
         'physical_exam': physical_exam,
+        'faculty_medical_requirements': faculty_medical_requirements,
+        'faculty_mental_health_record': faculty_mental_health_record,
         'total_students': total_students,
-        'pending_requests': pending_requests,
-        'todays_appointments': todays_appointments,
+        'pending_requests_count': pending_requests, # Renamed to avoid conflict
+        'todays_appointments_count': todays_appointments_count, # Renamed to avoid conflict
         'recent_requests': recent_requests,
-        'appointments': calendar_events,
+        'calendar_events': calendar_events, # Renamed to avoid conflict
         'medical_profile_incomplete': medical_profile_incomplete,
     }
     

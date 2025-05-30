@@ -1,109 +1,222 @@
-{% extends 'mainv2.html' %} 
-{% load static tailwind_tags %} 
-{% block title %}HealthHub Connect | Patient Profile{% endblock %} 
+{% extends 'mainv2.html' %}
+{% load static tailwind_tags %}
+{% block title %}HealthHub Connect | Patient Profile{% endblock %}
 {% block extra_css %}
 {% tailwind_css %}
+<style>
+    .tab-button.active {
+        background-color: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    .tab-button {
+        transition: all 0.2s ease-in-out;
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+    .filter-input {
+        width: 100%;
+        padding: 0.25rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
-  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4 mb-2">
-    <div>
-      <h2 class="font-bold text-2xl text-gray-800">Patient Profile</h2>
-      <p class="text-gray-500 text-sm">Search and view patient records</p>
+<div class="w-full h-screen rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-4">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b pb-4">
+        <div>
+            <h2 class="font-bold text-2xl text-gray-800">Patient Profile</h2>
+            <p class="text-gray-500 text-sm">Search and view registered students and faculty with patient records</p>
+        </div>
+        <div class="flex gap-2">
+            <button type="button" class="tab-button border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md active text-sm md:text-base" onclick="showTab('students')">Students</button>
+            <button type="button" class="tab-button border border-[#cccccc] p-2 xs:w-full md:w-[10rem] rounded-md text-sm md:text-base" onclick="showTab('faculty')">Faculty</button>
+        </div>
     </div>
-    <form method="POST" class="flex items-center gap-2 w-full md:w-auto">
-      {% csrf_token %}
-      <input class="p-2 border border-gray-300 rounded-md w-full md:w-64 text-base focus:ring-2 focus:ring-blue-200" type="text" name="student_id" placeholder="Enter ID to search" />
-      <button class="bg-blue-500 hover:bg-blue-600 text-white text-base px-4 py-2 rounded-md transition-colors" type="submit">Search</button>
-    </form>
-  </div>
-  <div class="overflow-x-auto">
-    <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow-lg text-lg">
-      <thead class="bg-gray-100">
-        <tr>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Student ID</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Degree</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Year Level</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Sex</th>
-          <th class="text-center p-4 text-lg font-semibold text-gray-700">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for patient in patients %}
-        <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
-          <td class="text-center p-4">
-            <span class="text-black">
-              {% if patient.user.student %}
-                {{ patient.user.student.student_id }}
-              {% elif patient.user.faculty %}
-                {{ patient.user.faculty.faculty_id }}
-              {% else %}
-                {{ patient.user.username }}
-              {% endif %}
-            </span>
-          </td>
-          <td class="text-center p-4">
-            <span class="text-black">{{ patient.user.last_name|title }}</span>
-          </td>
-          <td class="text-center p-4">
-            <span class="text-black">{{ patient.user.first_name|title }}</span>
-          </td>
-          <td class="text-center p-4">
-            <span class="text-black">
-              {% if patient.user.student %}
-                {{ patient.user.student.degree }}
-              {% elif patient.user.faculty %}
-                {{ patient.user.faculty.department }}
-              {% else %}
-                N/A
-              {% endif %}
-            </span>
-          </td>
-          <td class="text-center p-4">
-            <span class="text-black">
-              {% if patient.user.student %}
-                {{ patient.user.student.year_level }}
-              {% elif patient.user.faculty %}
-                {{ patient.user.faculty.position }}
-              {% else %}
-                N/A
-              {% endif %}
-            </span>
-          </td>
-          <td class="text-center p-4">
-            <span class="text-black">
-              {% if patient.user.student %}
-                {{ patient.user.student.sex }}
-              {% elif patient.user.faculty %}
-                {{ patient.user.faculty.sex }}
-              {% else %}
-                N/A
-              {% endif %}
-            </span>
-          </td>
-          <td class="text-center p-4">
-            {% if patient.user.student %}
-              <a href="{% url 'medical:physical_exam' patient.user.student.student_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors">View</a>
-            {% elif patient.user.faculty %}
-              <a href="{% url 'medical:physical_exam' patient.user.faculty.faculty_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors">View</a>
-            {% else %}
-              <span class="text-gray-500">N/A</span>
-            {% endif %}
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="7" class="text-center p-4 text-gray-500">No patients found</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
 
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="p-4 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="POST" class="flex items-center gap-2 w-full md:w-auto mb-4">
+        {% csrf_token %}
+        <input class="p-2 border border-gray-300 rounded-md w-full md:w-64 text-base focus:ring-2 focus:ring-blue-200" type="text" name="search_id" placeholder="Enter ID to search" />
+        <button class="bg-blue-500 hover:bg-blue-600 text-white text-base px-4 py-2 rounded-md transition-colors" type="submit">Search</button>
+    </form>
+
+    <div class="h-full w-full overflow-auto">
+        <!-- Students Tab -->
+        <div class="h-fit max-h-full w-full tab-content active" id="students">
+            <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Registered Students</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow-lg text-lg">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Student ID <br><input type="text" class="filter-input" data-col-index="0" placeholder="Filter ID"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname <br><input type="text" class="filter-input" data-col-index="1" placeholder="Filter Lastname"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname <br><input type="text" class="filter-input" data-col-index="2" placeholder="Filter Firstname"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Degree <br><input type="text" class="filter-input" data-col-index="3" placeholder="Filter Degree"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Year Level <br><input type="text" class="filter-input" data-col-index="4" placeholder="Filter Year"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Sex <br><input type="text" class="filter-input" data-col-index="5" placeholder="Filter Sex"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Patient Profile Complete</th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in students %}
+                        <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
+                            <td class="text-center p-4">{{ item.student.student_id }}</td>
+                            <td class="text-center p-4">{{ item.student.lastname|title }}</td>
+                            <td class="text-center p-4">{{ item.student.firstname|title }}</td>
+                            <td class="text-center p-4">{{ item.student.degree }}</td>
+                            <td class="text-center p-4">{{ item.student.year_level }}</td>
+                            <td class="text-center p-4">{{ item.student.sex }}</td>
+                            <td class="text-center p-4">
+                                {% if item.patient and item.patient.examination %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Yes</span>
+                                {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center p-4">
+                                {% if item.patient %}
+                                    <a href="{% url 'medical:physical_exam' item.student.student_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded shadow transition-colors text-sm">View Profile</a>
+                                {% else %}
+                                    <a href="{% url 'medical:patient_basic_info' item.student.student_id %}" class="inline-block bg-yellow-500 hover:bg-yellow-700 text-white font-semibold py-1 px-3 rounded shadow transition-colors text-sm">Create Profile</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center p-4 text-gray-500">No students found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Faculty Tab -->
+        <div class="h-fit max-h-full w-full tab-content" id="faculty" style="display:none;">
+            <h3 class="font-medium xs:text-base sm:text-[1.3rem] mb-2">Registered Faculty</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow-lg text-lg">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Faculty ID <br><input type="text" class="filter-input" data-col-index="0" placeholder="Filter ID"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname <br><input type="text" class="filter-input" data-col-index="1" placeholder="Filter Lastname"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname <br><input type="text" class="filter-input" data-col-index="2" placeholder="Filter Firstname"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Department <br><input type="text" class="filter-input" data-col-index="3" placeholder="Filter Department"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Position <br><input type="text" class="filter-input" data-col-index="4" placeholder="Filter Position"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Sex <br><input type="text" class="filter-input" data-col-index="5" placeholder="Filter Sex"></th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Patient Profile Complete</th>
+                            <th class="text-center p-4 text-lg font-semibold text-gray-700">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in faculty %}
+                        <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
+                            <td class="text-center p-4">{{ item.faculty.faculty_id }}</td>
+                            <td class="text-center p-4">{{ item.faculty.user.last_name|title }}</td>
+                            <td class="text-center p-4">{{ item.faculty.user.first_name|title }}</td>
+                            <td class="text-center p-4">{{ item.faculty.department }}</td>
+                            <td class="text-center p-4">{{ item.faculty.position }}</td>
+                            <td class="text-center p-4">{{ item.faculty.sex }}</td>
+                            <td class="text-center p-4">
+                                {% if item.patient and item.patient.examination %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Yes</span>
+                                {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center p-4">
+                                {% if item.patient %}
+                                    <a href="{% url 'medical:physical_exam' item.faculty.faculty_id %}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded shadow transition-colors text-sm">View Profile</a>
+                                {% else %}
+                                    <span class="text-gray-500 text-sm">N/A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center p-4 text-gray-500">No faculty found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
 {% block extra_js %}
+<script>
+    function showTab(tabId) {
+        var tabs = document.querySelectorAll('.tab-button');
+        var contents = document.querySelectorAll('.tab-content');
+        tabs.forEach(function(tab) {
+            tab.classList.remove('active');
+        });
+        contents.forEach(function(content) {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        });
+        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tabId).style.display = 'block';
+        document.querySelector('.tab-button[onclick="showTab(\'' + tabId + '\')"]').classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize based on hash or default to 'students'
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialTab = urlParams.get('tab') || 'students';
+        showTab(initialTab);
+
+        // Filter functionality
+        function attachFilterListeners(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+
+            const filterInputs = table.querySelectorAll('.filter-input');
+
+            filterInputs.forEach(input => {
+                input.addEventListener('keyup', function() {
+                    const filterValue = this.value.toLowerCase();
+                    const colIndex = parseInt(this.dataset.colIndex);
+                    const rows = table.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const cell = row.querySelectorAll('td')[colIndex];
+                        if (cell) {
+                            const cellText = cell.textContent.toLowerCase();
+                            if (cellText.includes(filterValue)) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            });
+        }
+
+        attachFilterListeners('students');
+        attachFilterListeners('faculty');
+    });
+</script>
 {% endblock %}

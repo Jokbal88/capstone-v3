@@ -17,7 +17,8 @@ from .models import (
     MedicalClearance,
     EligibilityForm,
     MedicalCertificate,
-    MentalHealthRecord
+    MentalHealthRecord,
+    FacultyRequest
 )
 
 # Register your models here.
@@ -31,14 +32,23 @@ from .models import (
 class StudentAdmin(admin.ModelAdmin):
     list_display = ('student_id', 'lastname', 'firstname', 'middlename', 'sex')
     ordering = ('lastname',)
+    search_fields = ('student_id',)
 
 class DentalRecordsAdmin(admin.ModelAdmin):
     list_display = ('patient', 'service_type', 'date_requested', 'date_appointed')
     ordering = ('date_requested',)
 
-class StudentRequestAdmin(admin.ModelAdmin):
-    list_display = ('patient', 'request_type', 'approve', 'date_requested', 'date_approved')
+class PatientRequestAdmin(admin.ModelAdmin):
+    list_display = ('patient', 'request_type', 'status', 'date_requested', 'date_responded')
     ordering = ('date_requested',)
+    list_filter = ('status', 'request_type')
+    search_fields = ('patient__user__first_name', 'patient__user__last_name', 'request_type')
+
+class FacultyRequestAdmin(admin.ModelAdmin):
+    list_display = ('faculty', 'request_type', 'status', 'is_urgent', 'priority_level', 'date_requested', 'date_responded')
+    ordering = ('-is_urgent', 'date_requested',)
+    list_filter = ('status', 'request_type', 'is_urgent', 'priority_level')
+    search_fields = ('faculty__user__first_name', 'faculty__user__last_name', 'request_type')
 
 class EmergencyHealthAssistanceRecordAdmin(admin.ModelAdmin):
     list_display = ('patient', 'reason', 'date_assisted')
@@ -50,13 +60,18 @@ class PrescriptionRecordAdmin(admin.ModelAdmin):
 class TransactionRecordAdmin(admin.ModelAdmin):
     list_display = ('patient', 'transac_type', 'transac_date')
 
+class MedicalRequirementAdmin(admin.ModelAdmin):
+    list_display = ('patient', 'faculty', 'status', 'reviewed_by', 'reviewed_date')
+    search_fields = ('patient__user__username', 'faculty__faculty_id')
+
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Patient)
 admin.site.register(PhysicalExamination)
 admin.site.register(MedicalClearance)
 admin.site.register(RiskAssessment)
-admin.site.register(MedicalRequirement)
-admin.site.register(PatientRequest, StudentRequestAdmin)
+admin.site.register(MedicalRequirement, MedicalRequirementAdmin)
+admin.site.register(PatientRequest, PatientRequestAdmin)
+admin.site.register(FacultyRequest, FacultyRequestAdmin)
 admin.site.register(PrescriptionRecord, PrescriptionRecordAdmin)
 admin.site.register(TransactionRecord, TransactionRecordAdmin)
 admin.site.register(EmergencyHealthAssistanceRecord, EmergencyHealthAssistanceRecordAdmin)

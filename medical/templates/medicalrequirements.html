@@ -103,8 +103,8 @@
     {% if user.is_superuser or user.is_staff %}
         <form method="GET" class="flex gap-4 mb-4">
             {% csrf_token %}
-            <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
-            <button type="submit" name="search_student" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
+            <input type="text" name="id_number" placeholder="Search by ID Number" class="w-full p-2 border rounded-md">
+            <button type="submit" name="search" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
                 Search
             </button>
         </form>
@@ -120,12 +120,22 @@
             <div><span class="font-semibold">Email:</span> {{ student.email }}</div>
         </div>
     </div>
-                    {% endif %}
+    {% elif faculty %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4 flex flex-col gap-3 text-lg">
+        <div class="flex flex-wrap gap-6">
+            <div><span class="font-semibold">ID Number:</span> {{ faculty.faculty_id }}</div>
+            <div><span class="font-semibold">Name:</span> {{ faculty.user.get_full_name|default:faculty.user.username }}</div>
+            <div><span class="font-semibold">Department:</span> {{ faculty.department|default:'N/A' }}</div>
+            <div><span class="font-semibold">Position:</span> {{ faculty.position|default:'N/A' }}</div>
+            <div><span class="font-semibold">Email:</span> {{ faculty.user.email|default:'N/A' }}</div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="bg-[#f8fafc] rounded-lg p-4 mb-2 border border-gray-200">
         <h3 class="font-semibold text-blue-700 mb-2">Required Medical Documents</h3>
         <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-            <p class="text-sm text-blue-800">Please review and update all required medical documents for students. These are essential for ensuring the health and safety of all students.</p>
+            <p class="text-sm text-blue-800">Please review and update all required medical documents for students and faculty. These are essential for ensuring the health and safety of all.</p>
         </div>
         <form method="POST">
             {% csrf_token %}

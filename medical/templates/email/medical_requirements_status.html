@@ -1,0 +1,26 @@
+<html>
+<head>
+</head>
+<body>
+    <div>
+        <h2>MEDICAL REQUIREMENTS {{ status_text }}</h2>
+        <p>Dear <strong>{{ recipient_name }}</strong>,</p>
+        <p>Your uploaded medical requirements have been <strong>{{ status_text }}</strong>.</p>
+        <div>
+            <h4>Reviewer Remarks:</h4>
+            <p><strong>Chest X-ray:</strong> {{ med_requirements.x_ray_remarks|default:'None' }}</p>
+            <p><strong>Complete Blood Count (CBC):</strong> {{ med_requirements.cbc_remarks|default:'None' }}</p>
+            <p><strong>Drug Test:</strong> {{ med_requirements.drug_test_remarks|default:'None' }}</p>
+            <p><strong>Stool Examination:</strong> {{ med_requirements.stool_examination_remarks|default:'None' }}</p>
+            <p><strong>PWD Card:</strong> {{ med_requirements.pwd_card_remarks|default:'None' }}</p>
+        </div>
+        <p>You can view your updated medical requirements status on the HealthHub Connect portal.</p>
+        <p>Best regards,</p>
+        <p><strong>HealthHub Connect Team</strong></p>
+    </div>
+    <div>
+        <p>This is an automated message, please do not reply to this email.</p>
+        <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+    </div>
+</body>
+</html> 

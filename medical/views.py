@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.db import models  # Add this import
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.contrib import messages
@@ -7,6 +8,7 @@ from datetime import datetime
 from datetime import date
 from django.utils import timezone
 from datetime import timedelta  
+from django.contrib.auth.models import User
 from . models import(
     Patient,
     MedicalClearance,
@@ -24,7 +26,8 @@ from . models import(
     EmergencyHealthAssistanceRecord,
     PrescriptionRecord,
     MedicalCertificate,
-    MentalHealthRecord
+    MentalHealthRecord,
+    FacultyRequest
 )
 from django.core.mail import send_mail
 from django.conf import settings
@@ -45,7 +48,6 @@ def is_admin(user):
 
 # Patient's basic information
 def patient_basic_info(request, student_id):
-    from django.contrib.auth.models import User
     student = Student.objects.get(student_id=student_id)
     user = User.objects.get(email=student.email)
     if Patient.objects.filter(user=user).exists():
@@ -160,7 +162,7 @@ def medicalclearance_view(request, student_id):
                 med_requirements.vaccinated_booster = vaccinated_booster
                 med_requirements.x_ray_remarks = x_ray_remarks
                 med_requirements.cbc_remarks = cbc_remarks
-                med_requirements.drug_test = drug_test_remarks
+                med_requirements.drug_test_remarks = drug_test_remarks
                 med_requirements.stool_examination_remarks = stool_examination_remarks
                 med_requirements.pwd_card_remarks = request.POST.get("pwd-card-remark")
                 med_requirements.save()
@@ -343,22 +345,85 @@ def eligibilty_form(request, student_id):
 # List of student for patient profile
 def patient_profile(request):
     if request.user.is_superuser or request.user.is_staff:
-        # Get all patients ordered by user's last name
-        patients = Patient.objects.select_related('user').order_by('user__last_name')
-        
-        if request.method == "POST":
-            student_id = request.POST.get("student_id")
+        # Get all students and faculty, ordered by name
+        all_students = Student.objects.all().order_by('lastname', 'firstname')
+        all_faculty = Faculty.objects.all().select_related('user').order_by('user__last_name', 'user__first_name')
+
+        students_list = []
+        for student in all_students:
             try:
-                # Try to find a student with this ID
-                student = Student.objects.get(student_id=student_id)
-                # Get the user associated with this student
+                # Get user by email from Student model
                 user = User.objects.get(email=student.email)
-                # Get the patient associated with this user
-                patient = Patient.objects.filter(user=user)
-                return render(request, "admin/patientprofile.html", {"patients": patient})
-            except (Student.DoesNotExist, User.DoesNotExist):
-                return render(request, "admin/patientprofile.html", {"patients": patients})
-        return render(request, "admin/patientprofile.html", {"patients": patients})
+                # Get patient record if it exists
+                patient = Patient.objects.filter(user=user).first()
+                students_list.append({
+                    'student': student,
+                    'patient': patient
+                })
+            except User.DoesNotExist:
+                # Handle case where student doesn't have a user account
+                students_list.append({
+                    'student': student,
+                    'patient': None
+                })
+
+        faculty_list = []
+        for faculty in all_faculty:
+            try:
+                # Faculty model has a direct ForeignKey to User
+                user = faculty.user
+                # Get patient record if it exists
+                patient = Patient.objects.filter(user=user).first()
+                faculty_list.append({
+                    'faculty': faculty,
+                    'patient': patient
+                })
+            except AttributeError:
+                # Handle case where faculty doesn't have a user account
+                faculty_list.append({
+                    'faculty': faculty,
+                    'patient': None
+                })
+
+        if request.method == "POST":
+            search_id = request.POST.get("search_id")
+            filtered_students = []
+            filtered_faculty = []
+
+            if search_id:
+                # Try to find a student first
+                try:
+                    student = Student.objects.get(student_id=search_id)
+                    user = User.objects.get(email=student.email)
+                    patient = Patient.objects.filter(user=user).first()
+                    filtered_students.append({
+                        'student': student,
+                        'patient': patient
+                    })
+                    messages.info(request, f"Found student with ID: {search_id}")
+                except (Student.DoesNotExist, User.DoesNotExist):
+                    # If not found as a student, try finding as faculty
+                    try:
+                        faculty = Faculty.objects.get(faculty_id=search_id)
+                        user = faculty.user
+                        patient = Patient.objects.filter(user=user).first()
+                        filtered_faculty.append({
+                            'faculty': faculty,
+                            'patient': patient
+                        })
+                        messages.info(request, f"Found faculty with ID: {search_id}")
+                    except (Faculty.DoesNotExist, AttributeError):
+                        messages.warning(request, f"No student or faculty found with ID: {search_id}")
+                # If a search ID was provided, only show the filtered results
+                students_list = filtered_students
+                faculty_list = filtered_faculty
+            else:
+                messages.info(request, "Displaying all registered patients.")
+
+        return render(request, "admin/patientprofile.html", {
+            "students": students_list,
+            "faculty": faculty_list
+        })
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
 
@@ -367,425 +432,546 @@ def view_request(request):
     if not request.user.is_superuser and not request.user.is_staff:
         return HttpResponseForbidden("You don't have permission to access this page.")
     
-    patient_requests = PatientRequest.objects.all()
+    # Fetch all patient requests and filter by status
+    pending_patient_requests = PatientRequest.objects.select_related('patient__user').filter(
+        status='pending'
+    )
+    accepted_patient_requests = PatientRequest.objects.select_related('patient__user').filter(
+        status='accepted'
+    )
+    completed_patient_requests = PatientRequest.objects.select_related('patient__user').filter(
+        status='completed'
+    )
+
+    # Fetch all faculty requests and filter by status
+    pending_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='pending')
+    accepted_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='accepted')
+    completed_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='completed')
+
+    # Ensure unique requests
+    pending_patient_requests = pending_patient_requests.distinct()
+    accepted_patient_requests = accepted_patient_requests.distinct()
+    completed_patient_requests = completed_patient_requests.distinct()
+    pending_faculty_requests = pending_faculty_requests.distinct()
+    accepted_faculty_requests = accepted_faculty_requests.distinct()
+    completed_faculty_requests = completed_faculty_requests.distinct()
+    
+    # Attach student/faculty ID and names to each request object for easier access in template
+    from main.models import Student, Faculty
+
+    for request_obj in pending_patient_requests:
+        if request_obj.patient and request_obj.patient.user:
+            try:
+                student = Student.objects.get(email=request_obj.patient.user.email)
+                request_obj.student_id = student.student_id
+                request_obj.student_first_name = student.firstname
+                request_obj.student_last_name = student.lastname
+            except Student.DoesNotExist:
+                request_obj.student_id = "N/A"
+                request_obj.student_first_name = "N/A"
+                request_obj.student_last_name = "N/A"
+
+    for request_obj in accepted_patient_requests:
+         if request_obj.patient and request_obj.patient.user:
+            try:
+                student = Student.objects.get(email=request_obj.patient.user.email)
+                request_obj.student_id = student.student_id
+                request_obj.student_first_name = student.firstname
+                request_obj.student_last_name = student.lastname
+            except Student.DoesNotExist:
+                request_obj.student_id = "N/A"
+                request_obj.student_first_name = "N/A"
+                request_obj.student_last_name = "N/A"
+
+    for request_obj in completed_patient_requests:
+         if request_obj.patient and request_obj.patient.user:
+            try:
+                student = Student.objects.get(email=request_obj.patient.user.email)
+                request_obj.student_id = student.student_id
+                request_obj.student_first_name = student.firstname
+                request_obj.student_last_name = student.lastname
+            except Student.DoesNotExist:
+                request_obj.student_id = "N/A"
+                request_obj.student_first_name = "N/A"
+                request_obj.student_last_name = "N/A"
+
+    for request_obj in pending_faculty_requests:
+        if request_obj.faculty:
+            request_obj.faculty_id = request_obj.faculty.faculty_id
+        else:
+            request_obj.faculty_id = "N/A"
+            
+    for request_obj in accepted_faculty_requests:
+        if request_obj.faculty:
+            request_obj.faculty_id = request_obj.faculty.faculty_id
+        else:
+            request_obj.faculty_id = "N/A"
+
+    for request_obj in completed_faculty_requests:
+        if request_obj.faculty:
+            request_obj.faculty_id = request_obj.faculty.faculty_id
+        else:
+            request_obj.faculty_id = "N/A"
+
     
     if request.method == "POST":
         request_id = request.POST.get("request_id")
-        request_type = request.POST.get("request_type")
+        request_type_model = request.POST.get("request_type_model") # 'PatientRequest' or 'FacultyRequest'
         action = request.POST.get("action")
-        
-        patient_request = get_object_or_404(PatientRequest, request_id=request_id, request_type=request_type)
-        
+        remarks = request.POST.get("remarks") # Get remarks from the form
+
         try:
-            if action == "approve":
-                patient_request.approve = True
-                patient_request.date_approved = timezone.now()
-                patient_request.save()
-                messages.success(request, "Marked as approved")
+            if request_type_model == 'PatientRequest':
+                request_obj = get_object_or_404(PatientRequest, request_id=request_id)
+            elif request_type_model == 'FacultyRequest':
+                request_obj = get_object_or_404(FacultyRequest, request_id=request_id)
+            else:
+                messages.error(request, "Invalid request type.")
+                return redirect('medical:viewrequest')
+
+            if action == "accept":
+                request_obj.status = 'accepted'
+                request_obj.date_responded = timezone.now()
+                request_obj.responded_by = request.user
+                request_obj.remarks = remarks
+                request_obj.save()
+                messages.success(request, "Request marked as accepted")
+
+                # Send acceptance email
+                user = None
+                if request_type_model == 'PatientRequest' and request_obj.patient and request_obj.patient.user:
+                    user = request_obj.patient.user
+                elif request_type_model == 'FacultyRequest' and request_obj.faculty and request_obj.faculty.user:
+                    user = request_obj.faculty.user
                 
-                # Send approval email
-                patient = patient_request.patient.student
-                patient_name = f"{patient.firstname} {patient.lastname}"
-                patient_email = patient.email
-                
-                # Construct approval email body using HTML template
-                approval_email_subject = 'Your Document Request Has Been Approved'
-                approval_email_body = f"""
-                    <html>
-                    <head>
-                        <style>
-                            body {{
-                                font-family: Arial, sans-serif;
-                                line-height: 1.6;
-                                color: #333;
-                                margin: 0;
-                                padding: 20px;
-                                background-color: #f4f4f4;
-                                text-align: center;
-                            }}
-                            .container {{
-                                max-width: 600px;
-                                margin: 0 auto;
-                                background-color: #fff;
-                                padding: 30px;
-                                border-radius: 8px;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                text-align: left;
-                            }}
-                            .title {{
-                                text-align: center;
-                                font-size: 24px;
-                                color: #0056b3;
-                                margin-bottom: 20px;
-                                padding-bottom: 15px;
-                                border-bottom: 1px solid #eee;
-                            }}
-                             p {{
-                                margin-bottom: 15px;
-                            }}
-                             .footer {{
-                                margin-top: 30px;
-                                padding-top: 20px;
-                                font-size: 12px;
-                                color: #999;
-                                text-align: center;
-                                border-top: 1px solid #eee;
-                            }}
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="title">REQUEST APPROVAL</div>
-                            <p>Dear <strong>{patient_name}</strong>,</p>
-                            <p>We're pleased to inform you that your document request for <strong>'{request_type}'</strong> has been <strong style='color:green;'>APPROVED</strong>.</p>
-                            <p>Please proceed to the Kahimsug Clinic for the necessary examination and to claim the printed copy of your document.</p>
-                            <p>Best Regards,</p>
-                            <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
-                        </div>
-                         <div class="footer">
-                            <p>This is an automated message, please do not reply to this email.</p>
-                            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                        </div>
-                    </body>
-                    </html>
-                """
-                
-                send_mail(
-                    approval_email_subject,
-                    '',
-                    settings.EMAIL_HOST_USER,
-                    [patient_email],
-                    html_message=approval_email_body,  # Send email as HTML
-                    fail_silently=False,
-                )
-                
+                if user and user.email:
+                    approval_email_subject = f'{request_obj.request_type} Request Accepted'
+                    approval_email_body = f"""
+                        <html>
+                        <head>
+                            <style>
+                                body {{
+                                    font-family: Arial, sans-serif;
+                                    line-height: 1.6;
+                                    color: #333;
+                                    margin: 0;
+                                    padding: 20px;
+                                    background-color: #f4f4f4;
+                                    text-align: center;
+                                }}
+                                .container {{
+                                    max-width: 600px;
+                                    margin: 0 auto;
+                                    background-color: #fff;
+                                    padding: 30px;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                    text-align: left;
+                                }}
+                                .title {{
+                                    text-align: center;
+                                    font-size: 24px;
+                                    color: #0056b3;
+                                    margin-bottom: 20px;
+                                    padding-bottom: 15px;
+                                    border-bottom: 1px solid #eee;
+                                }}
+                                 p {{
+                                    margin-bottom: 15px;
+                                }}
+                                 .footer {{
+                                    margin-top: 30px;
+                                    padding-top: 20px;
+                                    font-size: 12px;
+                                    color: #999;
+                                    text-align: center;
+                                    border-top: 1px solid #eee;
+                                }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="title">REQUEST ACCEPTED</div>
+                                <p>Dear <strong>{user.get_full_name() or user.username}</strong>,</p>
+                                <p>Your request for <strong>'{request_obj.request_type}'</strong> has been <strong style='color:green;'>ACCEPTED</strong>.</p>
+                                <p>Remarks from the clinic: {remarks or 'None provided'}</p>
+                                <p>Please log in to your account for more details or further instructions.</p>
+                                <p>Best Regards,</p>
+                                <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                            </div>
+                             <div class="footer">
+                                <p>This is an automated message, please do not reply to this email.</p>
+                                <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                            </div>
+                        </body>
+                        </html>
+                    """
+
+                    send_mail(
+                        approval_email_subject,
+                        '',
+                        settings.EMAIL_HOST_USER,
+                        [user.email],
+                        html_message=approval_email_body,
+                        fail_silently=False,
+                    )
+
             elif action == "reject":
-                patient_request.delete()
-                messages.error(request, "Request rejected")
-                
+                request_obj.status = 'rejected'
+                request_obj.date_responded = timezone.now()
+                request_obj.responded_by = request.user
+                request_obj.remarks = remarks
+                request_obj.save()
+                messages.error(request, "Request marked as rejected")
+
                 # Send rejection email
-                patient = patient_request.patient.student
-                patient_name = f"{patient.firstname} {patient.lastname}"
-                patient_email = patient.email
+                user = None
+                if request_type_model == 'PatientRequest' and request_obj.patient and request_obj.patient.user:
+                    user = request_obj.patient.user
+                elif request_type_model == 'FacultyRequest' and request_obj.faculty and request_obj.faculty.user:
+                    user = request_obj.faculty.user
                 
-                # Construct rejection email body using HTML template
-                rejection_email_subject = 'Your Document Request Has Been Rejected'
-                rejection_email_body = f"""
-                    <html>
-                    <head>
-                        <style>
-                            body {{
-                                font-family: Arial, sans-serif;
-                                line-height: 1.6;
-                                color: #333;
-                                margin: 0;
-                                padding: 20px;
-                                background-color: #f4f4f4;
-                                text-align: center;
-                            }}
-                            .container {{
-                                max-width: 600px;
-                                margin: 0 auto;
-                                background-color: #fff;
-                                padding: 30px;
-                                border-radius: 8px;
-                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                text-align: left;
-                            }}
-                            .title {{
-                                text-align: center;
-                                font-size: 24px;
-                                color: #d9534f;
-                                margin-bottom: 20px;
-                                padding-bottom: 15px;
-                                border-bottom: 1px solid #eee;
-                            }}
-                            p {{
-                                margin-bottom: 15px;
-                            }}
-                            .footer {{
-                                margin-top: 30px;
-                                padding-top: 20px;
-                                font-size: 12px;
-                                color: #999;
-                                text-align: center;
-                                border-top: 1px solid #eee;
-                            }}
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="title">REQUEST REJECTION</div>
-                            <p>Dear <strong>{patient_name}</strong>,</p>
-                            <p>We regret to inform you that your document request for <strong>'{request_type}'</strong> has been <strong style='color:red;'>REJECTED</strong>.</p>
-                            <p>Please review the requirements and resubmit your request if necessary.</p>
-                            <p>Best Regards,</p>
-                            <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
-                        </div>
-                        <div class="footer">
-                            <p>This is an automated message, please do not reply to this email.</p>
-                            <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                        </div>
-                    </body>
-                    </html>
-                """
-                
-                send_mail(
-                    rejection_email_subject,
-                    '',
-                    settings.EMAIL_HOST_USER,
-                    [patient_email],
-                    html_message=rejection_email_body,  # Send email as HTML
-                    fail_silently=False,
-                )
-                
-            elif action == "done":
+                if user and user.email:
+                    rejection_email_subject = f'{request_obj.request_type} Request Rejected'
+                    rejection_email_body = f"""
+                        <html>
+                        <head>
+                            <style>
+                                body {{
+                                    font-family: Arial, sans-serif;
+                                    line-height: 1.6;
+                                    color: #333;
+                                    margin: 0;
+                                    padding: 20px;
+                                    background-color: #f4f4f4;
+                                    text-align: center;
+                                }}
+                                .container {{
+                                    max-width: 600px;
+                                    margin: 0 auto;
+                                    background-color: #fff;
+                                    padding: 30px;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                    text-align: left;
+                                }}
+                                .title {{
+                                    text-align: center;
+                                    font-size: 24px;
+                                    color: #d9534f;
+                                    margin-bottom: 20px;
+                                    padding-bottom: 15px;
+                                    border-bottom: 1px solid #eee;
+                                }}
+                                p {{
+                                    margin-bottom: 15px;
+                                }}
+                                .footer {{
+                                    margin-top: 30px;
+                                    padding-top: 20px;
+                                    font-size: 12px;
+                                    color: #999;
+                                    text-align: center;
+                                    border-top: 1px solid #eee;
+                                }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="title">REQUEST REJECTED</div>
+                                <p>Dear <strong>{user.get_full_name() or user.username}</strong>,</p>
+                                <p>We regret to inform you that your request for <strong>'{request_obj.request_type}'</strong> has been <strong style='color:red;'>REJECTED</strong>.</p>
+                                <p>Remarks from the clinic: {remarks or 'None provided'}</p>
+                                <p>Please review the requirements and resubmit your request if necessary.</p>
+                                <p>Best Regards,</p>
+                                <p><strong>CTU - Argao Campus Kahimsug Clinic</strong></p>
+                            </div>
+                            <div class="footer">
+                                <p>This is an automated message, please do not reply to this email.</p>
+                                <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
+                            </div>
+                        </body>
+                        </html>
+                    """
+
+                    send_mail(
+                        rejection_email_subject,
+                        '',
+                        settings.EMAIL_HOST_USER,
+                        [user.email],
+                        html_message=rejection_email_body,
+                        fail_silently=False,
+                    )
+
+            elif action == "complete":
+                request_obj.status = 'completed'
+                request_obj.date_responded = timezone.now()
+                request_obj.responded_by = request.user
+                request_obj.remarks = remarks
+                request_obj.save()
+                messages.success(request, "Request marked as completed")
+
                 # Create a transaction record
-                TransactionRecord.objects.create(
-                    patient=patient_request.patient,
-                    transac_type="Medical Document Request",
-                    transac_date=timezone.now()
-                )
-                patient_request.is_completed = True
-                patient_request.save()
-                messages.success(request, "Transaction successfully completed")
-        except PatientRequest.DoesNotExist:
-            messages.error(request, "Something went wrong")
+                if request_type_model == 'PatientRequest' and request_obj.patient:
+                    TransactionRecord.objects.create(
+                        patient=request_obj.patient,
+                        transac_type=f"Medical Document Request: {request_obj.request_type}",
+                        transac_date=timezone.now()
+                    )
+                elif request_type_model == 'FacultyRequest' and request_obj.faculty:
+                    print(f"Transaction completed for faculty request ID {request_id} (Type: {request_obj.request_type})")
+
+        except (PatientRequest.DoesNotExist, FacultyRequest.DoesNotExist) as e:
+            messages.error(request, f"Request not found: {e}")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {e}")
+
+        return redirect('medical:viewrequest')
+
+    # Pass filtered requests to the template
+    context = {
+        "pending_patient_requests": pending_patient_requests,
+        "accepted_patient_requests": accepted_patient_requests,
+        "completed_patient_requests": completed_patient_requests,
+        "pending_faculty_requests": pending_faculty_requests,
+        "accepted_faculty_requests": accepted_faculty_requests,
+        "completed_faculty_requests": completed_faculty_requests,
+    }
     
-    print("Patient Requests:", patient_requests)
-    print("Approved and not completed requests:", patient_requests.filter(approve=True, is_completed=False))
-    
-    return render(request, "admin/viewrequest.html", {"patient_requests": patient_requests})
+    return render(request, "admin/viewrequest.html", context)
 
 # Views for creating Physical Examintaion Reports
 def physical_examination(request, student_id):
     if request.user.is_superuser or request.user.is_staff:
-        student = Student.objects.get(student_id=student_id)
-        user = User.objects.get(email=student.email)
-        patient = Patient.objects.get(user=user)
+        try:
+            student = Student.objects.get(student_id=student_id)
+            user = User.objects.get(email=student.email)
+            patient = Patient.objects.get(user=user)
 
-        # if PhysicalExamination.objects.filter(student__student_id=student_id).exists():
-        #     examination = PhysicalExamination.objects.get(student__student_id=student_id)
-        #     return render(request, "admin/physicalexamcomp.html", {"examination": examination, "students": student})
-        
-        if request.method == "POST":
-            # Get patient basic information
-            # date_exam = request.POST.get("date")
-            # date_of_physical_examination = datetime.strptime(str_date_exam, "%Y-%m-%d")
-            # birthdate = request.POST.get("birth_date")
-            # birth_date = datetime.strptime(str_birthdate, "%Y-%m-%d")
-            birth_date = request.POST.get("birth_date")
-            date_of_physical_examination = request.POST.get("date")
-            address = request.POST.get("home_address")
-            age = request.POST.get("age")
-            nationality = request.POST.get("nationality")
-            civil_status = request.POST.get("civil_status")
-            number_of_children = request.POST.get("number_of_children", 0)
-            academic_year = request.POST.get("academic_year")
-            section = request.POST.get("academic_year")
-            parent_guardian = request.POST.get("parent_guardian")
-            parent_contact = request.POST.get("parent_guardian_contact_number")
+            if request.method == "POST":
+                # Get patient basic information
+                birth_date = request.POST.get("birth_date")
+                date_of_physical_examination = request.POST.get("date")
+                address = request.POST.get("home_address")
+                age = request.POST.get("age")
+                nationality = request.POST.get("nationality")
+                civil_status = request.POST.get("civil_status")
+                number_of_children = request.POST.get("number_of_children", 0)
+                academic_year = request.POST.get("academic_year")
+                section = request.POST.get("academic_year")
+                parent_guardian = request.POST.get("parent_guardian")
+                parent_contact = request.POST.get("parent_guardian_contact_number")
+                
+                # Get patient medical history
+                tuberculosis = request.POST.get("tuberculosis") == "on"
+                peptic_ulcer = request.POST.get("peptic-ulcer") == "on"
+                venereal = request.POST.get("venereal-disease") == "on"
+                hypertension = request.POST.get("hypertension") == "on"
+                kidney_disease = request.POST.get("kidney-disease") == "on"
+                allergic_reaction = request.POST.get("allergic-reaction") == "on"
+                heart_disease = request.POST.get("heart-diseases") == "on"
+                asthma = request.POST.get("asthma") == "on"
+                nervous_breakdown = request.POST.get("nervous-breakdown") == "on"
+                hernia = request.POST.get("hernia") == "on"
+                insomnia = request.POST.get("insomnia") == "on"
+                jaundice = request.POST.get("jaundice") == "on"
+                epilepsy = request.POST.get("epilepsy") == "on"
+                malaria = request.POST.get("malaria") == "on"
+                others = request.POST.get("others")
+                no_history = request.POST.get("none") == "on"
+                hospital_admission = request.POST.get("operations")
+                medications = request.POST.get("medications")
+
+                # Get patient's family medical history
+                hypertension_family = request.POST.get("hypertension-family") == "on"
+                tuberculosis_family = request.POST.get("tuberculosis-family") == "on"
+                asthma_family = request.POST.get("asthma-family") == "on"
+                diabetes = request.POST.get("diabetes") == "on"
+                cancer = request.POST.get("cancer") == "on"
+                bleeding_disorder = request.POST.get("bleeding-disorder") == "on"
+                epilepsy_family = request.POST.get("epilepsy-family") == "on"
+                mental_disorders = request.POST.get("mental-disorders") == "on"
+                family_others = request.POST.get("family-others")
+                family_no_history = request.POST.get("no_history") == "on"
+
+                # Get OB-GYNE history
+                menarche = request.POST.get("menarche")
+                lmp = request.POST.get("lmp")
+                gravida = request.POST.get("gravida")
+                para = request.POST.get("para")
+                menopause = request.POST.get("menopause")
+                pap_smear = request.POST.get("pap_swear")
+                additional_history = request.POST.get("additional-history")
+
+                # Check if object already exists
+                if PhysicalExamination.objects.filter(patient=patient).exists():
+                    examination = PhysicalExamination.objects.get(patient=patient)
+
+                    # Update Physical Examination
+                    examination.patient.birth_date = birth_date
+                    examination.patient.home_address = address
+                    examination.patient.age = age
+                    examination.patient.nationality = nationality
+                    examination.patient.civil_status = civil_status
+                    examination.patient.number_of_children = number_of_children
+                    examination.patient.academic_year = academic_year
+                    examination.patient.section = section
+                    examination.date_of_physical_examination = date_of_physical_examination
+                    examination.patient.parent_guardian = parent_guardian
+                    examination.patient.parent_guardian_contact_number = parent_contact
+                    # Save
+                    examination.patient.save()
+                    examination.save()
+
+                    # Update or create Medical History
+                    medical_history, created = MedicalHistory.objects.update_or_create(
+                        examination=examination,
+                        defaults={
+                            'tuberculosis': tuberculosis,
+                            'hypertension': hypertension,
+                            'heart_disease': heart_disease,
+                            'hernia': hernia,
+                            'epilepsy': epilepsy,
+                            'peptic_ulcer': peptic_ulcer,
+                            'kidney_disease': kidney_disease,
+                            'asthma': asthma,
+                            'insomnia': insomnia,
+                            'malaria': malaria,
+                            'venereal_disease': venereal,
+                            'allergic_reaction': allergic_reaction,
+                            'nervous_breakdown': nervous_breakdown,
+                            'jaundice': jaundice,
+                            'others': others,
+                            'no_history': no_history,
+                            'hospital_admission': hospital_admission,
+                            'medications': medications
+                        }
+                    )
+
+                    # Update or create Family History
+                    family_history, created = FamilyMedicalHistory.objects.update_or_create(
+                        examination=examination,
+                        defaults={
+                            'hypertension': hypertension_family,
+                            'asthma': asthma_family,
+                            'cancer': cancer,
+                            'tuberculosis': tuberculosis_family,
+                            'diabetes': diabetes,
+                            'bleeding_disorder': bleeding_disorder,
+                            'epilepsy': epilepsy_family,
+                            'mental_disorder': mental_disorders,
+                            'no_history': family_no_history,
+                            'other_medical_history': family_others
+                        }
+                    )
+
+                    # Update or create Obgyne History
+                    obgyne, created = ObgyneHistory.objects.update_or_create(
+                        examination=examination,
+                        defaults={
+                            'menarche': menarche,
+                            'lmp': lmp,
+                            'pap_smear': pap_smear,
+                            'gravida': gravida,
+                            'para': para,
+                            'menopause': menopause,
+                            'additional_history': additional_history
+                        }
+                    )
+
+                    messages.success(request, "Record Updated")
+                    return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
             
-            # Get patient medical history
-            tuberculosis = request.POST.get("tuberculosis") == "on"
-            peptic_ulcer = request.POST.get("peptic-ulcer") == "on"
-            venereal = request.POST.get("venereal-disease") == "on"
-            hypertension = request.POST.get("hypertension") == "on"
-            kidney_disease = request.POST.get("kidney-disease") == "on"
-            allergic_reaction = request.POST.get("allergic-reaction") == "on"
-            heart_disease = request.POST.get("heart-diseases") == "on"
-            asthma = request.POST.get("asthma") == "on"
-            nervous_breakdown = request.POST.get("nervous-breakdown") == "on"
-            hernia = request.POST.get("hernia") == "on"
-            insomnia = request.POST.get("insomnia") == "on"
-            jaundice = request.POST.get("jaundice") == "on"
-            epilepsy = request.POST.get("epilepsy") == "on"
-            malaria = request.POST.get("malaria") == "on"
-            others = request.POST.get("others")
-            no_history = request.POST.get("none") == "on"
-            hospital_admission = request.POST.get("operations")
-            medications = request.POST.get("medications")
-
-            # Get patient's family medical history
-            hypertension_family = request.POST.get("hypertension-family") == "on"
-            tuberculosis_family = request.POST.get("tuberculosis-family") == "on"
-            asthma_family = request.POST.get("asthma-family") == "on"
-            diabetes = request.POST.get("diabetes") == "on"
-            cancer = request.POST.get("cancer") == "on"
-            bleeding_disorder = request.POST.get("bleeding-disorder") == "on"
-            epilepsy_family = request.POST.get("epilepsy-family") == "on"
-            mental_disorders = request.POST.get("mental-disorders") == "on"
-            family_others = request.POST.get("family-others")
-            family_no_history = request.POST.get("no_history") == "on"
-
-            # Get OB-GYNE history
-            menarche = request.POST.get("menarche")
-            lmp = request.POST.get("lmp")
-            gravida = request.POST.get("gravida")
-            para = request.POST.get("para")
-            menopause = request.POST.get("menopause")
-            pap_smear = request.POST.get("pap_swear")
-            additional_history = request.POST.get("additional-history")
-
-            # Check if object already exists
-            if PhysicalExamination.objects.filter(patient__student__student_id=student_id).exists():
-                examination = PhysicalExamination.objects.get(patient__student__student_id=student_id)
-
-                # Update Physical Examination
-                # birth_date = datetime.strptime(str_birthdate, "%B %d, %Y")
-                examination.patient.birth_date = birth_date
-                examination.patient.home_address = address
-                examination.patient.age = age
-                examination.patient.nationality = nationality
-                examination.patient.civil_status = civil_status
-                examination.patient.number_of_children = number_of_children
-                examination.patient.academic_year = academic_year
-                examination.patient.section = section
-                # date_of_physical_examination = datetime.strptime(str_date_exam, "%B %d, %Y")
-                examination.date_of_physical_examination = date_of_physical_examination
-                examination.patient.parent_guardian = parent_guardian
-                examination.patient.parent_guardian_contact_number = parent_contact
-                # Save
-                examination.save()
-
-                # Update or create Medical History
-                medical_history, created = MedicalHistory.objects.update_or_create(
-                    examination=examination,
-                    defaults={
-                        'tuberculosis': tuberculosis,
-                        'hypertension': hypertension,
-                        'heart_disease': heart_disease,
-                        'hernia': hernia,
-                        'epilepsy': epilepsy,
-                        'peptic_ulcer': peptic_ulcer,
-                        'kidney_disease': kidney_disease,
-                        'asthma': asthma,
-                        'insomnia': insomnia,
-                        'malaria': malaria,
-                        'venereal_disease': venereal,
-                        'allergic_reaction': allergic_reaction,
-                        'nervous_breakdown': nervous_breakdown,
-                        'jaundice': jaundice,
-                        'others': others,
-                        'no_history': no_history,
-                        'hospital_admission': hospital_admission,
-                        'medications': medications
-                    }
+                # Create the physical examination object if it does not exists
+                examination = PhysicalExamination.objects.create(
+                    patient=patient,
+                    date_of_physical_examination=date_of_physical_examination
                 )
 
-                # Update or create Family History
-                family_history, created = FamilyMedicalHistory.objects.update_or_create(
+                # Update patient information
+                patient.birth_date = birth_date
+                patient.home_address = address
+                patient.age = age
+                patient.nationality = nationality
+                patient.civil_status = civil_status
+                patient.number_of_children = number_of_children
+                patient.academic_year = academic_year
+                patient.section = section
+                patient.parent_guardian = parent_guardian
+                patient.parent_guardian_contact_number = parent_contact
+                patient.save()
+
+                # Insert data into the medical history of the patients model
+                MedicalHistory.objects.create(
                     examination=examination,
-                    defaults={
-                        'hypertension': hypertension_family,
-                        'asthma': asthma_family,
-                        'cancer': cancer,
-                        'tuberculosis': tuberculosis_family,
-                        'diabetes': diabetes,
-                        'bleeding_disorder': bleeding_disorder,
-                        'epilepsy': epilepsy_family,
-                        'mental_disorder': mental_disorders,
-                        'no_history': family_no_history,
-                        'other_medical_history': family_others
-                    }
+                    tuberculosis=tuberculosis,
+                    hypertension=hypertension,
+                    heart_disease=heart_disease,
+                    hernia=hernia,
+                    epilepsy=epilepsy,
+                    peptic_ulcer=peptic_ulcer,
+                    kidney_disease=kidney_disease,
+                    asthma=asthma,
+                    insomnia=insomnia,
+                    malaria=malaria,
+                    venereal_disease=venereal,
+                    allergic_reaction=allergic_reaction,
+                    nervous_breakdown=nervous_breakdown,
+                    jaundice=jaundice,
+                    others=others,
+                    no_history=no_history,
+                    hospital_admission=hospital_admission,
+                    medications=medications
                 )
 
-                # Update or create Obgyne History
-                obgyne, created = ObgyneHistory.objects.update_or_create(
+                # Insert data into the family medical history of the patients model
+                FamilyMedicalHistory.objects.create(
                     examination=examination,
-                    defaults={
-                        'menarche': menarche,
-                        'lmp': lmp,
-                        'pap_smear': pap_smear,
-                        'gravida': gravida,
-                        'para': para,
-                        'menopause': menopause,
-                        'additional_history': additional_history
-                    }
+                    hypertension=hypertension_family,
+                    asthma=asthma_family,
+                    cancer=cancer,
+                    tuberculosis=tuberculosis_family,
+                    diabetes=diabetes,
+                    bleeding_disorder=bleeding_disorder,
+                    epilepsy=epilepsy_family,
+                    mental_disorder=mental_disorders,
+                    no_history=family_no_history,
+                    other_medical_history=family_others
                 )
 
-                messages.success(request, "Record Updated")
+                # Insert data into the OB-GYNE history of the patients model
+                ObgyneHistory.objects.create(
+                    examination=examination,
+                    menarche=menarche,
+                    lmp=lmp,
+                    pap_smear=pap_smear,
+                    gravida=gravida,
+                    para=para,
+                    menopause=menopause,
+                    additional_history=additional_history
+                )
+
+                messages.success(request, "Record Created")
                 return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
-        
-            # Create the physical examination object if it does not exists
-            # examination = PhysicalExamination.objects.get(student_id = student_id)
-            examination = PhysicalExamination.objects.create(
-                patient = patient,
-                date_of_physical_examination = date_of_physical_examination,
-                # birth_date = birth_date,
-                # address = address,
-                # age = age,
-                # nationality = nationality,
-                # civil_status = civil_status,
-                # number_of_children = number_of_children,
-                # academic_year = academic_year,
-                # section = section,
-                # parent_guardian = parent_guardian,
-                # parent_guardian_contact_number = parent_contact
-            )
 
-            # Insert data into the medical history of the patients model
-            MedicalHistory.objects.create(
-                examination = examination,
-                tuberculosis = tuberculosis,
-                hypertension = hypertension,
-                heart_disease = heart_disease,
-                hernia = hernia,
-                epilepsy = epilepsy,
-                peptic_ulcer = peptic_ulcer,
-                kidney_disease = kidney_disease,
-                asthma = asthma,
-                insomnia = insomnia,
-                malaria = malaria,
-                venereal_disease = venereal,
-                allergic_reaction = allergic_reaction,
-                nervous_breakdown = nervous_breakdown,
-                jaundice = jaundice,
-                others = others,
-                no_history = no_history,
-                hospital_admission = hospital_admission,
-                medications = medications
-            )
+            # GET request - show the form
+            return render(request, "admin/physicalexamcomp.html", {"patient": patient, "student": student})
 
-            # Insert to patient's family's medical history
-            FamilyMedicalHistory.objects.create(
-                examination = examination,
-                hypertension = hypertension_family,
-                asthma = asthma_family,
-                cancer = cancer,
-                tuberculosis = tuberculosis_family,
-                diabetes = diabetes,
-                bleeding_disorder = bleeding_disorder,
-                epilepsy = epilepsy_family,
-                mental_disorder = mental_disorders,
-                no_history = family_no_history,
-                other_medical_history = family_others
-            )
-
-            # Insert to OB-GYNE models
-            ob = ObgyneHistory.objects.create(
-                examination = examination,
-                menarche = menarche,
-                lmp = lmp,
-                pap_smear = pap_smear,
-                gravida = gravida,
-                para = para,
-                menopause = menopause,
-                additional_history = additional_history
-            )
-
-            messages.success(request, "Physical Examination Done!")
-            # record_transaction(patient, "Physical Examination")
-            return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
-        
-        if PhysicalExamination.objects.filter(patient__student__student_id=student_id).exists():
-            examination = PhysicalExamination.objects.get(patient__student__student_id=student_id)
-            return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
-        
-        messages.info(request, f"Fill out the necessary information to complete {patient.student.firstname.title()}'s Physical Examination.")
-        return render(request, "admin/physicalexamcomp.html", {"patient": patient})
+        except Student.DoesNotExist:
+            messages.error(request, "Student not found")
+            return redirect("medical:patient_profile")
+        except User.DoesNotExist:
+            messages.error(request, "User account not found for this student")
+            return redirect("medical:patient_profile")
+        except Patient.DoesNotExist:
+            messages.error(request, "Patient record not found for this student")
+            return redirect("medical:patient_profile")
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect("medical:patient_profile")
     else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
+        messages.error(request, "You are not authorized to access this page")
+        return redirect("login")
 
 # Record prescriptions
 def prescription(request):
@@ -969,7 +1155,14 @@ def submit_request(request):
             patient_name = f"{student.firstname} {student.lastname}"
             patient_email = student.email
         elif faculty:
-            # For faculty, you may want to send a different email or handle differently
+            # Create PatientRequest for faculty
+            patient_request = PatientRequest.objects.create(
+                faculty=faculty,
+                patient=None, # Ensure patient is None for faculty requests
+                request_type=request_type,
+                date_requested=timezone.now()
+            )
+            # Set name and email for confirmation email
             patient_name = faculty.user.get_full_name()
             patient_email = faculty.user.email
         else:
@@ -1079,240 +1272,136 @@ def submit_request(request):
 def student_medical_requirements_tracker(request):
     if not (request.user.is_superuser or request.user.is_staff):
         return redirect('medical:upload_requirements')
+    
+    # Initialize variables to None at the start
     student = None
+    faculty = None
     patient = None
     med_requirements = None
 
-    # Check for student_id in both POST and GET requests
-    student_id_to_process = request.POST.get("student_id") or request.GET.get("student_id")
+    # Check for student_id or faculty_id in both POST and GET requests
+    id_to_process = request.POST.get("id_number") or request.GET.get("id_number")
 
     if request.method == "POST":
-        # The student_id is already obtained above
+        # The id is already obtained above
         action = request.POST.get('action')
 
-        if student_id_to_process:
+        if id_to_process:
             try:
-                patient = Patient.objects.get(student__student_id=student_id_to_process)
-                student = patient.student
-                med_requirements, created = MedicalRequirement.objects.get_or_create(patient=patient)
+                # Try to get a Student object first
+                student = Student.objects.filter(student_id=id_to_process).first()
+                faculty = None # Ensure faculty is None if a student is found
+                user = None
+                patient = None
+                med_requirements = None
 
-                print(f"Existing x_ray_remarks before processing POST: {med_requirements.x_ray_remarks}")
+                if student:
+                    # If a student is found, get the associated User and Patient
+                    user = User.objects.get(email=student.email)
+                    patient = Patient.objects.get(user=user)
+                    # Get the MedicalRequirement object for this patient
+                    med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
+                    if not med_requirements:
+                         messages.info(request, f"No medical requirements found for student ID {id_to_process}. Please upload the required documents.")
 
-                # Extract action first
-                if action:
-                    # Extract all remarks regardless of action
+                else:
+                    # If not a student, try to get a Faculty object
+                    faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
+                    student = None # Ensure student is None if a faculty is found
+                    if faculty:
+                         # If a faculty is found, get the associated User (Faculty has a direct user link)
+                         user = faculty.user
+                         # Get the MedicalRequirement object for this faculty
+                         med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
+                         if not med_requirements:
+                              messages.info(request, f"No medical requirements found for faculty ID {id_to_process}. Please upload the required documents.")
+                    else:
+                         # If neither student nor faculty is found
+                         messages.error(request, f"No student or faculty found with ID: {id_to_process}.")
+
+            except User.DoesNotExist:
+                messages.error(request, f"No user account found for ID {id_to_process}.")
+                student = None
+                faculty = None
+                patient = None
+                med_requirements = None
+            except Patient.DoesNotExist:
+                 messages.error(request, f"No patient profile found for student ID {id_to_process}. Please complete the patient profile.")
+                 # Re-fetch student and user to pass to template if needed, but patient is None
+                 student = Student.objects.filter(student_id=id_to_process).first()
+                 faculty = None
+                 if student:
+                      user = User.objects.filter(email=student.email).first()
+                 patient = None
+                 med_requirements = None
+            except Exception as e:
+                messages.error(request, f"An unexpected error occurred: {e}")
+                student = None
+                faculty = None
+                patient = None
+                med_requirements = None
+
+        # The rest of your POST handling logic (saving remarks, approving/rejecting) goes here,
+        # making sure to use the fetched `med_requirements` object.
+        # You will need to adapt this part to handle both student and faculty requirements
+        # if your MedicalRequirement model differentiates between them for these actions.
+        # Based on your model, MedicalRequirement has both patient and faculty fields,
+        # so you will likely need to check which one is not None.
+
+        # Example of how to access data after fetching:
+        if med_requirements:
+             # Handle actions (approve, reject, save remarks)
+             if action == 'save_all_remarks':
                     x_ray_remarks = request.POST.get("x-ray-remark", "")
                     cbc_remarks = request.POST.get("cbc-remark", "")
                     drug_test_remarks = request.POST.get("drug-test-remark", "")
                     stool_examination_remarks = request.POST.get("stool-examination-remark", "")
+                 # Assuming you have pwd_card_remarks in your template for MedicalRequirement
                     pwd_card_remarks = request.POST.get("pwd-card-remark", "")
 
-                    # Update remarks
                     med_requirements.x_ray_remarks = x_ray_remarks
                     med_requirements.cbc_remarks = cbc_remarks
                     med_requirements.drug_test_remarks = drug_test_remarks
                     med_requirements.stool_examination_remarks = stool_examination_remarks
                     med_requirements.pwd_card_remarks = pwd_card_remarks
 
-                    # Handle specific actions
-                    if action == 'save_all_remarks':
                         try:
                             med_requirements.save()
                             messages.success(request, "Remarks saved successfully.")
                         except Exception as e:
                             messages.error(request, f"Error saving remarks: {e}")
-                        return redirect(f'/medical/medicalrequirementstracker/?student_id={student_id_to_process}')
 
-                    elif action == 'approve_requirements':
-                        med_requirements.status = 'approved'
+             elif action in ['approve_requirements', 'reject_requirements']:
+                  med_requirements.status = action.replace('_requirements', '') # 'approved' or 'rejected'
                         med_requirements.reviewed_by = request.user
                         med_requirements.reviewed_date = timezone.now()
                         try:
                             med_requirements.save()
-                            # Send approval email
-                            subject = 'Medical Requirements Approved'
-                            email_body = f"""
-                                <html>
-                                <head>
-                                    <style>
-                                        body {{
-                                            font-family: Arial, sans-serif;
-                                            line-height: 1.6;
-                                            color: #333;
-                                            margin: 0;
-                                            padding: 20px;
-                                            background-color: #f4f4f4;
-                                            text-align: center;
-                                        }}
-                                        .container {{
-                                            max-width: 600px;
-                                            margin: 0 auto;
-                                            background-color: #fff;
-                                            padding: 30px;
-                                            border-radius: 8px;
-                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                            text-align: left;
-                                        }}
-                                        .title {{
-                                            text-align: center;
-                                            font-size: 24px;
-                                            color: #0056b3;
-                                            margin-bottom: 20px;
-                                            padding-bottom: 15px;
-                                            border-bottom: 1px solid #eee;
-                                        }}
-                                         p {{
-                                            margin-bottom: 15px;
-                                        }}
-                                        .remarks-section {{
-                                            margin-top: 20px;
-                                            padding-top: 15px;
-                                            border-top: 1px solid #eee;
-                                        }}
-                                        .remarks-section h4 {{
-                                            margin-bottom: 10px;
-                                            color: #555;
-                                        }}
-                                         .footer {{
-                                            margin-top: 30px;
-                                            padding-top: 20px;
-                                            font-size: 12px;
-                                            color: #999;
-                                            text-align: center;
-                                            border-top: 1px solid #eee;
-                                        }}
-                                    </style>
-                                </head>
-                                <body>
-                                    <div class="container">
-                                        <div class="title">MEDICAL REQUIREMENTS APPROVED</div>
-                                        <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-                                        <p>We are pleased to inform you that your medical requirements have been <strong style='color:green;'>APPROVED</strong>.</p>
-                                        <div class="remarks-section">
-                                            <h4>Reviewer Remarks:</h4>
-                                            <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
-                                            <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
-                                            <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
-                                            <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
-                                            <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
-                                        </div>
-                                        <p>You can view your updated medical requirements status on the HealthHub Connect portal.</p>
-                                        <p>Best regards,</p>
-                                        <p><strong>HealthHub Connect Team</strong></p>
-                                    </div>
-                                    <div class="footer">
-                                        <p>This is an automated message, please do not reply to this email.</p>
-                                        <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                                    </div>
-                                </body>
-                                </html>
-                                """
-                            from django.core.mail import send_mail
-                            from django.conf import settings
+                      messages.success(request, f"Medical requirements marked as {med_requirements.status}.")
 
-                            try:
-                                send_mail(
-                                    subject,
-                                    '',
-                                    settings.DEFAULT_FROM_EMAIL,
-                                    [student.email],
-                                    html_message=email_body,
-                                    fail_silently=False,
-                                )
-                                messages.success(request, "Medical requirements approved and email sent.")
-                            except Exception as e:
-                                messages.error(request, f"Medical requirements approved, but failed to send email: {e}")
-                            return redirect(f'/medical/medicalrequirementstracker/?student_id={student_id_to_process}')
+                      # Send email notification
+                      recipient_email = None
+                      recipient_name = ""
 
-                        except Exception as e:
-                            messages.error(request, f"Error saving medical requirements status: {e}")
-                        return redirect(f'/medical/medicalrequirementstracker/?student_id={student_id_to_process}')
+                      if med_requirements.patient and med_requirements.patient.user:
+                          recipient_email = med_requirements.patient.user.email
+                          recipient_name = med_requirements.patient.user.get_full_name() or med_requirements.patient.user.username
+                      elif med_requirements.faculty and med_requirements.faculty.user:
+                          recipient_email = med_requirements.faculty.user.email
+                          recipient_name = med_requirements.faculty.user.get_full_name() or med_requirements.faculty.user.username
 
-                    elif action == 'reject_requirements':
-                        med_requirements.status = 'rejected'
-                        med_requirements.reviewed_by = request.user
-                        med_requirements.reviewed_date = timezone.now()
-                        try:
-                            med_requirements.save()
-                            # Send rejection email
-                            subject = 'Medical Requirements Rejected'
-                            email_body = f"""
-                                <html>
-                                <head>
-                                    <style>
-                                        body {{
-                                            font-family: Arial, sans-serif;
-                                            line-height: 1.6;
-                                            color: #333;
-                                            margin: 0;
-                                            padding: 20px;
-                                            background-color: #f4f4f4;
-                                            text-align: center;
-                                        }}
-                                        .container {{
-                                            max-width: 600px;
-                                            margin: 0 auto;
-                                            background-color: #fff;
-                                            padding: 30px;
-                                            border-radius: 8px;
-                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                                            text-align: left;
-                                        }}
-                                        .title {{
-                                            text-align: center;
-                                            font-size: 24px;
-                                            color: #d9534f;
-                                            margin-bottom: 20px;
-                                            padding-bottom: 15px;
-                                            border-bottom: 1px solid #eee;
-                                        }}
-                                         p {{
-                                            margin-bottom: 15px;
-                                        }}
-                                        .remarks-section {{
-                                            margin-top: 20px;
-                                            padding-top: 15px;
-                                            border-top: 1px solid #eee;
-                                        }}
-                                        .remarks-section h4 {{
-                                            margin-bottom: 10px;
-                                            color: #555;
-                                        }}
-                                         .footer {{
-                                            margin-top: 30px;
-                                            padding-top: 20px;
-                                            font-size: 12px;
-                                            color: #999;
-                                            text-align: center;
-                                            border-top: 1px solid #eee;
-                                        }}
-                                    </style>
-                                </head>
-                                <body>
-                                    <div class="container">
-                                        <div class="title">MEDICAL REQUIREMENTS REJECTED</div>
-                                        <p>Dear <strong>{student.firstname} {student.lastname}</strong>,</p>
-                                        <p>We regret to inform you that your medical requirements have been <strong style='color:red;'>REJECTED</strong>.</p>
-                                         <p>Please review the remarks below and resubmit the necessary documents.</p>
-                                        <div class="remarks-section">
-                                            <h4>Reviewer Remarks:</h4>
-                                            <p><strong>Chest X-ray:</strong> {x_ray_remarks if x_ray_remarks else 'None'}</p>
-                                            <p><strong>Complete Blood Count (CBC):</strong> {cbc_remarks if cbc_remarks else 'None'}</p>
-                                            <p><strong>Drug Test:</strong> {drug_test_remarks if drug_test_remarks else 'None'}</p>
-                                            <p><strong>Stool Examination:</strong> {stool_examination_remarks if stool_examination_remarks else 'None'}</p>
-                                            <p><strong>PWD Card:</strong> {pwd_card_remarks if pwd_card_remarks else 'None'}</p>
-                                        </div>
-                                        <p>You can view your updated medical requirements status and upload revised documents on the HealthHub Connect portal.</p>
-                                        <p>Best regards,</p>
-                                        <p><strong>HealthHub Connect Team</strong></p>
-                                    </div>
-                                    <div class="footer">
-                                        <p>This is an automated message, please do not reply to this email.</p>
-                                        <p>&copy; 2024 HealthHub Connect. All rights reserved.</p>
-                                    </div>
-                                </body>
-                                </html>
-                                """
+                      if recipient_email:
+                          subject = f'Medical Requirements {med_requirements.status.capitalize()}'
+
+                          # Determine explicit status text to pass to template directly from action
+                          status_text = "APPROVED" if action == 'approve_requirements' else "REJECTED"
+
+                          # Render the HTML email body using the template
+                          email_body = render_to_string('email/medical_requirements_status.html', {
+                              'med_requirements': med_requirements,
+                              'recipient_name': recipient_name,
+                              'status_text': status_text, # Pass explicit status text
+                          })
 
                             from django.core.mail import send_mail
                             from django.conf import settings
@@ -1320,62 +1409,93 @@ def student_medical_requirements_tracker(request):
                             try:
                                 send_mail(
                                     subject,
-                                    '',
+                                  '', # Empty plain text message
                                     settings.DEFAULT_FROM_EMAIL,
-                                    [student.email],
+                                  [recipient_email],
                                     html_message=email_body,
                                     fail_silently=False,
                                 )
-                                messages.success(request, "Medical requirements rejected and email sent.")
+                              messages.info(request, f"Email notification sent to {recipient_email}.")
                             except Exception as e:
-                                messages.error(request, f"Medical requirements rejected, but failed to send email: {e}")
-                            return redirect(f'/medical/medicalrequirementstracker/?student_id={student_id_to_process}')
+                              messages.error(request, f"Failed to send email notification to {recipient_email}: {e}")
 
                         except Exception as e:
-                            messages.error(request, f"Error saving medical requirements status: {e}")
-                        return redirect(f'/medical/medicalrequirementstracker/?student_id={student_id_to_process}')
+                      messages.error(request, f"Error updating medical requirements status: {e}")
 
-                    # After handling all actions, redirect or re-render with updated data
-                    # The view currently renders at the end, ensure that's correct.
+        # After POST, redirect to the same page with the ID to show updated data
+        if id_to_process:
+            return redirect(f'{request.path}?id_number={id_to_process}')
+        else:
+             return redirect(request.path) # Redirect to empty form if no ID
 
-            except Patient.DoesNotExist:
-                student = Student.objects.filter(student_id=student_id_to_process).first()
-                if student:
-                     messages.error(request, "Patient profile not found for this student. Please create a patient profile first.")
-                     # Redirect to patient creation form if available
-                     # return redirect('medical:patient_basic_info', student_id=student_id_to_process)
-                     # To prevent trying to fetch med_requirements again if patient not found:
-                     patient = None # Ensure patient is None
-                     med_requirements = None # Ensure med_requirements is None
-                else:
-                     messages.error(request, "Student not found.")
-                     # To prevent trying to fetch med_requirements again if student not found:
-                     student = None # Ensure student is None
-                     patient = None # Ensure patient is None
-                     med_requirements = None # Ensure med_requirements is None
-
-    # Re-fetch med_requirements if it wasn't found or created in the POST block, or if it's a GET request
-    # This block will now correctly use student_id_to_process if it came from a GET parameter.
-    if student_id_to_process and not med_requirements:
+    # Handle GET requests and re-fetching after POST redirect or initial GET
+    if id_to_process:
          try:
-             patient = Patient.objects.get(student__student_id=student_id_to_process)
-             student = patient.student
-             med_requirements = MedicalRequirement.objects.get(patient=patient)
-         except (Patient.DoesNotExist, MedicalRequirement.DoesNotExist):
-             # Handle cases where patient or med_requirements still don't exist after POST attempt
-             pass # Will render with med_requirements=None, handled in template.
-    elif not student_id_to_process:
-        # If no student_id is provided (e.g., initial GET request to /medicalrequirementstracker/)
-        # we should not try to fetch med_requirements, just render the empty form.
-        pass
+             # Try to get a Student object first
+             student = Student.objects.filter(student_id=id_to_process).first()
+             faculty = None # Ensure faculty is None if a student is found
+             user = None
+             patient = None
+             med_requirements = None
+
+                if student:
+                 # If a student is found, get the associated User and Patient
+                 user = User.objects.get(email=student.email)
+                 patient = Patient.objects.get(user=user)
+                 # Get the MedicalRequirement object for this patient
+                 med_requirements = MedicalRequirement.objects.filter(patient=patient).first()
+                 if not med_requirements:
+                      messages.info(request, f"No medical requirements found for student ID {id_to_process}. Please upload the required documents.")
+
+                else:
+                 # If not a student, try to get a Faculty object
+                 faculty = Faculty.objects.filter(faculty_id=id_to_process).first()
+                 student = None # Ensure student is None if a faculty is found
+                 if faculty:
+                      # If a faculty is found, get the associated User
+                      user = faculty.user
+                      # Get the MedicalRequirement object for this faculty
+                      med_requirements = MedicalRequirement.objects.filter(faculty=faculty).first()
+                      if not med_requirements:
+                           messages.info(request, f"No medical requirements found for faculty ID {id_to_process}. Please upload the required documents.")
+                 else:
+                      # If neither student nor faculty is found
+                      messages.error(request, f"No student or faculty found with ID: {id_to_process}.")
+
+         except User.DoesNotExist:
+             messages.error(request, f"No user account found for ID {id_to_process}.")
+             student = None
+             faculty = None
+             patient = None
+             med_requirements = None
+         except Patient.DoesNotExist:
+              messages.error(request, f"No patient profile found for student ID {id_to_process}. Please complete the patient profile.")
+              # Re-fetch student and user to pass to template if needed, but patient is None
+              student = Student.objects.filter(student_id=id_to_process).first()
+              faculty = None
+              if student:
+                   user = User.objects.filter(email=student.email).first()
+              patient = None
+              med_requirements = None
+         except Exception as e:
+             messages.error(request, f"An unexpected error occurred: {e}")
+             student = None
+             faculty = None
+             patient = None
+             med_requirements = None
+    elif not id_to_process:
+        # If no id_number is provided (e.g., initial GET request to /medicalrequirementstracker/)
+        # we should not try to fetch data, just render the empty form.
+        pass # Variables are already None
 
     # Print statements for debugging
     print("Rendering template with:")
     print("Student:", student)
     print("Patient:", patient)
     print("Medical Requirements (before render):", med_requirements)
+    print("Faculty (before render):", faculty)
 
-    return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient})
+    return render(request, "medicalrequirements.html", {"med_requirements": med_requirements, "student": student, "patient": patient, "faculty": faculty})
 
 # Views for handling the medical requirements uploaded file
 def upload_requirements(request):
