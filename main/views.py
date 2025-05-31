@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db import models
-from main.models import Student, EmailVerification, Profile, Faculty
+from main.models import Student, EmailVerification, Profile, Faculty, SystemSettings
 from medical.models import (
     PhysicalExamination,
     Patient,
@@ -54,29 +54,48 @@ def login_view(request):
                 user = None
 
         if user is not None:
-            # Always generate and send OTP for login
-            try:
-                verification = EmailVerification.objects.get(user=user)
-            except EmailVerification.DoesNotExist:
-                verification = EmailVerification.objects.create(user=user)
+            # Check if OTP verification is required
+            system_settings = SystemSettings.get_settings()
             
-            # Generate new OTP
-            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-            verification.otp = otp
-            verification.created_at = timezone.now()
-            verification.save()
-            
-            # Send verification email
-            send_verification_email(user, verification)
-            
-            # Store email in session for OTP verification
-            request.session['verification_email'] = user.email
-            
-            return JsonResponse({
-                'status': 'success',
-                'message': 'OTP sent to your email',
-                'show_otp': True
-            })
+            if system_settings.require_otp_verification:
+                # Generate and send OTP for login
+                try:
+                    verification = EmailVerification.objects.get(user=user)
+                except EmailVerification.DoesNotExist:
+                    verification = EmailVerification.objects.create(user=user)
+                
+                # Generate new OTP
+                otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+                verification.otp = otp
+                verification.created_at = timezone.now()
+                verification.save()
+                
+                # Send verification email
+                send_verification_email(user, verification)
+                
+                # Store email in session for OTP verification
+                request.session['verification_email'] = user.email
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'OTP sent to your email',
+                    'show_otp': True
+                })
+            else:
+                # OTP verification is disabled, log the user in directly
+                login(request, user)
+                
+                # Determine redirect URL based on user role
+                if user.is_superuser or user.is_staff:
+                    redirect_url = reverse('main:admin_dashboard')
+                else:
+                    redirect_url = reverse('main:main')
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Login successful',
+                    'redirect_url': redirect_url
+                })
         else:
             return JsonResponse({
                 'status': 'error',
@@ -861,26 +880,24 @@ def admin_dashboard_view(request):
     all_upcoming_requests = []
     
     # Process patient requests
-    for request in upcoming_patient_requests:
+    for patient_request in upcoming_patient_requests:
         request_data = {
-            'request': request,
+            'request': patient_request,
             'user_info': {
                 'id': 'N/A',
                 'name': 'Unknown User'
             }
         }
-        if request.patient and request.patient.user:
+        if patient_request.patient and patient_request.patient.user:
             try:
-                # Try to get student info first
-                student = Student.objects.filter(email=request.patient.user.email).first()
+                student = Student.objects.filter(email=patient_request.patient.user.email).first()
                 if student:
                     request_data['user_info'] = {
                         'id': student.student_id,
                         'name': f"{student.lastname}, {student.firstname}"
                     }
                 else:
-                    # If not a student, try to get faculty info
-                    faculty = Faculty.objects.filter(user=request.patient.user).first()
+                    faculty = Faculty.objects.filter(user=patient_request.patient.user).first()
                     if faculty:
                         request_data['user_info'] = {
                             'id': faculty.faculty_id,
@@ -889,28 +906,28 @@ def admin_dashboard_view(request):
                     else:
                         request_data['user_info'] = {
                             'id': 'N/A',
-                            'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                            'name': f"{patient_request.patient.user.first_name} {patient_request.patient.user.last_name}"
                         }
             except Exception:
                 request_data['user_info'] = {
                     'id': 'N/A',
-                    'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                    'name': f"{patient_request.patient.user.first_name} {patient_request.patient.user.last_name}"
                 }
         all_upcoming_requests.append(request_data)
     
     # Process faculty requests
-    for request in upcoming_faculty_requests:
+    for faculty_request in upcoming_faculty_requests:
         request_data = {
-            'request': request,
+            'request': faculty_request,
             'user_info': {
                 'id': 'N/A',
                 'name': 'Unknown User'
             }
         }
-        if request.faculty and request.faculty.user:
+        if faculty_request.faculty and faculty_request.faculty.user:
             request_data['user_info'] = {
-                'id': request.faculty.faculty_id,
-                'name': f"{request.faculty.user.last_name}, {request.faculty.user.first_name}"
+                'id': faculty_request.faculty.faculty_id,
+                'name': f"{faculty_request.faculty.user.last_name}, {faculty_request.faculty.user.first_name}"
             }
         all_upcoming_requests.append(request_data)
     
@@ -924,41 +941,43 @@ def admin_dashboard_view(request):
     
     # Process dental requests to include proper user information
     dental_requests_data = []
-    for request in dental_requests:
+    for dental_request in dental_requests:
         request_data = {
-            'request': request,
+            'id': dental_request.id,
+            'service_type': dental_request.service_type,
+            'date_requested': dental_request.date_requested,
+            'date_appointed': dental_request.date_appointed,
+            'appointed': dental_request.appointed,
             'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
+                'id_number': 'N/A',
+                'full_name': 'Unknown User'
             }
         }
-        if request.patient and request.patient.user:
+        
+        if dental_request.patient and dental_request.patient.user:
             try:
-                # Try to get student info first
-                student = Student.objects.filter(email=request.patient.user.email).first()
+                student = Student.objects.filter(email=dental_request.patient.user.email).first()
                 if student:
                     request_data['user_info'] = {
-                        'id': student.student_id,
-                        'name': f"{student.lastname}, {student.firstname}"
+                        'id_number': student.student_id,
+                        'full_name': f"{student.lastname}, {student.firstname}"
                     }
                 else:
-                    # If not a student, try to get faculty info
-                    faculty = Faculty.objects.filter(user=request.patient.user).first()
+                    faculty = Faculty.objects.filter(user=dental_request.patient.user).first()
                     if faculty:
                         request_data['user_info'] = {
-                            'id': faculty.faculty_id,
-                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
+                            'id_number': faculty.faculty_id,
+                            'full_name': f"{faculty.user.last_name}, {faculty.user.first_name}"
                         }
                     else:
                         request_data['user_info'] = {
-                            'id': 'N/A',
-                            'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                            'id_number': 'N/A',
+                            'full_name': f"{dental_request.patient.user.first_name} {dental_request.patient.user.last_name}"
                         }
-            except Exception:
-                request_data['user_info'] = {
-                    'id': 'N/A',
-                    'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
-                }
+            except Exception as e:
+                print(f"Error processing dental request {dental_request.id}: {str(e)}")
+                continue
+        
         dental_requests_data.append(request_data)
     
     # Get scheduled appointments for the calendar
@@ -1011,26 +1030,24 @@ def admin_dashboard_view(request):
     
     # Process emergency requests to include proper user information
     emergency_requests_data = []
-    for request in emergency_requests:
+    for emergency_request in emergency_requests:
         request_data = {
-            'request': request,
+            'request': emergency_request,
             'user_info': {
                 'id': 'N/A',
                 'name': 'Unknown User'
             }
         }
-        if request.patient and request.patient.user:
+        if emergency_request.patient and emergency_request.patient.user:
             try:
-                # Try to get student info first
-                student = Student.objects.filter(email=request.patient.user.email).first()
+                student = Student.objects.filter(email=emergency_request.patient.user.email).first()
                 if student:
                     request_data['user_info'] = {
                         'id': student.student_id,
                         'name': f"{student.lastname}, {student.firstname}"
                     }
                 else:
-                    # If not a student, try to get faculty info
-                    faculty = Faculty.objects.filter(user=request.patient.user).first()
+                    faculty = Faculty.objects.filter(user=emergency_request.patient.user).first()
                     if faculty:
                         request_data['user_info'] = {
                             'id': faculty.faculty_id,
@@ -1039,12 +1056,12 @@ def admin_dashboard_view(request):
                     else:
                         request_data['user_info'] = {
                             'id': 'N/A',
-                            'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                            'name': f"{emergency_request.patient.user.first_name} {emergency_request.patient.user.last_name}"
                         }
             except Exception:
                 request_data['user_info'] = {
                     'id': 'N/A',
-                    'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                    'name': f"{emergency_request.patient.user.first_name} {emergency_request.patient.user.last_name}"
                 }
         emergency_requests_data.append(request_data)
     
@@ -1055,26 +1072,24 @@ def admin_dashboard_view(request):
     
     # Process prescription requests to include proper user information
     prescription_requests_data = []
-    for request in prescription_requests:
+    for prescription_request in prescription_requests:
         request_data = {
-            'request': request,
+            'request': prescription_request,
             'user_info': {
                 'id': 'N/A',
                 'name': 'Unknown User'
             }
         }
-        if request.patient and request.patient.user:
+        if prescription_request.patient and prescription_request.patient.user:
             try:
-                # Try to get student info first
-                student = Student.objects.filter(email=request.patient.user.email).first()
+                student = Student.objects.filter(email=prescription_request.patient.user.email).first()
                 if student:
                     request_data['user_info'] = {
                         'id': student.student_id,
                         'name': f"{student.lastname}, {student.firstname}"
                     }
                 else:
-                    # If not a student, try to get faculty info
-                    faculty = Faculty.objects.filter(user=request.patient.user).first()
+                    faculty = Faculty.objects.filter(user=prescription_request.patient.user).first()
                     if faculty:
                         request_data['user_info'] = {
                             'id': faculty.faculty_id,
@@ -1083,12 +1098,12 @@ def admin_dashboard_view(request):
                     else:
                         request_data['user_info'] = {
                             'id': 'N/A',
-                            'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                            'name': f"{prescription_request.patient.user.first_name} {prescription_request.patient.user.last_name}"
                         }
             except Exception:
                 request_data['user_info'] = {
                     'id': 'N/A',
-                    'name': f"{request.patient.user.first_name} {request.patient.user.last_name}"
+                    'name': f"{prescription_request.patient.user.first_name} {prescription_request.patient.user.last_name}"
                 }
         prescription_requests_data.append(request_data)
     

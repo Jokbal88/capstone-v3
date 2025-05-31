@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 import uuid
+from django.core.exceptions import ValidationError
 
 class Student(models.Model):
     GENDER_CHOICES = [
@@ -63,3 +64,26 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.role}"
+
+class SystemSettings(models.Model):
+    require_otp_verification = models.BooleanField(default=True, help_text="If enabled, users will need to verify their email with OTP during login")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "System Setting"
+        verbose_name_plural = "System Settings"
+
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists
+        if not self.pk and SystemSettings.objects.exists():
+            raise ValidationError("There can be only one SystemSettings instance")
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_settings(cls):
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
+
+    def __str__(self):
+        return "System Settings"

@@ -36,19 +36,29 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Show OTP form and hide login form
-                    loginForm.classList.add('hidden');
-                    otpForm.classList.remove('hidden');
-                    
-                    // Focus on first OTP input
-                    document.querySelector('#otpForm input[name="otp"]').focus();
-                    
-                    // Show success message
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Success!',
-                        text: data.message || 'Please check your email for the verification code'
-                    });
+                    if (data.show_otp) {
+                        // Show OTP form and hide login form
+                        loginForm.classList.add('hidden');
+                        otpForm.classList.remove('hidden');
+                        // Focus on first OTP input
+                        document.querySelector('#otpForm input[name="otp"]').focus();
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message || 'Please check your email for the verification code'
+                        });
+                    } else if (data.redirect_url) {
+                        // Redirect immediately if OTP is not required
+                        window.location.href = data.redirect_url;
+                    } else {
+                        // Fallback: show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: data.message || 'Login successful'
+                        });
+                    }
                 } else {
                     Swal.fire({
                         icon: 'error',

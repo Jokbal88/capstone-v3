@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Student, EmailVerification, Faculty, Profile
+from .models import Student, EmailVerification, Faculty, Profile, SystemSettings
 
 class EmailVerifiedFilter(admin.SimpleListFilter):
     title = _('email verified')
@@ -162,6 +162,19 @@ class EmailVerificationAdmin(admin.ModelAdmin):
     list_filter = ('is_verified', 'created_at')
     search_fields = ('user__email', 'user__username')
     readonly_fields = ('created_at',)
+
+# Register SystemSettings model
+@admin.register(SystemSettings)
+class SystemSettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        # Only allow adding if no settings exist
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of the settings
+        return False
 
 # Unregister the default UserAdmin and register our custom one
 admin.site.unregister(User)

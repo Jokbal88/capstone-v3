@@ -331,13 +331,13 @@
                             <tbody>
                                 {% for request_data in dental_requests %}
                                 <tr>
-                                    <td class="text-center">{{ request_data.user_info.id }}</td>
-                                    <td>{{ request_data.user_info.name }}</td>
-                                    <td>{{ request_data.request.service_type }}</td>
-                                    <td>{{ request_data.request.date_requested|date:"F d, Y" }}</td>
+                                    <td class="text-center">{{ request_data.user_info.id_number }}</td>
+                                    <td>{{ request_data.user_info.full_name }}</td>
+                                    <td>{{ request_data.service_type }}</td>
+                                    <td>{{ request_data.date_requested|date:"F d, Y" }}</td>
                                     <td class="text-center">
-                                        <span class="badge {% if request_data.request.status == 'appointed' %}bg-success{% elif request_data.request.status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
-                                            {{ request_data.request.status|title }}
+                                        <span class="badge {% if request_data.appointed %}bg-success{% else %}bg-warning{% endif %}">
+                                            {% if request_data.appointed %}Appointed{% else %}Pending{% endif %}
                                         </span>
                                     </td>
                                 </tr>
@@ -355,9 +355,9 @@
                                 </tr>
                             </tbody>
                         </table>
-      </div>
-    </div>
-  </div>
+                    </div>
+                </div>
+            </div>
             <!-- Right Column: Calendar, Schedules, History -->
             <div class="flex flex-col h-full flex-1 gap-3">
                 <div class="dashboard-card border border-gray-200 flex flex-col p-2 mb-1 w-full" style="min-height: 40px; height: auto;">
