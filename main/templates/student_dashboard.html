@@ -384,7 +384,7 @@
                                     <span class="inline-block px-2 py-1 rounded bg-red-100 text-red-800">Rejected</span>
                                 {% elif request.status == 'completed' %}
                                     <span class="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800">Completed</span>
-                                {% endif %}
+                    {% endif %}
                             </td>
                         </tr>
                         {% empty %}
@@ -409,8 +409,8 @@
                     </div>
                 </div>
                 <div id="calendar" class="calendar-grid"></div>
+                </div>
             </div>
-        </div>
     </div>
     {% else %}
         <div class="bg-white rounded-lg shadow-lg p-6 text-center w-full flex items-center justify-center">

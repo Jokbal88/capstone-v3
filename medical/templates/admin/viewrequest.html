@@ -56,8 +56,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Student ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Requested</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -67,8 +66,7 @@
                             {% for request in pending_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4"><span class="text-black">{{ request.student_id }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">{{ request.student_last_name|title }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">{{ request.student_first_name|title }}</span></td>
+                                    <td class="text-center p-4"><span class="text-black">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.request_type }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.date_requested|date:'M d, Y' }}</span></td>
                                     <td class="text-center p-4">
@@ -97,8 +95,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Student ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Accepted</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -108,8 +105,7 @@
                             {% for request in accepted_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.student_id }}</td>
-                                    <td class="text-center p-4">{{ request.student_last_name|title }}</td>
-                                    <td class="text-center p-4">{{ request.student_first_name|title }}</td>
+                                    <td class="text-center p-4">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
                                     <td class="text-center p-4">
                                          {% comment %} Link only if relevant and student exists {% endcomment %}
                                          {% if request.student_id and request.student_id|length > 0 %}
@@ -147,8 +143,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Student ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Completed</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -158,8 +153,7 @@
                             {% for request in completed_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.student_id }}</td>
-                                    <td class="text-center p-4">{{ request.student_last_name|title }}</td>
-                                    <td class="text-center p-4">{{ request.student_first_name|title }}</td>
+                                    <td class="text-center p-4">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
                                     <td class="text-center p-4">{{ request.request_type }}</td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                     <td class="text-center p-4">
@@ -189,8 +183,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Faculty ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Requested</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -200,8 +193,7 @@
                             {% for request in pending_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4"><span class="text-black">{{ request.faculty_id }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">{{ request.faculty.user.last_name|title }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">{{ request.faculty.user.first_name|title }}</span></td>
+                                    <td class="text-center p-4"><span class="text-black">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.request_type }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.date_requested|date:'M d, Y' }}</span></td>
                                     <td class="text-center p-4">
@@ -231,8 +223,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Faculty ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Accepted</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -242,9 +233,14 @@
                             {% for request in accepted_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.last_name|title }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }}</td>
-                                    <td class="text-center p-4">{{ request.request_type }}</td>
+                                    <td class="text-center p-4">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">
+                                        {% if request.request_type == 'Eligibility Form' %}
+                                            <a href="{% url 'medical:physical_exam' request.faculty_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>
+                                        {% else %}
+                                            {{ request.request_type }}
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                     <td class="text-center p-4">
                                         <form action="" method="POST" class="flex gap-2 justify-center">
@@ -271,8 +267,7 @@
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Faculty ID</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Lastname</th>
-                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Firstname</th>
+                                <th class="text-center p-4 text-lg font-semibold text-gray-700">Name</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Request Type</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Date Completed</th>
                                 <th class="text-center p-4 text-lg font-semibold text-gray-700">Action</th>
@@ -282,8 +277,7 @@
                             {% for request in completed_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.last_name|title }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }}</td>
+                                    <td class="text-center p-4">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
                                     <td class="text-center p-4">{{ request.request_type }}</td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                      <td class="text-center p-4">

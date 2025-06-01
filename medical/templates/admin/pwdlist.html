@@ -5,6 +5,7 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'styles/viewrequest.css' %}">
+    <link rel="stylesheet" href="{% static 'styles/medicalrequirements.css' %}">
     <link rel="stylesheet" media="print" href="{% static 'styles/print.css' %}">
 {% endblock %}
 
@@ -30,7 +31,7 @@
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Firstname</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Age</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Sex</th>
-                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Remarks</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">File</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Verification Status</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Actions</th>
                 </tr>
@@ -51,7 +52,13 @@
                             {% endif %}
                             <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.age }}</a></td>
                             <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{% if patient.related_student %}{{ patient.related_student.sex }}{% else %}N/A{% endif %}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.remarks_display|default:"N/A" }}</a></td>
+                            <td class="p-2">
+                                {% if patient.pwd_file %}
+                                    <button type="button" onclick="previewFile('{{ patient.pwd_file.url }}', '{% if patient.related_student %}{{ patient.related_student.firstname }} {{ patient.related_student.lastname }}{% elif patient.related_faculty %}{{ patient.related_faculty.user.get_full_name }}{% else %}{{ patient.user.username }}{% endif %}', 'PWD Card')" class="text-blue-600 hover:underline">Preview</button>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
                             <td class="p-2 text-center">
                                 {% if patient.medicalclearance.riskassessment.pwd_verified %}
                                     <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verified</span>
@@ -91,9 +98,113 @@
         </div>
     </div>
 </div>
+
+<!-- Add Modal for File Preview -->
+<div id="previewModal" class="modal" style="display: none;">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h5 class="modal-title" id="modalTitle">File Preview</h5>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="previewContainer"></div>
+        <div class="zoom-controls">
+            <button onclick="zoomOut()">-</button>
+            <button onclick="zoomIn()">+</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Modal JavaScript (copied from medupload.html)
+    var modal = document.getElementById("previewModal");
+    var previewContainer = document.getElementById("previewContainer");
+    var modalTitle = document.getElementById("modalTitle");
+    var currentZoom = 1;
+    var zoomStep = 0.1;
+    var minZoom = 0.5;
+    var maxZoom = 3;
+
+    function previewFile(fileUrl, patientName, documentType) {
+        modalTitle.textContent = `Preview: ${patientName} - ${documentType}`;
+        previewContainer.innerHTML = ''; // Clear previous content
+        currentZoom = 1; // Reset zoom level
+
+        // Determine file type
+        var fileExtension = fileUrl.split('.').pop().toLowerCase();
+
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+            var img = document.createElement('img');
+            img.src = fileUrl;
+            img.style.transform = `scale(${currentZoom})`;
+            img.style.transformOrigin = 'top left'; // Set transform origin
+            previewContainer.appendChild(img);
+             modal.style.display = "block";
+        } else if (fileExtension === 'pdf') {
+            var obj = document.createElement('object');
+            obj.data = fileUrl;
+            obj.type = 'application/pdf';
+            obj.style.width = '100%';
+            obj.style.height = '100%';
+            previewContainer.appendChild(obj);
+             // Hide zoom controls for PDF
+            document.querySelector('.zoom-controls').style.display = 'none';
+             modal.style.display = "block";
+        } else {
+            previewContainer.innerHTML = '<p>Preview not available for this file type.</p>';
+             // Hide zoom controls for unsupported types
+            document.querySelector('.zoom-controls').style.display = 'none';
+        }
+
+         // Show zoom controls only if it's an image
+        if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
+            document.querySelector('.zoom-controls').style.display = 'flex';
+        } else {
+            document.querySelector('.zoom-controls').style.display = 'none';
+        }
+    }
+
+    function closeModal() {
+        modal.style.display = "none";
+        previewContainer.innerHTML = ''; // Clear content when closing
+         document.querySelector('.zoom-controls').style.display = 'none'; // Hide controls on close
+    }
+
+    // Close modal when clicking outside the modal-content
+    window.onclick = function(event) {
+        const modal = document.getElementById('previewModal');
+        const modalContent = document.querySelector('.modal-content');
+        // Check if the clicked area is outside the modal-content but inside the modal
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+
+    function zoomIn() {
+        currentZoom += zoomStep;
+        applyZoom();
+    }
+
+    function zoomOut() {
+        currentZoom = Math.max(minZoom, currentZoom - zoomStep); // Prevent zooming out below minZoom
+        applyZoom();
+    }
+
+    function applyZoom() {
+        const imageElement = previewContainer.querySelector('img');
+        const objectElement = previewContainer.querySelector('object');
+
+        if (imageElement) {
+            imageElement.style.transform = `scale(${currentZoom})`;
+             // Adjust transform origin if needed, currently set to top left in CSS
+        } else if (objectElement) {
+            // Applying transform to object element (for PDFs) - behavior may vary across browsers
+             // Consider alternative PDF viewers for reliable zoom
+            objectElement.style.transform = `scale(${currentZoom})`;
+             // You might need to adjust the container's overflow and dimensions if zooming causes content to exceed boundaries
+        }
+         // You might also want to update a visual indicator of the current zoom level
+    }
 </script>
 {% endblock %}

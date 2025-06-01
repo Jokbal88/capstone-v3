@@ -122,16 +122,16 @@ def patient_basic_info(request, student_id):
     return render(request, "students/basicinfo.html", {"student": student})
 
 # view for handling clearance form submission
+@user_passes_test(is_admin)
 def medicalclearance_view(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-
-        #if MedicalClearance.objects.filter(student__student_id = student_id).exists():
-        #     clearance = MedicalClearance.objects.get(student__student_id = student_id)
-        #    med_requirements = MedicalRequirement.objects.get(student__student_id = student_id)
-        #     return render(request, "admin/patientclearance_comp.html", {"clearance":clearance, "med_requirements": med_requirements})
-        student = Student.objects.get(student_id=student_id)
-        user = User.objects.get(email=student.email)
-        patient = Patient.objects.get(user=user)
+        try:
+            student = Student.objects.get(student_id=student_id)
+            user = User.objects.get(email=student.email)
+            patient = Patient.objects.get(user=user)
+        except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist):
+            messages.error(request, "Student, User, or Patient record not found.")
+            return redirect('medical:viewrequest') # Redirect to a safe page
+        
         if request.method == "POST":
             # Handle patient basic information
             age = request.POST.get("age")
@@ -190,7 +190,8 @@ def medicalclearance_view(request, student_id):
 
             if MedicalClearance.objects.filter(patient__student__student_id = student_id).exists():
                 clearance = MedicalClearance.objects.get(patient__student__student_id = student_id)
-                med_requirements = MedicalRequirement.objects.get(patient__student__student_id = student_id)
+                # Get MedicalRequirement for the fetched patient
+                med_requirements = MedicalRequirement.objects.get(patient=patient)
 
                 clearance.patient.age = age
                 clearance.patient.birth_date = birth_date
@@ -219,7 +220,7 @@ def medicalclearance_view(request, student_id):
                 
 
                 # Update Medical Requirements
-                med_requirements_files = MedicalRequirement.objects.get(patient__student__student_id = student_id)
+                med_requirements_files = MedicalRequirement.objects.get(patient=patient)
                 med_requirements_files.vaccination_type = vaccination_type
                 med_requirements_files.vaccinated_1st = vaccinated_1st
                 med_requirements_files.vaccinated_2nd = vaccinated_2nd
@@ -235,7 +236,7 @@ def medicalclearance_view(request, student_id):
                 riskass.save()
                 med_requirements_files.save()
                 messages.success(request, "Record Updated")
-                return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
+                # return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
             
             # Create the clearance object
             # patient = Student.objects.get(student_id = student_id)
@@ -268,26 +269,21 @@ def medicalclearance_view(request, student_id):
             # patient_request.save()
 
             messages.success(request, "Medical Clearance created successfully.")
-            return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
-        #student = Student.objects.get(student_id=student_id)
+            # return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
 
-        if MedicalClearance.objects.filter(patient__student__student_id = student_id).exists():
-            clearance = MedicalClearance.objects.get(patient__student__student_id = student_id)
-            med_requirements = MedicalRequirement.objects.get(patient__student__student_id = student_id)
+        if MedicalClearance.objects.filter(patient=patient).exists():
+            clearance = MedicalClearance.objects.get(patient=patient)
+            # Get MedicalRequirement for the fetched patient
+            med_requirements = MedicalRequirement.objects.get(patient=patient)
             return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance": clearance, "med_requirements": med_requirements})
-        messages.info(request, f"Fill out the necessary information to complete {patient.student.firstname.title()}'s Medical Clearance.")
+        # Access student's first name through the patient's user and linked student object
+        student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
+        messages.info(request, f"Fill out the necessary information to complete {student_first_name.title()}'s Medical Clearance.")
         return render(request, "admin/patientclearance_comp.html", {"patient":patient})
-    else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
 
 # Views for handling eligibilty form creation
+@user_passes_test(is_admin)
 def eligibilty_form(request, student_id):
-    if request.user.is_superuser or request.user.is_staff:
-        # if EligibilityForm.objects.filter(student__student_id = student_id).exists():
-        #     student_eligibilty_form = EligibilityForm.objects.get(student__student_id = student_id)
-        #     return render(request, "admin/eligibilityformcomp.html", {"eligibility_form": student_eligibilty_form})
-
-        #student = Student.objects.get(student_id=student_id)
         student = Student.objects.get(student_id=student_id)
         user = User.objects.get(email=student.email)
         patient = Patient.objects.get(user=user)
@@ -309,9 +305,11 @@ def eligibilty_form(request, student_id):
             license_number = request.POST.get("liscence-number")
             validity_date = request.POST.get("validity-date")
 
-            if EligibilityForm.objects.filter(patient__student__student_id = student_id).exists():
-                patient_eligibilty_form = EligibilityForm.objects.get(patient__student__student_id = student_id)
+            # Check if EligibilityForm exists for the patient
+            if EligibilityForm.objects.filter(patient=patient).exists():
+                patient_eligibilty_form = EligibilityForm.objects.get(patient=patient)
 
+                # Update the existing EligibilityForm and patient basic info
                 patient_eligibilty_form.patient.age = age
                 patient_eligibilty_form.patient.birth_date = birth_date
                 patient_eligibilty_form.patient.weight = weight
@@ -322,47 +320,62 @@ def eligibilty_form(request, student_id):
                 patient_eligibilty_form.patient.home_address = address
                 patient_eligibilty_form.blood_pressure = blood_pressure
                 patient_eligibilty_form.date_of_event = date_event
-                patient_eligibilty_form.competetions = competetions,
+                # competetions field assignment was incorrect, assuming it's a single value
+                patient_eligibilty_form.competetions = competetions
                 patient_eligibilty_form.venue = venue
                 patient_eligibilty_form.date_of_examination = date_of_examination
                 patient_eligibilty_form.liscence_number = license_number
                 patient_eligibilty_form.validity_date = validity_date
 
+                patient_eligibilty_form.patient.save()
                 patient_eligibilty_form.save()
-                messages.success(request, "Record Updated")
+
+                messages.success(request, "Eligibility Form record updated.")
                 return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
 
-            # If not exists
-            patient_eligibilty_form = EligibilityForm.objects.create(
-                patient = patient,
-                blood_pressure = blood_pressure,
-                competetions = competetions,
-                date_of_event = date_event,
-                venue = venue,
-                date_of_examination = date_of_examination,
-                liscence_number = license_number,
-                validity_date = validity_date
-            )
-            
-            # patient_request = PatientRequest.objects.get(patient__student__student_id = student_id, request_type = "Eligibility Form")
-            # student_request.date_approved = datetime.now()
-            # student_request.save()
+            else:
+                # Create the EligibilityForm object if it does not exists
+                patient_eligibilty_form = EligibilityForm.objects.create(
+                    patient = patient,
+                    blood_pressure = blood_pressure,
+                    competetions = competetions,
+                    date_of_event = date_event,
+                    venue = venue,
+                    date_of_examination = date_of_examination,
+                    liscence_number = license_number,
+                    validity_date = validity_date
+                )
+                # Also update basic patient info when creating the eligibility form
+                patient.age = age
+                patient.birth_date = birth_date
+                patient.weight = weight
+                patient.height = height
+                patient.bloodtype = blood_type
+                patient.allergies = allergies
+                patient.medications = medications
+                patient.home_address = address
+                patient.save()
 
-            messages.success(request, "Eligibility Form successfully created")
-            return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})      
-        
-        if EligibilityForm.objects.filter(patient__student__student_id = student_id).exists():
-            patient_eligibilty_form = EligibilityForm.objects.get(patient__student__student_id = student_id)
+                # patient_request = PatientRequest.objects.get(patient__student__student_id = student_id, request_type = "Eligibility Form")
+                # student_request.date_approved = datetime.now()
+                # student_request.save()
+
+                messages.success(request, "Eligibility Form successfully created.")
+                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})      
+
+        # For GET request or if POST doesn't have necessary data, check if EligibilityForm exists
+        if EligibilityForm.objects.filter(patient=patient).exists():
+            patient_eligibilty_form = EligibilityForm.objects.get(patient=patient)
             return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
-        
-        messages.info(request, f"Fill out the necessary information to complete {patient.student.firstname.title()}'s Eligibility Form.")
+
+        # Access student's first name through the patient's user object and linked student object
+        student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
+        messages.info(request, f"Fill out the necessary information to complete {student_first_name.title()}'s Eligibility Form.")
         return render(request, "admin/eligibilityformcomp.html", {"patient": patient})
-    else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
     
 # List of student for patient profile
+@user_passes_test(is_admin)
 def patient_profile(request):
-    if request.user.is_superuser or request.user.is_staff:
         # Get all students and faculty, ordered by name
         all_students = Student.objects.all().order_by('lastname', 'firstname')
         all_faculty = Faculty.objects.all().select_related('user').order_by('user__last_name', 'user__first_name')
@@ -442,14 +455,10 @@ def patient_profile(request):
             "students": students_list,
             "faculty": faculty_list
         })
-    else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
 
 # View students request, eg. Medical Clearance for OJT/Practicum, Eligibility Form and Medical Certificate
+@user_passes_test(is_admin)
 def view_request(request):
-    if not request.user.is_superuser and not request.user.is_staff:
-        return HttpResponseForbidden("You don't have permission to access this page.")
-    
     # Fetch all patient requests and filter by status
     pending_patient_requests = PatientRequest.objects.select_related('patient__user').filter(
         status='pending'
@@ -759,8 +768,8 @@ def view_request(request):
     return render(request, "admin/viewrequest.html", context)
 
 # Views for creating Physical Examintaion Reports
+@user_passes_test(is_admin)
 def physical_examination(request, id):
-    if request.user.is_superuser or request.user.is_staff:
         student = None
         faculty = None
         user = None
@@ -1030,13 +1039,9 @@ def physical_examination(request, id):
 
         return render(request, "admin/physicalexamcomp.html", context)
 
-    else:
-        messages.error(request, "You are not authorized to access this page")
-        return redirect("login")
-
 # Record prescriptions
+@user_passes_test(is_admin)
 def prescription(request):
-    if request.user.is_superuser or request.user.is_staff:
         if request.method == "POST":
             id_number = request.POST.get("student_id") # Use id_number to be consistent with other views and handle both student and faculty IDs
             name = request.POST.get("name")
@@ -1106,9 +1111,8 @@ def prescription(request):
 
         else:
             return render(request, "admin/prescription.html", {})
-    else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
 
+@user_passes_test(is_admin)
 def get_user_name_by_id(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -1151,8 +1155,8 @@ def get_user_name_by_id(request):
 #             return JsonResponse({'success': False, 'message': 'Student with the provided ID does not exist'})   
 
 # Record Emergency Health Assistance
+@user_passes_test(is_admin)
 def emergency_asst(request):
-    if request.user.is_superuser or request.user.is_staff:
         if request.method == "POST":
             # Get the ID number from the form
             id_number = request.POST.get("student_id") # The input name is 'student_id' but it can be faculty ID
@@ -1232,8 +1236,6 @@ def emergency_asst(request):
         
         # For GET requests, render the empty form
         return render(request, "admin/emergency_asst.html", {})
-    else:
-        return HttpResponseForbidden("You don't have permission to access this page.")
 
 # Helper function to record transactions
 def record_transaction(patient, transac_type):
@@ -1247,45 +1249,27 @@ def record_transaction(patient, transac_type):
 def submit_request(request):
     from main.models import Faculty
     if request.method == "POST":
-        student_id = request.POST.get("student_id")
-        # Try to get student or faculty
-        student = Student.objects.filter(student_id=student_id).first()
-        faculty = Faculty.objects.filter(faculty_id=student_id).first()
-        id_number = ""
-        if student:
-            id_number = student.student_id
-        elif faculty:
-            id_number = faculty.faculty_id
-        else:
-            id_number = student_id or ""
-        if not (student or faculty):
-            messages.error(request, "The ID you entered does not exist.")
-            return render(request, "students/requestform.html", {"student": None, "faculty": None, "id_number": id_number})
-
-        # Get the User associated with this student or faculty
-        from django.contrib.auth.models import User
-        if student:
-            user = User.objects.filter(email=student.email).first()
-        else:
-            user = faculty.user if faculty else None
-        if not user:
-            messages.error(request, "No user account found for this ID.")
-            return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
-
         request_type = request.POST.get("request_type")
         
-        # Handle student requests
-        if student:
+        # Determine if the logged-in user is a student or faculty
+        student_user = get_student_by_user(request.user)
+        faculty_user = get_faculty_by_user(request.user)
+
+        if student_user:
+            # Logged-in user is a student
+            student = student_user
+            id_number = student.student_id
             # Check if patient exists for student
             try:
+                user = request.user
                 patient = Patient.objects.get(user=user)
             except Patient.DoesNotExist:
-                 messages.info(request, "Fill out your medical profile first before doing any transactions")
-                 return redirect('medical:patient_basicinfo', student_id)
+                messages.info(request, "Fill out your medical profile first before doing any transactions")
+                return redirect('medical:patient_basicinfo', student.student_id)
 
             if PatientRequest.objects.filter(patient=patient, request_type=request_type).exists():
                 messages.error(request, "You have already submitted this type of request")
-                return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+                return render(request, "students/requestform.html", {"student": student, "faculty": None, "id_number": id_number})
             
             # Create student request
             request_obj = PatientRequest.objects.create(
@@ -1294,14 +1278,17 @@ def submit_request(request):
                 date_requested=timezone.now()
             )
             # Set name and email for confirmation email
-            patient_name = f"{student.firstname} {student.lastname}"
-            patient_email = student.email
-            
-        # Handle faculty requests
-        elif faculty:
+            user_name = f"{student.firstname} {student.lastname}"
+            user_email = student.email
+
+        elif faculty_user:
+            # Logged-in user is a faculty
+            faculty = faculty_user
+            id_number = faculty.faculty_id
+
             if FacultyRequest.objects.filter(faculty=faculty, request_type=request_type).exists():
                 messages.error(request, "You have already submitted this type of request")
-                return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+                return render(request, "students/requestform.html", {"student": None, "faculty": faculty, "id_number": id_number})
             
             # Create faculty request
             request_obj = FacultyRequest.objects.create(
@@ -1310,13 +1297,14 @@ def submit_request(request):
                 date_requested=timezone.now()
             )
             # Set name and email for confirmation email
-            patient_name = faculty.user.get_full_name()
-            patient_email = faculty.user.email
+            user_name = faculty.user.get_full_name()
+            user_email = faculty.user.email
         else:
-            patient_name = ""
-            patient_email = ""
+            # User is neither student nor faculty (should not happen if login required)
+            messages.error(request, "User profile not found.")
+            return render(request, "students/requestform.html", {"student": None, "faculty": None, "id_number": ""})
 
-        # Send confirmation email
+        # Send confirmation email (common for both student and faculty)
         email_subject = 'Request Confirmation'
         email_body = f"""
         <html>
@@ -1375,7 +1363,7 @@ def submit_request(request):
             <div class="container">
                 <div class="title">REQUEST CONFIRMATION</div>
 
-                <p>Dear <strong>{patient_name}</strong>,</p>
+                <p>Dear <strong>{user_name}</strong>,</p>
 
                 <p>Thank you for submitting your request for the document <strong>'{request_type}'</strong>. We have received it and our team is now processing it with utmost care and attention.</p>
 
@@ -1392,29 +1380,34 @@ def submit_request(request):
         </body>
         </html>
         """
-        if patient_email:
+        if user_email:
             send_mail(
                 email_subject,
                 '',
                 settings.EMAIL_HOST_USER,
-                [patient_email],
+                [user_email],
                 html_message=email_body,
                 fail_silently=False,
             )
         messages.success(request, "Request submitted. A confirmation email has been sent.")
-        return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
-    # For GET requests, fetch the student or faculty object if possible
-    student = None
-    faculty = None
+        
+        # Redirect to the correct dashboard based on user type
+        if student_user:
+            return redirect('main:main') # Redirect to main view which handles student dashboard redirection
+        elif faculty_user:
+             return redirect('main:main') # Redirect to main view which handles faculty dashboard redirection
+        else:
+             return redirect('main:main') # Fallback redirection
+             
+    # For GET requests, fetch the student or faculty object for initial form display
+    student = get_student_by_user(request.user)
+    faculty = get_faculty_by_user(request.user)
     id_number = ""
-    if hasattr(request.user, 'username'):
-        from main.models import Faculty
-        student = Student.objects.filter(email=request.user.username).first() or Student.objects.filter(student_id=request.user.username).first()
-        faculty = Faculty.objects.filter(user__username=request.user.username).first()
-        if student:
-            id_number = student.student_id
-        elif faculty:
-            id_number = faculty.faculty_id
+    if student:
+        id_number = student.student_id
+    elif faculty:
+        id_number = faculty.faculty_id
+
     return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
 
 # Views for medical requirements tracker
@@ -2136,50 +2129,58 @@ def dental_schedule(request):
 @user_passes_test(is_admin)
 def pwd_list(request):
     if request.user.is_superuser or request.user.is_staff:
-        # Use select_related to fetch the user, medicalclearance, riskassessment, and the faculty linked via the user.
-        # We cannot use select_related for user__student directly due to the ForeignKey setup.
-        # Fetch all PWD patients, attempting to select related medicalclearance and riskassessment
-        # Note: Filtering by riskassessment__pwd=True assumes a link exists, even if MedicalClearance is missing.
-        # We will try to access riskassessment directly or via medicalclearance in the loop.
-        pwd_patients = Patient.objects.filter(riskassessment__pwd=True).select_related('user__faculty', 'user', 'medicalclearance__riskassessment')
+        # Filter patients who have both PWD status and medical requirements
+        pwd_patients = Patient.objects.filter(
+            riskassessment__pwd=True,
+            medicalrequirement__isnull=False
+        ).select_related(
+            'user__faculty', 
+            'user', 
+            'medicalclearance__riskassessment',
+            'medicalrequirement'
+        )
 
         # Attach the correct ID (Student ID or Faculty ID) and potentially the related student/faculty object
         # to each patient object for easier access in the template.
         for patient in pwd_patients:
             patient.user_id_display = "N/A"
-            patient.related_student = None # Initialize related student/faculty fields
+            patient.related_student = None
             patient.related_faculty = None
+
+            # Get the related MedicalRequirement for this patient (already prefetched)
+            medical_requirement = patient.medicalrequirement
+            patient.pwd_file = medical_requirement.pwd_card if medical_requirement else None
 
             # Access risk assessment directly if pre-fetched via medicalclearance
             patient.risk_assessment_obj = None
             if hasattr(patient, 'medicalclearance') and hasattr(patient.medicalclearance, 'riskassessment'):
                 patient.risk_assessment_obj = patient.medicalclearance.riskassessment
 
-            patient.remarks_display = "N/A" # Initialize remarks display field
+            patient.remarks_display = "N/A"
 
             if patient.user:
                 try:
-                    # Try to get student first by user's email. This will be an extra query for students.
+                    # Try to get student first by user's email
                     student = Student.objects.filter(email=patient.user.email).first()
                     if student:
                         patient.user_id_display = student.student_id
-                        patient.related_student = student # Attach the student object
+                        patient.related_student = student
                 except Exception:
-                    pass # Continue if student not found
+                    pass
 
                 if not patient.related_student:
                     # If not a student, check for faculty (already select_related)
                     if hasattr(patient.user, 'faculty') and patient.user.faculty:
-                        faculty = patient.user.faculty # Access the prefetched faculty
+                        faculty = patient.user.faculty
                         patient.user_id_display = faculty.faculty_id
-                        patient.related_faculty = faculty # Attach the faculty object
+                        patient.related_faculty = faculty
 
             # Set remarks display if RiskAssessment is found
             if patient.risk_assessment_obj and patient.risk_assessment_obj.disability:
                 patient.remarks_display = patient.risk_assessment_obj.disability
 
         if request.method == "POST":
-            search_id = request.POST.get("student_id") # Input name is student_id but can be faculty ID
+            search_id = request.POST.get("student_id")
             filtered_pwd_patients = []
             if search_id:
                 # Filter by the attached user_id_display
@@ -2190,7 +2191,7 @@ def pwd_list(request):
                 if not filtered_pwd_patients:
                     messages.error(request, f"No PWD student or faculty found with ID: {search_id}")
 
-                pwd_patients = filtered_pwd_patients # Use filtered list if search ID provided
+                pwd_patients = filtered_pwd_patients
 
         return render(request, "admin/pwdlist.html", {"pwds": pwd_patients})
     else:
@@ -2225,16 +2226,17 @@ def pwd_detail(request, id):
             return redirect('medical:pwdlist')
 
         # Get the patient record for the user
-        patient = Patient.objects.get(user=user)
+        try:
+            patient = Patient.objects.get(user=user)
+        except Patient.DoesNotExist:
+            messages.error(request, f"Patient record not found for user {user.get_full_name() or user.username} (ID: {id}).")
+            return redirect('medical:pwdlist')
 
-        # Get the medical requirements for the patient (or faculty if applicable)
-        if patient:
-             md = MedicalRequirement.objects.filter(patient=patient).first()
-        elif faculty:
-             md = MedicalRequirement.objects.filter(faculty=faculty).first()
-
-        if not patient or not md:
-             messages.error(request, f"Patient record or Medical Requirements not found for ID: {id}")
+        # Get the medical requirements for the patient
+        try:
+             md = MedicalRequirement.objects.get(patient=patient)
+        except MedicalRequirement.DoesNotExist:
+             messages.error(request, f"Medical Requirements record not found for patient {patient.user.get_full_name() or patient.user.username} (ID: {id}).")
              return redirect('medical:pwdlist')
 
     except User.DoesNotExist:
@@ -2686,8 +2688,9 @@ def med_cert(request, student_id):
         print(physically_able)
         physically_not_able = request.POST.get("not-able") == "on"
 
-        if MedicalCertificate.objects.filter(patient__student__student_id = student_id).exists():
-            med_cert = MedicalCertificate.objects.get(patient__student__student_id = student_id)
+        # Check if MedicalCertificate exists for the fetched patient
+        if MedicalCertificate.objects.filter(patient=patient).exists():
+            med_cert = MedicalCertificate.objects.get(patient=patient)
             med_cert.college = college
             med_cert.year = year
             med_cert.age = age
@@ -2722,10 +2725,13 @@ def med_cert(request, student_id):
         )
         messages.success(request, "Medical certificate successfully created")
         return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert})
-    if MedicalCertificate.objects.filter(patient__student__student_id = student_id).exists():
-        med_cert = MedicalCertificate.objects.get(patient__student__student_id = student_id)
+    # For GET request, check if MedicalCertificate exists for the fetched patient
+    if MedicalCertificate.objects.filter(patient=patient).exists():
+        med_cert = MedicalCertificate.objects.get(patient=patient)
         return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert})
-    messages.info(request, f"Issue Medical Certificate for {patient.student.firstname.title()}")
+    # Access student's first name through the patient's user and linked student object
+    student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
+    messages.info(request, f"Issue Medical Certificate for {student_first_name.title()}")
     return render(request, "admin/med_cert.html", {"patient": patient})
 
 # For uploading student from a csv file
