@@ -1887,6 +1887,41 @@ def dental_services(request):
 # Views for appointing students dental requests
 def dental_request(request):
     if request.user.is_superuser or request.user.is_staff:
+        if request.method == "POST":
+            request_id = request.POST.get("request_id")
+            appointment_date_str = request.POST.get("appointment_date")
+            appointment_time_str = request.POST.get("appointment_time")
+
+            try:
+                # Get the DentalRecords object
+                dental_record = DentalRecords.objects.get(id=request_id)
+
+                # Combine date and time strings and convert to datetime object
+                # Need to import datetime and timezone
+                from datetime import datetime
+                from django.utils import timezone
+
+                appointment_datetime = datetime.strptime(f"{appointment_date_str} {appointment_time_str}", "%Y-%m-%d %H:%M")
+                # Make the datetime timezone-aware
+                appointment_datetime = timezone.make_aware(appointment_datetime)
+
+                # Update the dental record
+                dental_record.date_appointed = appointment_datetime
+                dental_record.appointed = True
+                dental_record.save()
+
+                messages.success(request, "Appointment set successfully.")
+
+            except DentalRecords.DoesNotExist:
+                messages.error(request, "Dental request not found.")
+            except ValueError:
+                messages.error(request, "Invalid date or time format.")
+            except Exception as e:
+                messages.error(request, f"An error occurred: {str(e)}")
+
+            # Redirect or refresh the page after processing
+            # return redirect('medical:dental_request') # Assuming 'medical:dental_request' is the URL name for this view
+
         service_request = DentalRecords.objects.filter(appointed=False).select_related('patient__user')
         
         # Fetch and attach ID and name to each request for either student or faculty
@@ -1926,77 +1961,68 @@ def dental_schedule(request):
         # Attach ID and name to each schedule for either student or faculty
         for schedule in schedules:
             schedule.id_number = "N/A"
-            schedule.name = "N/A"
+            schedule.lastname = "N/A"
+            schedule.firstname = "N/A"
 
             if schedule.patient and schedule.patient.user:
                 user = schedule.patient.user
-                
+
                 # Try to get Student info
                 try:
                     student = Student.objects.get(email=user.email)
                     schedule.id_number = student.student_id
-                    schedule.name = f"{student.lastname}, {student.firstname}"
+                    schedule.lastname = student.lastname
+                    schedule.firstname = student.firstname
                 except Student.DoesNotExist:
                     # If not a student, try to get Faculty info
                     try:
                         faculty = Faculty.objects.get(user=user)
                         schedule.id_number = faculty.faculty_id
-                        schedule.name = f"{faculty.user.last_name}, {faculty.user.first_name}"
+                        schedule.lastname = faculty.user.last_name
+                        schedule.firstname = faculty.user.first_name
                     except Faculty.DoesNotExist:
                         # User is neither student nor faculty (or not linked properly)
                         schedule.id_number = "User ID N/A"
-                        schedule.name = user.get_full_name() or user.username or "Unknown User"
+                        schedule.lastname = "Unknown"
+                        schedule.firstname = "User"
             else:  # Handle cases where patient or user might be missing on DentalRecord
                 schedule.id_number = "N/A"
-                schedule.name = "Patient/User Missing"
+                schedule.lastname = "Patient/User"
+                schedule.firstname = "Missing"
 
         if request.method == "POST":
             action = request.POST.get("action")
 
             if action == "done":
-                id_number = request.POST.get("id_number")  # Changed from student_id to id_number
-                service_type = request.POST.get("service_type")
+                request_id = request.POST.get("request_id") # Use request_id from the form
                 
                 try:
-                    # Try to find the dental record by checking both student and faculty
-                    dental_record = None
-                    try:
-                        # First try to find by student
-                        student = Student.objects.get(student_id=id_number)
-                        dental_record = DentalRecords.objects.get(
-                            patient__student=student,
-                            service_type=service_type
-                        )
-                    except Student.DoesNotExist:
-                        # If not a student, try to find by faculty
-                        faculty = Faculty.objects.get(faculty_id=id_number)
-                        dental_record = DentalRecords.objects.get(
-                            patient__faculty=faculty,
-                            service_type=service_type
-                        )
-                    
-                    if dental_record:
-                        # Create a TransactionRecord
-                        TransactionRecord.objects.create(
+                    dental_record = DentalRecords.objects.get(id=request_id)
+
+                    # Create a TransactionRecord
+                    # Ensure patient is not None before creating transaction
+                    if dental_record.patient:
+                         TransactionRecord.objects.create(
                             patient=dental_record.patient,
-                            transac_type="Dental Service",
+                            transac_type=dental_record.service_type,
                             transac_date=timezone.now()
                         )
-                        
-                        # Delete the dental record
-                        dental_record.delete()
-                        
-                        messages.success(request, "Marked As Done")
+                         messages.success(request, "Transaction recorded successfully.")
                     else:
-                        messages.error(request, "Dental record not found")
-                except (Student.DoesNotExist, Faculty.DoesNotExist):
-                    messages.error(request, f"No student or faculty found with ID: {id_number}")
+                         messages.warning(request, "Cannot record transaction: Patient not linked to dental record.")
+
+                    # Delete the dental record after marking as done
+                    dental_record.delete()
+
+                    messages.success(request, "Marked As Done")
+
                 except DentalRecords.DoesNotExist:
-                    messages.error(request, "Dental record not found")
+                    messages.error(request, "Dental record not found.")
                 except Exception as e:
                     messages.error(request, f"An error occurred: {str(e)}")
 
-                return render(request, "admin/dentalschedule.html", {"schedules": schedules})
+                # Redirect or re-render after processing
+                return redirect('medical:dentalschedule') # Redirect back to the schedule page
 
             elif action == "reschedule":
                 request_id = request.POST.get("request_id")
@@ -2068,74 +2094,254 @@ def dental_schedule(request):
         return HttpResponseForbidden("You don't have permission to access this page.")
 
 # List pwd
+@user_passes_test(is_admin)
 def pwd_list(request):
     if request.user.is_superuser or request.user.is_staff:
-        pwd_patients = Patient.objects.filter(riskassessment__pwd=True)
+        # Use select_related to fetch the user, medicalclearance, riskassessment, and the faculty linked via the user.
+        # We cannot use select_related for user__student directly due to the ForeignKey setup.
+        # Fetch all PWD patients, attempting to select related medicalclearance and riskassessment
+        # Note: Filtering by riskassessment__pwd=True assumes a link exists, even if MedicalClearance is missing.
+        # We will try to access riskassessment directly or via medicalclearance in the loop.
+        pwd_patients = Patient.objects.filter(riskassessment__pwd=True).select_related('user__faculty', 'user', 'medicalclearance__riskassessment')
+
+        # Attach the correct ID (Student ID or Faculty ID) and potentially the related student/faculty object
+        # to each patient object for easier access in the template.
+        for patient in pwd_patients:
+            patient.user_id_display = "N/A"
+            patient.related_student = None # Initialize related student/faculty fields
+            patient.related_faculty = None
+
+            # Access risk assessment directly if pre-fetched via medicalclearance
+            patient.risk_assessment_obj = None
+            if hasattr(patient, 'medicalclearance') and hasattr(patient.medicalclearance, 'riskassessment'):
+                patient.risk_assessment_obj = patient.medicalclearance.riskassessment
+
+            patient.remarks_display = "N/A" # Initialize remarks display field
+
+            if patient.user:
+                try:
+                    # Try to get student first by user's email. This will be an extra query for students.
+                    student = Student.objects.filter(email=patient.user.email).first()
+                    if student:
+                        patient.user_id_display = student.student_id
+                        patient.related_student = student # Attach the student object
+                except Exception:
+                    pass # Continue if student not found
+
+                if not patient.related_student:
+                    # If not a student, check for faculty (already select_related)
+                    if hasattr(patient.user, 'faculty') and patient.user.faculty:
+                        faculty = patient.user.faculty # Access the prefetched faculty
+                        patient.user_id_display = faculty.faculty_id
+                        patient.related_faculty = faculty # Attach the faculty object
+
+            # Set remarks display if RiskAssessment is found
+            if patient.risk_assessment_obj and patient.risk_assessment_obj.disability:
+                patient.remarks_display = patient.risk_assessment_obj.disability
+
         if request.method == "POST":
-            student_id = request.POST.get("student_id")
-            if Patient.objects.filter(student__student_id=student_id, riskassessment__pwd=True).exists():
-                pwd_patient = Patient.objects.filter(student__student_id=student_id, riskassessment__pwd=True)
-                return render(request, "admin/pwdlist.html", {"pwds": pwd_patient})
-            else:
-                messages.error(request, "PWD Student not found")
-                return render(request, "admin/pwdlist.html", {})
+            search_id = request.POST.get("student_id") # Input name is student_id but can be faculty ID
+            filtered_pwd_patients = []
+            if search_id:
+                # Filter by the attached user_id_display
+                for patient in pwd_patients:
+                    if patient.user_id_display == search_id:
+                        filtered_pwd_patients.append(patient)
+
+                if not filtered_pwd_patients:
+                    messages.error(request, f"No PWD student or faculty found with ID: {search_id}")
+
+                pwd_patients = filtered_pwd_patients # Use filtered list if search ID provided
+
         return render(request, "admin/pwdlist.html", {"pwds": pwd_patients})
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
-
+        
 # View pwd in details
-def pwd_detail(request, student_id):
-    student = Student.objects.get(student_id=student_id)
-    user = User.objects.get(email=student.email)
-    patient = Patient.objects.get(user=user)
-    md = MedicalRequirement.objects.get(patient=patient)
-    return render(request, 'admin/pwddetails.html', {'patient': patient, 'md': md, 'student': student})
+def pwd_detail(request, id):
+    if not request.user.is_superuser and not request.user.is_staff:
+        return HttpResponseForbidden("You don't have permission to access this page.")
+
+    student = None
+    faculty = None
+    user = None
+    patient = None
+    md = None
+
+    try:
+        # Try to find a Student first
+        student = Student.objects.filter(student_id=id).first()
+        if student:
+            user = User.objects.get(email=student.email)
+
+        # If not a student, try to find a Faculty
+        if not user:
+            faculty = Faculty.objects.filter(faculty_id=id).first()
+            if faculty:
+                user = faculty.user
+
+        # If neither student nor faculty was found with the provided ID
+        if not user:
+            messages.error(request, f"No student or faculty found with ID: {id}")
+            return redirect('medical:pwdlist')
+
+        # Get the patient record for the user
+        patient = Patient.objects.get(user=user)
+
+        # Get the medical requirements for the patient (or faculty if applicable)
+        if patient:
+             md = MedicalRequirement.objects.filter(patient=patient).first()
+        elif faculty:
+             md = MedicalRequirement.objects.filter(faculty=faculty).first()
+
+        if not patient or not md:
+             messages.error(request, f"Patient record or Medical Requirements not found for ID: {id}")
+             return redirect('medical:pwdlist')
+
+    except User.DoesNotExist:
+        messages.error(request, f"User account not found for ID: {id}.")
+        return redirect('medical:pwdlist')
+    except Patient.DoesNotExist:
+         messages.error(request, f"Patient record not found for ID: {id}.")
+         return redirect('medical:pwdlist')
+    except Exception as e:
+        messages.error(request, f"An unexpected error occurred: {str(e)}")
+        return redirect('medical:pwdlist')
+
+    # Pass all relevant objects to the template
+    context = {
+        'patient': patient,
+        'student': student,  # Pass student object if found
+        'faculty': faculty,  # Pass faculty object if found
+        'md': md
+    }
+
+    return render(request, 'admin/pwddetails.html', context)
+
 
 @user_passes_test(is_admin)
-def verify_pwd(request, student_id):
-    try:
-        student = Student.objects.get(student_id=student_id)
-        user = User.objects.get(email=student.email)
-        patient = Patient.objects.get(user=user)
-        
-        # Get or create risk assessment for the patient
-        risk_assessment, created = RiskAssessment.objects.get_or_create(
-            clearance__patient=patient,
-            defaults={'pwd': True}
-        )
-        
-        if not created:
-            risk_assessment.pwd = True
+def verify_pwd(request, id):
+    if request.method == "POST":
+        try:
+            user = None
+            # Try to find a Student first
+            student = Student.objects.filter(student_id=id).first()
+            if student:
+                user = User.objects.get(email=student.email)
+            else:
+                # If not a student, try to find a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id).first()
+                if faculty:
+                    user = faculty.user
+
+            if not user:
+                messages.error(request, f"No user found with ID: {id}.")
+                return redirect('medical:pwdlist')
+
+            patient = Patient.objects.get(user=user)
+
+            # Get or create MedicalClearance for the patient
+            # Get or create MedicalClearance for the patient using patient's primary key
+            # Using patient_id=patient.pk might circumvent TypeError with Patient object instance lookup
+            medical_clearance, created = MedicalClearance.objects.get_or_create(patient_id=patient.pk)
+
+            # Get RiskAssessment through MedicalClearance.
+            # If not found directly linked to *this* MedicalClearance, try to find one linked to it with pwd=True.
+            try:
+                risk_assessment = medical_clearance.riskassessment
+            except RiskAssessment.DoesNotExist:
+                 # Try finding RiskAssessment linked to the medical_clearance we just got/created, filtered by pwd=True
+                 try:
+                     risk_assessment = RiskAssessment.objects.get(clearance=medical_clearance, pwd=True)
+                 except RiskAssessment.DoesNotExist:
+                     # If RiskAssessment is still not found linked to this medical clearance,
+                     # it indicates that the PWD RiskAssessment record for this patient is missing or not linked correctly.
+                     messages.error(request, f"Risk Assessment record with PWD status not found for patient {patient.user.get_full_name() or patient.user.username}. Cannot verify PWD status. Please ensure a Risk Assessment with PWD status exists and is linked to the Medical Clearance.")
+                     return redirect('medical:pwdlist')
+
+
+            # Proceed with verification
+            risk_assessment.pwd_verified = True
+            risk_assessment.pwd_verification_date = timezone.now()
+            risk_assessment.pwd_verified_by = request.user
             risk_assessment.save()
-            
-        messages.success(request, f"Student {student.firstname} {student.lastname} has been verified as PWD.")
-    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist) as e:
-        messages.error(request, f"Error verifying PWD status: {str(e)}")
-    except Exception as e:
-        messages.error(request, f"An unexpected error occurred: {str(e)}")
-        
-    return redirect('medical:pwdlist')
+
+            user_name = user.get_full_name() or user.username
+            messages.success(request, f"PWD status has been verified for {user_name}.")
+
+            # Record the transaction
+            record_transaction(patient, "PWD Verification")
+
+        except (Student.DoesNotExist, Faculty.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist) as e:
+            messages.error(request, f"Error finding patient or user for ID {id}: {str(e)}")
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
+
+        return redirect('medical:pwdlist')
 
 @user_passes_test(is_admin)
-def unverify_pwd(request, student_id):
-    try:
-        student = Student.objects.get(student_id=student_id)
-        user = User.objects.get(email=student.email)
-        patient = Patient.objects.get(user=user)
-        
-        # Get the risk assessment for the patient
-        risk_assessment = RiskAssessment.objects.get(clearance__patient=patient)
-        risk_assessment.pwd = False
-        risk_assessment.save()
-            
-        messages.success(request, f"PWD status has been removed for {student.firstname} {student.lastname}.")
-    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist, RiskAssessment.DoesNotExist) as e:
-        messages.error(request, f"Error removing PWD status: {str(e)}")
-    except Exception as e:
-        messages.error(request, f"An unexpected error occurred: {str(e)}")
-        
-    return redirect('medical:pwdlist')
+def unverify_pwd(request, id):
+    if request.method == "POST":
+        try:
+            user = None
+            # Try to find a Student first
+            student = Student.objects.filter(student_id=id).first()
+            if student:
+                user = User.objects.get(email=student.email)
+            else:
+                # If not a student, try to find a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id).first()
+                if faculty:
+                    user = faculty.user
 
+            if not user:
+                messages.error(request, f"No user found with ID: {id}.")
+                return redirect('medical:pwdlist')
+
+            patient = Patient.objects.get(user=user)
+
+            # Get or create MedicalClearance for the patient
+            # Explicitly ensure patient is a Patient instance before passing
+            if isinstance(patient, Patient):
+                medical_clearance, created = MedicalClearance.objects.get_or_create(patient=patient)
+            else:
+                # This case should ideally not be reached if Patient.objects.get works as expected
+                messages.error(request, f"Internal Error: Retrieved object for user {user.username} is not a Patient instance.")
+                return redirect('medical:pwdlist')
+
+            # Get RiskAssessment through MedicalClearance.
+            # If not found directly linked to *this* MedicalClearance, try to find one linked to it with pwd=True.
+            try:
+                risk_assessment = medical_clearance.riskassessment
+            except RiskAssessment.DoesNotExist:
+                # Try finding RiskAssessment linked to the medical_clearance we just got/created, filtered by pwd=True
+                try:
+                    risk_assessment = RiskAssessment.objects.get(clearance=medical_clearance, pwd=True)
+                except RiskAssessment.DoesNotExist:
+                    # If RiskAssessment is still not found linked to this medical clearance,
+                    # it indicates that the PWD RiskAssessment record for this patient is missing or not linked correctly.
+                    messages.error(request, f"Risk Assessment record with PWD status not found for patient {patient.user.get_full_name() or patient.user.username}. Cannot unverify PWD status. Please ensure a Risk Assessment with PWD status exists and is linked to the Medical Clearance.")
+                    return redirect('medical:pwdlist')
+
+
+            # Proceed with unverification
+            risk_assessment.pwd_verified = False
+            risk_assessment.pwd_verification_date = None
+            risk_assessment.pwd_verified_by = None
+            risk_assessment.save()
+
+            user_name = user.get_full_name() or user.username
+            messages.success(request, f"PWD status has been unverified for {user_name}.")
+
+            # Record the transaction
+            record_transaction(patient, "PWD Unverification")
+
+        except (Student.DoesNotExist, Faculty.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist) as e:
+            messages.error(request, f"Error finding patient or user for ID {id}: {str(e)}")
+        except Exception as e:
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
+
+        return redirect('medical:pwdlist')
 # List all record of prescriptions
 def view_prescription_records(request):
     if not request.user.is_superuser and not request.user.is_staff:
@@ -2192,6 +2398,10 @@ def transactions_view(request):
     if transaction_type != 'all':
         if transaction_type == 'Medical Document Request':
             transaction_records = transaction_records.filter(transac_type__startswith='Medical Document Request')
+        elif transaction_type == 'Dental Service':
+            # Include all specific dental service types
+            dental_service_types = ['Cleaning', 'Dental Filling', 'Tooth Extraction']
+            transaction_records = transaction_records.filter(transac_type__in=dental_service_types)
         else:
             transaction_records = transaction_records.filter(transac_type=transaction_type)
 

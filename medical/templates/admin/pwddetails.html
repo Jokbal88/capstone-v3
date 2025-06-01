@@ -1,7 +1,15 @@
 {% extends 'mainv2.html' %}
 {% load static %}
 
-{% block title %}Student Detail{% endblock %}
+{% block title %}
+{% if student %}
+    Student Detail
+{% elif faculty %}
+    Faculty Detail
+{% else %}
+    PWD Detail
+{% endif %}
+{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'styles/admin/pwd_details.css' %}">
@@ -21,7 +29,15 @@
         {% if messages %}
         
         {% endif %}
-        <h2>Student Detail</h2><br><br>
+        <h2>
+            {% if student %}
+                Student Detail
+            {% elif faculty %}
+                Faculty Detail
+            {% else %}
+                PWD Detail
+            {% endif %}
+        </h2><br><br>
         {% if md.pwd_card.url %}
             <div class="student-id">
                 <img class="pwd-card" src="{{ md.pwd_card.url }}" alt="PWD ID Card">
@@ -33,43 +49,51 @@
         {% endif %}
         <div class="student-detail">
             <div class="detail-row">
-                <span class="detail-title">Lastname:</span>
-                <span class="detail-content">{{ pwd.patient.student.lastname|title }}</span>
+                <span class="detail-title">ID Number:</span>
+                <span class="detail-content">
+                    {% if student %}{{ student.student_id }}
+                    {% elif faculty %}{{ faculty.faculty_id }}
+                    {% else %}N/A{% endif %}
+                </span>
             </div>
             <div class="detail-row">
-                <span class="detail-title">Firstname:</span>
-                <span class="detail-content">{{ pwd.patient.student.firstname|title }}</span>
+                <span class="detail-title">Name:</span>
+                <span class="detail-content">
+                    {% if student %}{{ student.firstname|title }} {{ student.lastname|title }}
+                    {% elif faculty %}{{ faculty.user.first_name|title }} {{ faculty.user.last_name|title }}
+                    {% else %}N/A{% endif %}
+                </span>
             </div>
             <div class="detail-row">
                 <span class="detail-title">Age:</span>
-                <span class="detail-content">{{ pwd.patient.age }}</span>
+                <span class="detail-content">{{ patient.age|default:"N/A" }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-title">Sex:</span>
-                <span class="detail-content">{{ pwd.patient.student.sex }}</span>
+                <span class="detail-content">{% if student %}{{ student.sex }}{% else %}N/A{% endif %}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-title">Type of Disability:</span>
-                <span class="detail-content">{{ pwd.riskassessment.disability }}</span>
+                <span class="detail-content">{{ patient.riskassessment.disability|default:"N/A" }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-title">Verification Status:</span>
                 <span class="detail-content">
-                    {% if pwd.riskassessment.pwd_verified %}
+                    {% if patient.riskassessment.pwd_verified %}
                         <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verified</span>
                     {% else %}
                         <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Pending</span>
                     {% endif %}
                 </span>
             </div>
-            {% if pwd.riskassessment.pwd_verified %}
+            {% if patient.riskassessment.pwd_verified %}
             <div class="detail-row">
                 <span class="detail-title">Verified By:</span>
-                <span class="detail-content">{{ pwd.riskassessment.pwd_verified_by.get_full_name|default:pwd.riskassessment.pwd_verified_by.username }}</span>
+                <span class="detail-content">{{ patient.riskassessment.pwd_verified_by.get_full_name|default:patient.riskassessment.pwd_verified_by.username|default:"N/A" }}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-title">Verification Date:</span>
-                <span class="detail-content">{{ pwd.riskassessment.pwd_verification_date|date:"F d, Y" }}</span>
+                <span class="detail-content">{{ patient.riskassessment.pwd_verification_date|date:"F d, Y"|default:"N/A" }}</span>
             </div>
             {% endif %}
         </div>

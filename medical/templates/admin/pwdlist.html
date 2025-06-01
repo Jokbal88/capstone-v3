@@ -14,7 +14,7 @@
         <h2 class="font-bold text-[1.5rem] text-black tracking-tight">List of PWD</h2>
         <form method="POST" class="flex gap-4">
             {% csrf_token %}
-            <input type="text" name="student_id" placeholder="Search by Student ID" class="w-full p-2 border rounded-md">
+            <input type="text" name="student_id" placeholder="Search by ID Number" class="w-full p-2 border rounded-md">
             <button type="submit" class="bg-[#3b82f6] text-white py-2 px-8 rounded-md hover:bg-[#2563eb] transition-colors">
                 Search
             </button>
@@ -25,12 +25,12 @@
             <table class="w-full table-auto border-separate border-spacing-0 rounded-lg overflow-hidden shadow text-base">
                 <thead class="bg-[#e6e6e6]">
                     <tr>
-                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Student ID</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">ID Number</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Lastname</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Firstname</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Age</th>
                         <th class="p-2 text-left text-lg font-semibold text-gray-700">Sex</th>
-                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Type of Disability</th>
+                        <th class="p-2 text-left text-lg font-semibold text-gray-700">Remarks</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Verification Status</th>
                         <th class="p-2 text-center text-lg font-semibold text-gray-700">Actions</th>
                 </tr>
@@ -38,34 +38,46 @@
             <tbody>
                     {% for patient in pwds %}
                         <tr class="bg-white border-b hover:bg-gray-50">
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.student_id }}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.lastname|title }}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.firstname|title }}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.age }}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.student.sex }}</a></td>
-                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.student.student_id %}" class="text-blue-600 hover:underline">{{ patient.riskassessment.disability }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.user_id_display }}</a></td>
+                            {% if patient.related_student %}
+                                <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.related_student.lastname|title|default:"N/A" }}</a></td>
+                                <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.related_student.firstname|title|default:"N/A" }}</a></td>
+                            {% elif patient.related_faculty %}
+                                <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.related_faculty.user.last_name|title|default:"N/A" }}</a></td>
+                                <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.related_faculty.user.first_name|title|default:"N/A" }}</a></td>
+                            {% else %}
+                                <td class="p-2">N/A</td>
+                                <td class="p-2">N/A</td>
+                            {% endif %}
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.age }}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{% if patient.related_student %}{{ patient.related_student.sex }}{% else %}N/A{% endif %}</a></td>
+                            <td class="p-2"><a href="{% url 'medical:pwd_detail' patient.user_id_display %}" class="text-blue-600 hover:underline">{{ patient.remarks_display|default:"N/A" }}</a></td>
                             <td class="p-2 text-center">
-                                {% if patient.riskassessment.pwd_verified %}
+                                {% if patient.medicalclearance.riskassessment.pwd_verified %}
                                     <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verified</span>
                                 {% else %}
                                     <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Pending</span>
                                 {% endif %}
                             </td>
                             <td class="p-2 text-center">
-                                {% if not patient.riskassessment.pwd_verified %}
-                                    <form method="POST" action="{% url 'medical:verify_pwd' patient.student.student_id %}" class="inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
-                                            Verify
-                                        </button>
-                                    </form>
+                                {% if patient.user_id_display != "N/A" %}
+                                    {% if not patient.medicalclearance.riskassessment.pwd_verified %}
+                                        <form method="POST" action="{% url 'medical:verify_pwd' patient.user_id_display %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                                                Verify
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="POST" action="{% url 'medical:unverify_pwd' patient.user_id_display %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                                                Unverify
+                                            </button>
+                                        </form>
+                                    {% endif %}
                                 {% else %}
-                                    <form method="POST" action="{% url 'medical:unverify_pwd' patient.student.student_id %}" class="inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
-                                            Unverify
-                                        </button>
-                                    </form>
+                                    N/A
                                 {% endif %}
                             </td>
                     </tr>

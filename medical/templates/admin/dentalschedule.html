@@ -36,11 +36,13 @@
                     <tr>
                         <form method="POST" action="">
                             {% csrf_token %}
+                            <input type="hidden" name="request_id" value="{{ appointment.id }}">
+                            <input type="hidden" name="action" value="done">
                             <input type="hidden" name="student_id" value="{{ appointment.id_number }}">
                             <input type="hidden" name="service_type" value="{{ appointment.service_type }}">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ appointment.id_number }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.name|title }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.name|title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.lastname|title }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.firstname|title }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.service_type }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ appointment.date_appointed }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">

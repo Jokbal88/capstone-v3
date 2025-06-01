@@ -369,7 +369,7 @@ class DentalRecords(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, null=True, blank=True)
     service_type = models.CharField(max_length=50)
     date_requested = models.DateTimeField()
-    date_appointed = models.DateField(null=True)
+    date_appointed = models.DateTimeField(null=True)
     appointed = models.BooleanField(default=False)
     # def __str__(self):
     #     pass

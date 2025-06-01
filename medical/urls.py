@@ -18,7 +18,7 @@ urlpatterns = [
     path('dentalrequest/', views.dental_request, name='dentalrequest'),
     path('dentalschedule/', views.dental_schedule, name='dentalschedule'),
     path('listofpwd/', views.pwd_list, name='pwdlist'),
-    path('pwd/<int:student_id>/', views.pwd_detail, name='pwd_detail'),
+    path('pwd/<str:id>/', views.pwd_detail, name='pwd_detail'),
     path('prescriptions/', views.prescription, name='prescription'),
     path('prescriptionrecords/', views.view_prescription_records, name='prescription_records'),
     path('getusernamebyid/', views.get_user_name_by_id, name='get_user_name_by_id'),
@@ -33,7 +33,7 @@ urlpatterns = [
     path('upload/', views.upload_file, name='upload'),
     path('mental-health/', views.mental_health_view, name='mental_health'),
     # PWD verification URLs
-    path('pwd/verify/<str:student_id>/', views.verify_pwd, name='verify_pwd'),
-    path('pwd/unverify/<str:student_id>/', views.unverify_pwd, name='unverify_pwd'),
+    path('pwd/verify/<str:id>/', views.verify_pwd, name='verify_pwd'),
+    path('pwd/unverify/<str:id>/', views.unverify_pwd, name='unverify_pwd'),
     path('mental-health/update-status/<int:pk>/', views.update_mental_health_status, name='update_mental_health_status'),
 ]
