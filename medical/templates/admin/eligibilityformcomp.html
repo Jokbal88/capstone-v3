@@ -8,11 +8,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="w-1/2 h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+<div class="w-full h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
     {% if messages %}
     
     {% endif %}
-    <form action="" method="POST" class="flex flex-col gap-4">
+    <form action="" method="POST" class="flex flex-col gap-4 w-full">
         {% csrf_token %}
         <div class="flex items-center self-center gap-4">
             <img class="size-[8rem]" src="{% static 'images/CTU_logo.png' %}" alt="CTU_logo">
