@@ -933,6 +933,7 @@ def physical_examination(request, id):
                 )
 
                 messages.success(request, "Record Updated")
+                record_transaction(patient, "Physical Examination")
                 return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient, "student": student, "faculty": faculty})
         
             # Create the physical examination object if it does not exists
@@ -1005,6 +1006,7 @@ def physical_examination(request, id):
             )
 
             messages.success(request, "Record Created")
+            record_transaction(patient, "Physical Examination")
             return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient, "student": student, "faculty": faculty})
 
         # GET request - show the form
