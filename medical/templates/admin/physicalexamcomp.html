@@ -51,7 +51,13 @@
                 </div>
                 <div class="flex flex-col w-full">
                     <label class="mName">Middle Name:</label>
-                    <input type="text" value="{{ patient.user.username|title }}" name="username" disabled>
+                    {% if student %}
+                    <input type="text" value="{{ student.middlename|title }}" name="middlename" disabled>
+                    {% elif faculty %}
+                    <input type="text" value="{{ faculty.middlename|title }}" name="middlename" disabled>
+                    {% else %}
+                    <input type="text" value="N/A" name="middlename" disabled>
+                    {% endif %}
                 </div>
             </div>
             <div class="flex gap-2">
@@ -65,7 +71,13 @@
                 </div>
                 <div class="flex flex-col w-full">
                     <label for="contact">Contact Number:</label>
-                    <input type="text" value="{{ patient.user.email }}" name="email" disabled>
+                    {% if patient and patient.parent_guardian_contact_number %}
+                    <input type="text" value="{{ patient.parent_guardian_contact_number }}" name="parent_guardian_contact_number">
+                    {% elif student and student.contact_number %}
+                    <input type="text" value="{{ student.contact_number }}" name="contact_number" disabled>
+                    {% else %}
+                    <input type="text" value="N/A" name="contact_number" disabled>
+                    {% endif %}
                 </div>
             </div>
             <div class="flex gap-2">
@@ -88,12 +100,28 @@
                     <input type="number" value="{{ patient.number_of_children|default:'0' }}" name="number_of_children" min="0" required>
                 </div>
                 <div class="flex flex-col w-full">
+                    {% if student %}
                     <label for="course">Course:</label>
-                    <input type="text" value="{{ patient.academic_year|title }}" name="academic_year">
+                    <input type="text" value="{{ student.degree|title }}" name="degree" disabled>
+                    {% elif faculty %}
+                    <label for="department">Department:</label>
+                    <input type="text" value="{{ faculty.department|title }}" name="department" disabled>
+                    {% else %}
+                    <label for="course">Course/Department:</label>
+                    <input type="text" value="N/A" name="course_department" disabled>
+                    {% endif %}
                 </div>
                 <div class="flex flex-col w-full">
+                     {% if student %}
                     <label for="section">Section:</label>
                     <input type="text" value="{{ patient.section }}" name="section">
+                    {% elif faculty %}
+                     <label for="position">Position:</label>
+                    <input type="text" value="{{ faculty.position|title }}" name="position" disabled>
+                    {% else %}
+                    <label for="section">Section/Position:</label>
+                    <input type="text" value="N/A" name="section_position" disabled>
+                    {% endif %}
                 </div>
             </div>
             <div class="flex gap-2">

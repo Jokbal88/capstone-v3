@@ -756,234 +756,275 @@ def view_request(request):
     return render(request, "admin/viewrequest.html", context)
 
 # Views for creating Physical Examintaion Reports
-def physical_examination(request, student_id):
+def physical_examination(request, id):
     if request.user.is_superuser or request.user.is_staff:
+        student = None
+        faculty = None
+        user = None
+        patient = None
+
         try:
-            student = Student.objects.get(student_id=student_id)
-            user = User.objects.get(email=student.email)
-            patient = Patient.objects.get(user=user)
+            # Try to get a Student first
+            student = Student.objects.filter(student_id=id).first()
+            if student:
+                user = User.objects.get(email=student.email)
+                patient = Patient.objects.get(user=user)
+            else:
+                # If not a student, try to get a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id).first()
+                if faculty:
+                    user = faculty.user
+                    patient = Patient.objects.filter(user=user).first() # Faculty may or may not have a patient record
 
-            if request.method == "POST":
-                # Get patient basic information
-                birth_date = request.POST.get("birth_date")
-                date_of_physical_examination = request.POST.get("date")
-                address = request.POST.get("home_address")
-                age = request.POST.get("age")
-                nationality = request.POST.get("nationality")
-                civil_status = request.POST.get("civil_status")
-                number_of_children = request.POST.get("number_of_children", 0)
-                academic_year = request.POST.get("academic_year")
-                section = request.POST.get("academic_year")
-                parent_guardian = request.POST.get("parent_guardian")
-                parent_contact = request.POST.get("parent_guardian_contact_number")
-                
-                # Get patient medical history
-                tuberculosis = request.POST.get("tuberculosis") == "on"
-                peptic_ulcer = request.POST.get("peptic-ulcer") == "on"
-                venereal = request.POST.get("venereal-disease") == "on"
-                hypertension = request.POST.get("hypertension") == "on"
-                kidney_disease = request.POST.get("kidney-disease") == "on"
-                allergic_reaction = request.POST.get("allergic-reaction") == "on"
-                heart_disease = request.POST.get("heart-diseases") == "on"
-                asthma = request.POST.get("asthma") == "on"
-                nervous_breakdown = request.POST.get("nervous-breakdown") == "on"
-                hernia = request.POST.get("hernia") == "on"
-                insomnia = request.POST.get("insomnia") == "on"
-                jaundice = request.POST.get("jaundice") == "on"
-                epilepsy = request.POST.get("epilepsy") == "on"
-                malaria = request.POST.get("malaria") == "on"
-                others = request.POST.get("others")
-                no_history = request.POST.get("none") == "on"
-                hospital_admission = request.POST.get("operations")
-                medications = request.POST.get("medications")
+            # If neither student nor faculty was found with the provided ID
+            if not student and not faculty:
+                messages.error(request, f"No student or faculty found with ID: {id}")
+                return redirect("medical:patient_profile")
 
-                # Get patient's family medical history
-                hypertension_family = request.POST.get("hypertension-family") == "on"
-                tuberculosis_family = request.POST.get("tuberculosis-family") == "on"
-                asthma_family = request.POST.get("asthma-family") == "on"
-                diabetes = request.POST.get("diabetes") == "on"
-                cancer = request.POST.get("cancer") == "on"
-                bleeding_disorder = request.POST.get("bleeding-disorder") == "on"
-                epilepsy_family = request.POST.get("epilepsy-family") == "on"
-                mental_disorders = request.POST.get("mental-disorders") == "on"
-                family_others = request.POST.get("family-others")
-                family_no_history = request.POST.get("no_history") == "on"
+            # If a student or faculty was found, but no associated user or patient record exists
+            if (student and not (user and patient)) or (faculty and not user):
+                 if student:
+                     messages.error(request, f"User or Patient record not found for student with ID: {id}")
+                 elif faculty:
+                     messages.error(request, f"User record not found for faculty with ID: {id}")
+                 return redirect("medical:patient_profile")
 
-                # Get OB-GYNE history
-                menarche = request.POST.get("menarche")
-                lmp = request.POST.get("lmp")
-                gravida = request.POST.get("gravida")
-                para = request.POST.get("para")
-                menopause = request.POST.get("menopause")
-                pap_smear = request.POST.get("pap_swear")
-                additional_history = request.POST.get("additional-history")
-
-                # Check if object already exists
-                if PhysicalExamination.objects.filter(patient=patient).exists():
-                    examination = PhysicalExamination.objects.get(patient=patient)
-
-                    # Update Physical Examination
-                    examination.patient.birth_date = birth_date
-                    examination.patient.home_address = address
-                    examination.patient.age = age
-                    examination.patient.nationality = nationality
-                    examination.patient.civil_status = civil_status
-                    examination.patient.number_of_children = number_of_children
-                    examination.patient.academic_year = academic_year
-                    examination.patient.section = section
-                    examination.date_of_physical_examination = date_of_physical_examination
-                    examination.patient.parent_guardian = parent_guardian
-                    examination.patient.parent_guardian_contact_number = parent_contact
-                    # Save
-                    examination.patient.save()
-                    examination.save()
-
-                    # Update or create Medical History
-                    medical_history, created = MedicalHistory.objects.update_or_create(
-                        examination=examination,
-                        defaults={
-                            'tuberculosis': tuberculosis,
-                            'hypertension': hypertension,
-                            'heart_disease': heart_disease,
-                            'hernia': hernia,
-                            'epilepsy': epilepsy,
-                            'peptic_ulcer': peptic_ulcer,
-                            'kidney_disease': kidney_disease,
-                            'asthma': asthma,
-                            'insomnia': insomnia,
-                            'malaria': malaria,
-                            'venereal_disease': venereal,
-                            'allergic_reaction': allergic_reaction,
-                            'nervous_breakdown': nervous_breakdown,
-                            'jaundice': jaundice,
-                            'others': others,
-                            'no_history': no_history,
-                            'hospital_admission': hospital_admission,
-                            'medications': medications
-                        }
-                    )
-
-                    # Update or create Family History
-                    family_history, created = FamilyMedicalHistory.objects.update_or_create(
-                        examination=examination,
-                        defaults={
-                            'hypertension': hypertension_family,
-                            'asthma': asthma_family,
-                            'cancer': cancer,
-                            'tuberculosis': tuberculosis_family,
-                            'diabetes': diabetes,
-                            'bleeding_disorder': bleeding_disorder,
-                            'epilepsy': epilepsy_family,
-                            'mental_disorder': mental_disorders,
-                            'no_history': family_no_history,
-                            'other_medical_history': family_others
-                        }
-                    )
-
-                    # Update or create Obgyne History
-                    obgyne, created = ObgyneHistory.objects.update_or_create(
-                        examination=examination,
-                        defaults={
-                            'menarche': menarche,
-                            'lmp': lmp,
-                            'pap_smear': pap_smear,
-                            'gravida': gravida,
-                            'para': para,
-                            'menopause': menopause,
-                            'additional_history': additional_history
-                        }
-                    )
-
-                    messages.success(request, "Record Updated")
-                    return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
-            
-                # Create the physical examination object if it does not exists
-                examination = PhysicalExamination.objects.create(
-                    patient=patient,
-                    date_of_physical_examination=date_of_physical_examination
-                )
-
-                # Update patient information
-                patient.birth_date = birth_date
-                patient.home_address = address
-                patient.age = age
-                patient.nationality = nationality
-                patient.civil_status = civil_status
-                patient.number_of_children = number_of_children
-                patient.academic_year = academic_year
-                patient.section = section
-                patient.parent_guardian = parent_guardian
-                patient.parent_guardian_contact_number = parent_contact
-                patient.save()
-
-                # Insert data into the medical history of the patients model
-                MedicalHistory.objects.create(
-                    examination=examination,
-                    tuberculosis=tuberculosis,
-                    hypertension=hypertension,
-                    heart_disease=heart_disease,
-                    hernia=hernia,
-                    epilepsy=epilepsy,
-                    peptic_ulcer=peptic_ulcer,
-                    kidney_disease=kidney_disease,
-                    asthma=asthma,
-                    insomnia=insomnia,
-                    malaria=malaria,
-                    venereal_disease=venereal,
-                    allergic_reaction=allergic_reaction,
-                    nervous_breakdown=nervous_breakdown,
-                    jaundice=jaundice,
-                    others=others,
-                    no_history=no_history,
-                    hospital_admission=hospital_admission,
-                    medications=medications
-                )
-
-                # Insert data into the family medical history of the patients model
-                FamilyMedicalHistory.objects.create(
-                    examination=examination,
-                    hypertension=hypertension_family,
-                    asthma=asthma_family,
-                    cancer=cancer,
-                    tuberculosis=tuberculosis_family,
-                    diabetes=diabetes,
-                    bleeding_disorder=bleeding_disorder,
-                    epilepsy=epilepsy_family,
-                    mental_disorder=mental_disorders,
-                    no_history=family_no_history,
-                    other_medical_history=family_others
-                )
-
-                # Insert data into the OB-GYNE history of the patients model
-                ObgyneHistory.objects.create(
-                    examination=examination,
-                    menarche=menarche,
-                    lmp=lmp,
-                    pap_smear=pap_smear,
-                    gravida=gravida,
-                    para=para,
-                    menopause=menopause,
-                    additional_history=additional_history
-                )
-
-                messages.success(request, "Record Created")
-                return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient})
-
-            # GET request - show the form
-            return render(request, "admin/physicalexamcomp.html", {"patient": patient, "student": student})
-
-        except Student.DoesNotExist:
-            messages.error(request, "Student not found")
-            return redirect("medical:patient_profile")
         except User.DoesNotExist:
-            messages.error(request, "User account not found for this student")
+            # This should be caught by the check above, but as a fallback:
+            messages.error(request, f"User account not found for the ID: {id}")
             return redirect("medical:patient_profile")
         except Patient.DoesNotExist:
-            messages.error(request, "Patient record not found for this student")
+             # This should be caught by the check above, but as a fallback:
+            messages.error(request, f"Patient record not found for the ID: {id}")
             return redirect("medical:patient_profile")
         except Exception as e:
-            messages.error(request, f"An error occurred: {str(e)}")
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
             return redirect("medical:patient_profile")
+
+        if request.method == "POST":
+            # Get patient basic information
+            birth_date = request.POST.get("birth_date")
+            date_of_physical_examination = request.POST.get("date")
+            address = request.POST.get("home_address")
+            age = request.POST.get("age")
+            nationality = request.POST.get("nationality")
+            civil_status = request.POST.get("civil_status")
+            number_of_children = request.POST.get("number_of_children", 0)
+            academic_year = request.POST.get("academic_year")
+            section = request.POST.get("academic_year")
+            parent_guardian = request.POST.get("parent_guardian")
+            parent_contact = request.POST.get("parent_guardian_contact_number")
+            
+            # Get patient medical history
+            tuberculosis = request.POST.get("tuberculosis") == "on"
+            peptic_ulcer = request.POST.get("peptic-ulcer") == "on"
+            venereal = request.POST.get("venereal-disease") == "on"
+            hypertension = request.POST.get("hypertension") == "on"
+            kidney_disease = request.POST.get("kidney-disease") == "on"
+            allergic_reaction = request.POST.get("allergic-reaction") == "on"
+            heart_disease = request.POST.get("heart-diseases") == "on"
+            asthma = request.POST.get("asthma") == "on"
+            nervous_breakdown = request.POST.get("nervous-breakdown") == "on"
+            hernia = request.POST.get("hernia") == "on"
+            insomnia = request.POST.get("insomnia") == "on"
+            jaundice = request.POST.get("jaundice") == "on"
+            epilepsy = request.POST.get("epilepsy") == "on"
+            malaria = request.POST.get("malaria") == "on"
+            others = request.POST.get("others")
+            no_history = request.POST.get("none") == "on"
+            hospital_admission = request.POST.get("operations")
+            medications = request.POST.get("medications")
+
+            # Get patient's family medical history
+            hypertension_family = request.POST.get("hypertension-family") == "on"
+            tuberculosis_family = request.POST.get("tuberculosis-family") == "on"
+            asthma_family = request.POST.get("asthma-family") == "on"
+            diabetes = request.POST.get("diabetes") == "on"
+            cancer = request.POST.get("cancer") == "on"
+            bleeding_disorder = request.POST.get("bleeding-disorder") == "on"
+            epilepsy_family = request.POST.get("epilepsy-family") == "on"
+            mental_disorders = request.POST.get("mental-disorders") == "on"
+            family_others = request.POST.get("family-others")
+            family_no_history = request.POST.get("no_history") == "on"
+
+            # Get OB-GYNE history
+            menarche = request.POST.get("menarche")
+            lmp = request.POST.get("lmp")
+            gravida = request.POST.get("gravida")
+            para = request.POST.get("para")
+            menopause = request.POST.get("menopause")
+            pap_smear = request.POST.get("pap_swear")
+            additional_history = request.POST.get("additional-history")
+
+            # Check if object already exists
+            if PhysicalExamination.objects.filter(patient=patient).exists():
+                examination = PhysicalExamination.objects.get(patient=patient)
+
+                # Update Physical Examination
+                examination.patient.birth_date = birth_date
+                examination.patient.home_address = address
+                examination.patient.age = age
+                examination.patient.nationality = nationality
+                examination.patient.civil_status = civil_status
+                examination.patient.number_of_children = number_of_children
+                examination.patient.academic_year = academic_year
+                examination.patient.section = section
+                examination.date_of_physical_examination = date_of_physical_examination
+                examination.patient.parent_guardian = parent_guardian
+                examination.patient.parent_guardian_contact_number = parent_contact
+                # Save
+                examination.patient.save()
+                examination.save()
+
+                # Update or create Medical History
+                medical_history, created = MedicalHistory.objects.update_or_create(
+                    examination=examination,
+                    defaults={
+                        'tuberculosis': tuberculosis,
+                        'hypertension': hypertension,
+                        'heart_disease': heart_disease,
+                        'hernia': hernia,
+                        'epilepsy': epilepsy,
+                        'peptic_ulcer': peptic_ulcer,
+                        'kidney_disease': kidney_disease,
+                        'asthma': asthma,
+                        'insomnia': insomnia,
+                        'malaria': malaria,
+                        'venereal_disease': venereal,
+                        'allergic_reaction': allergic_reaction,
+                        'nervous_breakdown': nervous_breakdown,
+                        'jaundice': jaundice,
+                        'others': others,
+                        'no_history': no_history,
+                        'hospital_admission': hospital_admission,
+                        'medications': medications
+                    }
+                )
+
+                # Update or create Family History
+                family_history, created = FamilyMedicalHistory.objects.update_or_create(
+                    examination=examination,
+                    defaults={
+                        'hypertension': hypertension_family,
+                        'asthma': asthma_family,
+                        'cancer': cancer,
+                        'tuberculosis': tuberculosis_family,
+                        'diabetes': diabetes,
+                        'bleeding_disorder': bleeding_disorder,
+                        'epilepsy': epilepsy_family,
+                        'mental_disorder': mental_disorders,
+                        'no_history': family_no_history,
+                        'other_medical_history': family_others
+                    }
+                )
+
+                # Update or create Obgyne History
+                obgyne, created = ObgyneHistory.objects.update_or_create(
+                    examination=examination,
+                    defaults={
+                        'menarche': menarche,
+                        'lmp': lmp,
+                        'pap_smear': pap_smear,
+                        'gravida': gravida,
+                        'para': para,
+                        'menopause': menopause,
+                        'additional_history': additional_history
+                    }
+                )
+
+                messages.success(request, "Record Updated")
+                return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient, "student": student, "faculty": faculty})
+        
+            # Create the physical examination object if it does not exists
+            examination = PhysicalExamination.objects.create(
+                patient=patient,
+                date_of_physical_examination=date_of_physical_examination
+            )
+
+            # Update patient information
+            patient.birth_date = birth_date
+            patient.home_address = address
+            patient.age = age
+            patient.nationality = nationality
+            patient.civil_status = civil_status
+            patient.number_of_children = number_of_children
+            patient.academic_year = academic_year
+            patient.section = section
+            patient.parent_guardian = parent_guardian
+            patient.parent_guardian_contact_number = parent_contact
+            patient.save()
+
+            # Insert data into the medical history of the patients model
+            MedicalHistory.objects.create(
+                examination=examination,
+                tuberculosis=tuberculosis,
+                hypertension=hypertension,
+                heart_disease=heart_disease,
+                hernia=hernia,
+                epilepsy=epilepsy,
+                peptic_ulcer=peptic_ulcer,
+                kidney_disease=kidney_disease,
+                asthma=asthma,
+                insomnia=insomnia,
+                malaria=malaria,
+                venereal_disease=venereal,
+                allergic_reaction=allergic_reaction,
+                nervous_breakdown=nervous_breakdown,
+                jaundice=jaundice,
+                others=others,
+                no_history=no_history,
+                hospital_admission=hospital_admission,
+                medications=medications
+            )
+
+            # Insert data into the family medical history of the patients model
+            FamilyMedicalHistory.objects.create(
+                examination=examination,
+                hypertension=hypertension_family,
+                asthma=asthma_family,
+                cancer=cancer,
+                tuberculosis=tuberculosis_family,
+                diabetes=diabetes,
+                bleeding_disorder=bleeding_disorder,
+                epilepsy=epilepsy_family,
+                mental_disorder=mental_disorders,
+                no_history=family_no_history,
+                other_medical_history=family_others
+            )
+
+            # Insert data into the OB-GYNE history of the patients model
+            ObgyneHistory.objects.create(
+                examination=examination,
+                menarche=menarche,
+                lmp=lmp,
+                pap_smear=pap_smear,
+                gravida=gravida,
+                para=para,
+                menopause=menopause,
+                additional_history=additional_history
+            )
+
+            messages.success(request, "Record Created")
+            return render(request, "admin/physicalexamcomp.html", {"examination": examination, "patient": patient, "student": student, "faculty": faculty})
+
+        # GET request - show the form
+        context = {
+            "patient": patient,
+            "student": student,
+            "faculty": faculty, # Pass faculty object to the template
+        }
+        # Try to fetch existing examination and related histories
+        try:
+            examination = PhysicalExamination.objects.get(patient=patient)
+            context['examination'] = examination
+            context['medicalhistory'] = MedicalHistory.objects.filter(examination=examination).first()
+            context['familymedicalhistory'] = FamilyMedicalHistory.objects.filter(examination=examination).first()
+            context['obgynehistory'] = ObgyneHistory.objects.filter(examination=examination).first()
+        except PhysicalExamination.DoesNotExist:
+            pass # No existing examination, context will not have these objects
+
+        return render(request, "admin/physicalexamcomp.html", context)
+
     else:
         messages.error(request, "You are not authorized to access this page")
         return redirect("login")
