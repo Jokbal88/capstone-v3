@@ -22,7 +22,9 @@
                 <input class="w-full xs:text-[14px] md:text-base" type="text" id="student_id" name="student_id" value="{{ id_number }}" readonly>
                 <select class="w-full xs:text-[14px] md:text-base" id="requestType" name="request_type" required>
                     <option value="">Select Request Type</option>
+                    {% if not faculty %}
                     <option value="Eligibility Form">Eligibility Form</option>
+                    {% endif %}
                     <option value="Medical Certificate for Intramurals">Medical Certificate for Intramurals</option>
                     <option value="Medical Clearance for OJT/Practicum">Medical Clearance for OJT/Practicum</option>
                 </select>
