@@ -12,7 +12,7 @@
         <table class="w-full h-full">
             <thead class="bg-[#e6e6e6] w-full">
                 <tr class="tr-header">
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Student ID</th>
+                    <th class="text-center p-2 xs:text-[14px] sm:text-base">ID Number</th>
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Name</th>
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Reason</th>
                     <th class="text-center p-2 xs:text-[14px] sm:text-base">Date</th>
@@ -21,7 +21,7 @@
             <tbody>
                 {% for record in emrgncy_record %}
                     <tr class="tr-td">
-                        <td class="text-center">{{ record.patient.student.student_id }}</td>
+                        <td class="text-center">{{ record.user_id_display }}</td>
                         <td class="text-center">{{ record.name }}</td>
                         <td class="text-center">{{ record.reason }}</td>
                         <td class="text-center">{{ record.date_assisted }}</td>

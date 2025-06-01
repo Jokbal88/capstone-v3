@@ -1038,7 +1038,6 @@ def prescription(request):
             student_id = request.POST.get("student_id")
             name = request.POST.get("name")
             problem = request.POST.get("problem")
-            treatment = request.POST.get("treatment")
             str_date_prescribed = request.POST.get("date_prescribed")
             date_prescribed = datetime.strptime(str_date_prescribed, "%Y-%m-%d")
 
@@ -1075,19 +1074,28 @@ def prescription(request):
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
 
-def get_student_name(request):
+def get_user_name_by_id(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        student_id = data.get("student_id")
+        id_number = data.get("student_id") # The input name from the form is 'student_id'
 
         try:
-            student = Student.objects.get(student_id=student_id)
-            student_name = f"{student.firstname} {student.lastname}".title()
-            print(student_name)
-            return JsonResponse({"student_name": student_name})
-        except Student.DoesNotExist:
-            return JsonResponse({"error": "Student not found"}, status=404)
-    return JsonResponse({"error": "Invalid request"}, status=400)
+            # Try to find a Student first
+            student = Student.objects.filter(student_id=id_number).first()
+            if student:
+                user_name = f"{student.firstname} {student.lastname}".title()
+                return JsonResponse({"user_name": user_name})
+            else:
+                # If not a student, try to find a Faculty
+                faculty = Faculty.objects.filter(faculty_id=id_number).first()
+                if faculty and faculty.user:
+                    user_name = faculty.user.get_full_name() or faculty.user.username
+                    return JsonResponse({"user_name": user_name})     
+                else:
+                    return JsonResponse({"error": "User not found"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
 
 #check if student matched
 # def check_student_match(request):
@@ -1111,44 +1119,88 @@ def get_student_name(request):
 def emergency_asst(request):
     if request.user.is_superuser or request.user.is_staff:
         if request.method == "POST":
-            student_id = request.POST.get("student_id")
-            # patient = Patient.objects.get(student__student_id=student_id)
+            # Get the ID number from the form
+            id_number = request.POST.get("student_id") # The input name is 'student_id' but it can be faculty ID
             name = request.POST.get("name")
             reason = request.POST.get("problem")
             str_date_assisted = request.POST.get("date_assisted")
-            date_assisted = datetime.strptime(str_date_assisted, "%Y-%m-%d")
+
+            # Validate date format and convert to datetime object
+            try:
+                date_assisted = datetime.strptime(str_date_assisted, "%Y-%m-%d").date() # Store as date
+            except ValueError:
+                messages.error(request, "Invalid date format.")
+                return render(request, "admin/emergency_asst.html", {})
+
+            user = None
+            patient = None
+            user_name = ""
 
             try:
-                # Retrieve the patient information based on the student ID
-                patient = Patient.objects.get(student__student_id=student_id)
-                # Convert both names to lowercase for case-insensitive comparison
-                inputted_name_lower = name.lower()
-                student_name_lower = f"{patient.student.firstname} {patient.student.lastname}".lower()
-                # Validate if the inputted name matches the first name and last name of the patient
-                if inputted_name_lower != student_name_lower:
-                    messages.error(request, "The entered name does not match the student's name associated with the inputted student ID.")
-                    return redirect('medical:emergency_asst')  # Redirect to the same page
-            except Patient.DoesNotExist:
-                messages.info(request, "Fill out this form first to record patient's basic information")
-                return redirect('medical:patient_basicinfo', student_id)
-            
-            # Create EmergencyHealthAssistanceRecord
-            EmergencyHealthAssistanceRecord.objects.create(
-                name=name,
-                patient=patient,
-                reason=reason,
-                date_assisted=date_assisted
-            )
-            messages.success(request, "Record Saved")
-            # Record transaction
-            record_transaction(patient, "Emergency Health Assistance")
-            return render(request, "admin/emergency_asst.html", {"student_name": {}})
-            #return redirect('medical:emergency_asst')  # Redirect to the same page after successful record creation
+                # Try to find a Student first
+                student = Student.objects.filter(student_id=id_number).first()
+                if student:
+                    user = User.objects.get(email=student.email)
+                    user_name = f"{student.firstname} {student.lastname}"
+                    # Get or create patient for student
+                    patient, created = Patient.objects.get_or_create(user=user)
+                    if created:
+                        messages.info(request, f"Patient profile created for student {id_number}.")
+                else:
+                    # If not a student, try to find a Faculty
+                    faculty = Faculty.objects.filter(faculty_id=id_number).first()
+                    if faculty:
+                        user = faculty.user
+                        user_name = faculty.user.get_full_name() or faculty.user.username
+                        # Get or create patient for faculty
+                        patient, created = Patient.objects.get_or_create(user=user)
+                        if created:
+                             messages.info(request, f"Patient profile created for faculty {id_number}.")
+
+                # If neither student nor faculty was found
+                if not user or not patient:
+                    messages.error(request, f"No student or faculty found with ID: {id_number} or could not create patient profile.")
+                    return render(request, "admin/emergency_asst.html", {})
+
+                # Validate inputted name against the retrieved user's name (case-insensitive)
+                if name.lower() != user_name.lower():
+                    messages.error(request, "The entered name does not match the name associated with the inputted ID Number.")
+                    # Return existing values to the form for correction
+                    return render(request, "admin/emergency_asst.html", {
+                        'id_number': id_number,
+                        'name': name,
+                        'reason': reason,
+                        'date_assisted': str_date_assisted # Pass back as string
+                    })
+
+                # Create EmergencyHealthAssistanceRecord
+                EmergencyHealthAssistanceRecord.objects.create(
+                    name=user_name, # Use the verified name from the database
+                    patient=patient,
+                    reason=reason,
+                    date_assisted=date_assisted
+                )
+                messages.success(request, "Record Saved")
+
+                # Record transaction
+                record_transaction(patient, "Emergency Health Assistance")
+
+                # Redirect after successful save and transaction recording
+                return redirect('medical:emergency_asst')
+
+            except User.DoesNotExist:
+                 messages.error(request, f"User account not found for ID: {id_number}.")
+                 return render(request, "admin/emergency_asst.html", {})
+            except Exception as e:
+                messages.error(request, f"An error occurred: {str(e)}")
+                return render(request, "admin/emergency_asst.html", {})
         
+        # For GET requests, render the empty form
         return render(request, "admin/emergency_asst.html", {})
     else:
         return HttpResponseForbidden("You don't have permission to access this page.")
-    
+
+# Helper function to record transactions
 def record_transaction(patient, transac_type):
     TransactionRecord.objects.create(
         patient = patient, 
@@ -2095,8 +2147,28 @@ def view_prescription_records(request):
 def view_emergency_health_records(request):
     if not request.user.is_superuser and not request.user.is_staff:
         return HttpResponseForbidden("You don't have permission to access this page.")
-    emrgncy_record = EmergencyHealthAssistanceRecord.objects.all()
-    return render(request, "admin/emergencyhealthrecords.html", {"emrgncy_record": emrgncy_record})
+    emrgncy_records = EmergencyHealthAssistanceRecord.objects.all().select_related('patient__user')
+
+    # Attach the correct ID (Student ID or Faculty ID) to each record
+    for record in emrgncy_records:
+        record.user_id_display = "N/A"
+        if record.patient and record.patient.user:
+            try:
+                # Try to get student first by user's email
+                student = Student.objects.filter(email=record.patient.user.email).first()
+                if student:
+                    record.user_id_display = student.student_id
+                else:
+                    # If not a student, try to get faculty by user
+                    faculty = Faculty.objects.filter(user=record.patient.user).first()
+                    if faculty:
+                        record.user_id_display = faculty.faculty_id
+                    # If neither student nor faculty found, ID remains "N/A"
+            except Exception as e:
+                # Handle potential errors during lookup
+                record.user_id_display = f"Error: {e}"
+
+    return render(request, "admin/emergencyhealthrecords.html", {"emrgncy_record": emrgncy_records})
 
 # Check if eligible for insurance
 def check_insurance_availability(request):

@@ -11,7 +11,7 @@
     <form method="POST" class="flex flex-col xs:gap-2 md:gap-4 xs:w-full md:w-[60%]">
         {% csrf_token %}
         <div class="flex flex-col">
-            <label for="student_id" class="xs:text-[14px] sm:text-base">Student ID</label>
+            <label for="student_id" class="xs:text-[14px] sm:text-base">ID Number</label>
             <div class="flex gap-2">
                 <input class="w-full h-full p-2 xs:text-[14px] sm:text-base" type="text" id="student_id" name="student_id" required>
                 <button class="bg-[#3b82f6] text-white text-[14px] py-2 px-4 w-[30%] xs:h-[2.6rem] md:h-full cursor-pointer" type="button" id="btn-get">Get</button>
@@ -55,7 +55,7 @@
                 student_id: id
             }
 
-            fetch("/medical/getstudentname/", {
+            fetch("/medical/getusernamebyid/", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -65,9 +65,9 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.student_name){
-                    document.getElementById("name").value = data.student_name;
-                } else if(data.error) {
+                if (data.user_name){
+                    document.getElementById("name").value = data.user_name;
+                } else if (data.error) {
                     alert(data.error);
                 }else{
                     console.error("Unexpected response:", data);   
