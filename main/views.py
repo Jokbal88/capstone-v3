@@ -1170,7 +1170,10 @@ def dashboard_view(request):
                 risk_assessment = None
 
             # Get patient requests (linked to Patient directly)
-            patient_requests = PatientRequest.objects.filter(patient=patient).order_by('-date_requested')
+            # Only get requests for this specific patient
+            patient_requests = medical_models.PatientRequest.objects.filter(
+                patient=patient
+            ).order_by('-date_requested')
             
         # Get student information
         student = None
@@ -1179,6 +1182,25 @@ def dashboard_view(request):
         except Student.DoesNotExist:
             # Handle cases where a Student object might not exist for this user (e.g., faculty)
             pass
+
+        # Get appointments for calendar
+        appointments = medical_models.PatientRequest.objects.filter(
+            patient=patient,
+            status='accepted'
+        ).values(
+            'date_responded',
+            'request_type'
+        ).order_by('date_responded')
+
+        # Format appointments for calendar
+        calendar_events = []
+        for appointment in appointments:
+            if appointment['date_responded']:
+                calendar_events.append({
+                    'title': appointment['request_type'],
+                    'start': appointment['date_responded'].strftime('%Y-%m-%d'),
+                    'description': appointment['request_type']
+                })
 
         context = {
             'user': request.user,
@@ -1189,6 +1211,7 @@ def dashboard_view(request):
             'risk_assessment': risk_assessment,
             'physical_exam': physical_exam,
             'patient_requests': patient_requests,
+            'appointments': calendar_events,
             'medical_profile_incomplete': not patient.examination
         }
             
@@ -1418,93 +1441,78 @@ def faculty_dashboard_view(request):
         # Get the Patient record for the faculty user (may not exist or be complete)
         patient = medical_models.Patient.objects.filter(user=request.user).first()
         medical_profile_incomplete = patient is None or not patient.examination
+
+        # Get faculty's own requests
+        faculty_requests = medical_models.FacultyRequest.objects.filter(
+            faculty=faculty
+        ).order_by('-date_requested')
+
+        # Get appointments for calendar (only faculty's accepted requests)
+        appointments = medical_models.FacultyRequest.objects.filter(
+            faculty=faculty,
+            status='accepted'
+        ).values(
+            'date_responded',
+            'request_type',
+            'description'
+        ).order_by('date_responded')
+
+        # Format appointments for calendar
+        calendar_events = []
+        for appointment in appointments:
+            if appointment['date_responded']:
+                calendar_events.append({
+                    'title': appointment['request_type'],
+                    'start': appointment['date_responded'].strftime('%Y-%m-%d'),
+                    'description': appointment['description'] or appointment['request_type']
+                })
+
+        # Get faculty's medical information (handle cases where patient or examination might not exist)
+        physical_exam = None
+        medical_history = None
+        family_history = None
+        risk_assessment = None
+
+        if patient and patient.examination:
+            try:
+                physical_exam = patient.examination
+                medical_history = medical_models.MedicalHistory.objects.filter(examination=physical_exam).first()
+                family_history = medical_models.FamilyMedicalHistory.objects.filter(examination=physical_exam).first()
+            except (medical_models.MedicalHistory.DoesNotExist, 
+                    medical_models.FamilyMedicalHistory.DoesNotExist):
+                pass # Handle gracefully if history records are missing
+
+        if patient:
+            try:
+                # Risk assessment is linked to Patient through clearance field
+                risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
+            except medical_models.RiskAssessment.DoesNotExist:
+                pass # Handle gracefully if risk assessment is missing
+
+        # Get faculty's medical requirements and mental health records
+        faculty_medical_requirements = medical_models.MedicalRequirement.objects.filter(faculty=faculty).first()
+        faculty_mental_health_record = medical_models.MentalHealthRecord.objects.filter(faculty=faculty).first()
+
+        context = {
+            'faculty': faculty,
+            'patient': patient,
+            'medical_history': medical_history,
+            'family_history': family_history,
+            'risk_assessment': risk_assessment,
+            'physical_exam': physical_exam,
+            'faculty_medical_requirements': faculty_medical_requirements,
+            'faculty_mental_health_record': faculty_mental_health_record,
+            'faculty_requests': faculty_requests,
+            'appointments': calendar_events,
+            'medical_profile_incomplete': medical_profile_incomplete,
+        }
+        
+        return render(request, 'faculty_dashboard.html', context)
+        
     except Faculty.DoesNotExist:
         messages.error(request, 'Faculty profile not found.')
         return redirect('main:login')
-
-    # Get total students count (assuming this is relevant for a faculty dashboard)
-    total_students = Student.objects.count()
-    
-    # Get pending requests (assuming this includes both student and faculty requests)
-    pending_requests = PatientRequest.objects.filter(status='pending').count()
-    
-    # Get today's appointments (assuming this might include faculty-related appointments if implemented)
-    today = timezone.now().date()
-    # This currently only counts PatientRequest with status='accepted', which are student requests based on current implementation
-    # If faculty appointments are stored elsewhere, this needs adjustment.
-    todays_appointments_count = PatientRequest.objects.filter(
-        date_requested__date=today,
-        status='accepted'
-    ).count()
-
-    # Get recent requests (both student and faculty), optimizing related lookups
-    recent_requests = PatientRequest.objects.select_related(
-        'patient__user', 'faculty__user'
-    ).order_by('-date_requested')[:10]
-    
-    # Get appointments for calendar (both student and faculty)
-    # This currently only fetches PatientRequest with status='accepted', which are student requests
-    appointments = PatientRequest.objects.select_related(
-        'patient__user', 'faculty__user'
-    ).filter(status='accepted').order_by('date_requested')
-    
-    # Format appointments for the calendar
-    calendar_events = []
-    for appointment in appointments:
-        user_name = "Unknown User"
-        if appointment.patient:
-            user_name = f"{appointment.patient.user.first_name} {appointment.patient.user.last_name}"
-        elif appointment.faculty:
-            user_name = f"{appointment.faculty.user.first_name} {appointment.faculty.user.last_name}"
-
-        calendar_events.append({
-            'title': f"{user_name} - {appointment.request_type}",
-            'start': appointment.date_requested.strftime('%Y-%m-%d'),
-            'description': appointment.request_type
-        })
-    
-    # Get faculty's medical information (handle cases where patient or examination might not exist)
-    physical_exam = None
-    medical_history = None
-    family_history = None
-    risk_assessment = None
-
-    if patient and patient.examination:
-        try:
-            physical_exam = patient.examination
-            medical_history = medical_models.MedicalHistory.objects.filter(examination=physical_exam).first()
-            family_history = medical_models.FamilyMedicalHistory.objects.filter(examination=physical_exam).first()
-        except (medical_models.MedicalHistory.DoesNotExist, 
-                medical_models.FamilyMedicalHistory.DoesNotExist):
-            pass # Handle gracefully if history records are missing
-
-    if patient:
-         try:
-             # Risk assessment is linked to Patient through clearance field
-             risk_assessment = medical_models.RiskAssessment.objects.get(clearance=patient)
-         except medical_models.RiskAssessment.DoesNotExist:
-             pass # Handle gracefully if risk assessment is missing
-
-    # Assuming you might also want to display faculty's own medical requirements or mental health records
-    # These are linked directly to the Faculty model
-    faculty_medical_requirements = medical_models.MedicalRequirement.objects.filter(faculty=faculty).first()
-    faculty_mental_health_record = medical_models.MentalHealthRecord.objects.filter(faculty=faculty).first()
-
-    context = {
-        'faculty': faculty,
-        'patient': patient, # Include patient object for potentially incomplete medical info
-        'medical_history': medical_history,
-        'family_history': family_history,
-        'risk_assessment': risk_assessment,
-        'physical_exam': physical_exam,
-        'faculty_medical_requirements': faculty_medical_requirements,
-        'faculty_mental_health_record': faculty_mental_health_record,
-        'total_students': total_students,
-        'pending_requests_count': pending_requests, # Renamed to avoid conflict
-        'todays_appointments_count': todays_appointments_count, # Renamed to avoid conflict
-        'recent_requests': recent_requests,
-        'calendar_events': calendar_events, # Renamed to avoid conflict
-        'medical_profile_incomplete': medical_profile_incomplete,
-    }
-    
-    return render(request, 'faculty_dashboard.html', context)
+    except Exception as e:
+        print(f"Error in faculty_dashboard_view: {e}")
+        messages.error(request, 'Error loading dashboard data.')
+        return redirect('main:login')

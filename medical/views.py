@@ -1272,38 +1272,40 @@ def submit_request(request):
             messages.error(request, "No user account found for this ID.")
             return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
 
-        # Check if patient already exists for this user (for students only)
-        if student and not Patient.objects.filter(user=user).exists():
-            messages.info(request, "Fill out this form first before doing any transactions")
-            return redirect('medical:patient_basicinfo', student_id)
-
-        # For faculty, you may want to add a similar check if needed
         request_type = request.POST.get("request_type")
+        
+        # Handle student requests
         if student:
-            patient = Patient.objects.get(user=user)
-        else:
-            patient = None  # Or handle faculty-specific logic if needed
+            # Check if patient exists for student
+            try:
+                patient = Patient.objects.get(user=user)
+            except Patient.DoesNotExist:
+                 messages.info(request, "Fill out your medical profile first before doing any transactions")
+                 return redirect('medical:patient_basicinfo', student_id)
 
-        if student and PatientRequest.objects.filter(patient=patient, request_type=request_type).exists():
-            messages.error(request, "You have already submitted this type of request")
-            return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
-
-        # Only create PatientRequest for students
-        if student:
-            transac_type = f"Request for {request_type}"
-            patient_request = PatientRequest.objects.create(
+            if PatientRequest.objects.filter(patient=patient, request_type=request_type).exists():
+                messages.error(request, "You have already submitted this type of request")
+                return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+            
+            # Create student request
+            request_obj = PatientRequest.objects.create(
                 patient=patient,
                 request_type=request_type,
                 date_requested=timezone.now()
             )
-            # Send confirmation email to the student
+            # Set name and email for confirmation email
             patient_name = f"{student.firstname} {student.lastname}"
             patient_email = student.email
+            
+        # Handle faculty requests
         elif faculty:
-            # Create PatientRequest for faculty
-            patient_request = PatientRequest.objects.create(
+            if FacultyRequest.objects.filter(faculty=faculty, request_type=request_type).exists():
+                messages.error(request, "You have already submitted this type of request")
+                return render(request, "students/requestform.html", {"student": student, "faculty": faculty, "id_number": id_number})
+            
+            # Create faculty request
+            request_obj = FacultyRequest.objects.create(
                 faculty=faculty,
-                patient=None, # Ensure patient is None for faculty requests
                 request_type=request_type,
                 date_requested=timezone.now()
             )
@@ -1313,6 +1315,8 @@ def submit_request(request):
         else:
             patient_name = ""
             patient_email = ""
+
+        # Send confirmation email
         email_subject = 'Request Confirmation'
         email_body = f"""
         <html>

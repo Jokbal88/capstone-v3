@@ -6,6 +6,7 @@
 {% block extra_css %} 
 {% tailwind_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <style>
     .tab-button.active {
         background-color: #3B82F6;
@@ -261,7 +262,7 @@
 
         <!-- Right: Requests and Calendar Section -->
         <div class="w-[350px] p-6 bg-gray-50 border-l flex flex-col">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Recent Requests</h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-4">My Requests</h2>
             <div class="flex-1 overflow-y-auto rounded-lg mb-6">
                 <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead>
@@ -272,7 +273,7 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {% for request in recent_requests %}
+                    {% for request in faculty_requests %}
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-3 py-2">{{ request.request_type }}</td>
                             <td class="px-3 py-2">{{ request.date_requested|date:"M d, Y" }}</td>
@@ -325,96 +326,97 @@
 </div>
 
 {% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-    // Tab Switching Logic
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
+        // Tab Switching Logic
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
 
-            button.classList.add('active');
-            const tabId = button.getAttribute('data-tab');
-            const content = document.getElementById(`${tabId}-tab`);
-            if (content) {
-                content.classList.add('active');
-            }
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab');
+                const content = document.getElementById(`${tabId}-tab`);
+                if (content) {
+                    content.classList.add('active');
+                }
+            });
         });
-    });
 
-    // Calendar Initialization
+        // Calendar Initialization
         const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth',
             headerToolbar: {
-            left: '',
+                left: '',
                 center: 'title',
-            right: ''
+                right: ''
             },
             events: [
                 {% for appointment in appointments %}
                 {
-                title: '{{ appointment.title|escapejs }}',
-                start: '{{ appointment.start|escapejs }}',
-                description: '{{ appointment.description|escapejs }}',
-                backgroundColor: '#3B82F6',
-                borderColor: '#3B82F6',
-                textColor: '#ffffff'
-            }{% if not forloop.last %},{% endif %}
+                    title: '{{ appointment.title|escapejs }}',
+                    start: '{{ appointment.start|escapejs }}',
+                    description: '{{ appointment.description|escapejs }}',
+                    backgroundColor: '#3B82F6',
+                    borderColor: '#3B82F6',
+                    textColor: '#ffffff'
+                }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             ],
             eventClick: function(info) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            modal.innerHTML = `
-                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                    <div class="flex justify-between items-start mb-4">
-                        <h3 class="text-lg font-semibold">Appointment Details</h3>
-                        <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="text-lg font-semibold">Appointment Details</h3>
+                            <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <p><span class="font-medium">Type:</span> ${info.event.title}</p>
+                            <p><span class="font-medium">Date:</span> ${info.event.start.toLocaleDateString()}</p>
+                            <p><span class="font-medium">Description:</span> ${info.event.extendedProps.description}</p>
+                        </div>
                     </div>
-                    <div class="space-y-3">
-                        <p><span class="font-medium">Student:</span> ${info.event.title}</p>
-                        <p><span class="font-medium">Date:</span> ${info.event.start.toLocaleDateString()}</p>
-                        <p><span class="font-medium">Type:</span> ${info.event.extendedProps.description}</p>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        },
-        dayMaxEvents: true,
-        height: 'auto',
-        aspectRatio: 1.35
+                `;
+                document.body.appendChild(modal);
+            },
+            dayMaxEvents: true,
+            height: 'auto',
+            aspectRatio: 1.35
         });
         calendar.render();
 
-    // Calendar Navigation
-    document.getElementById('prevMonth').addEventListener('click', () => {
-        calendar.prev();
-    });
-    document.getElementById('nextMonth').addEventListener('click', () => {
-        calendar.next();
-    });
-
-    // Profile Picture Upload
-    const editBtn = document.getElementById('editProfileBtn');
-    const profilePictureInput = document.getElementById('profile-picture-upload');
-    const profilePictureForm = document.getElementById('profile-picture-form');
-
-    if (editBtn && profilePictureInput && profilePictureForm) {
-        editBtn.onclick = () => {
-            profilePictureInput.click();
-        };
-
-        profilePictureInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                profilePictureForm.submit();
-            }
+        // Calendar Navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            calendar.prev();
         });
-    }
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            calendar.next();
+        });
+
+        // Profile Picture Upload
+        const editBtn = document.getElementById('editProfileBtn');
+        const profilePictureInput = document.getElementById('profile-picture-upload');
+        const profilePictureForm = document.getElementById('profile-picture-form');
+
+        if (editBtn && profilePictureInput && profilePictureForm) {
+            editBtn.onclick = () => {
+                profilePictureInput.click();
+            };
+
+            profilePictureInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    profilePictureForm.submit();
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
