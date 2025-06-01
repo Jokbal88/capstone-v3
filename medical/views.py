@@ -1035,40 +1035,72 @@ def physical_examination(request, id):
 def prescription(request):
     if request.user.is_superuser or request.user.is_staff:
         if request.method == "POST":
-            student_id = request.POST.get("student_id")
+            id_number = request.POST.get("student_id") # Use id_number to be consistent with other views and handle both student and faculty IDs
             name = request.POST.get("name")
             problem = request.POST.get("problem")
+            treatment = request.POST.get("treatment") # Added missing treatment retrieval
             str_date_prescribed = request.POST.get("date_prescribed")
             date_prescribed = datetime.strptime(str_date_prescribed, "%Y-%m-%d")
 
-            # Validate student existence
+            user = None
+            patient = None
+            user_name = ""
+
             try:
-                patient = Patient.objects.get(student__student_id=student_id)
-            except Patient.DoesNotExist:
-                messages.info(request, "Fill out this form first to record patient's basic information.")
-                return redirect('medical:patient_basicinfo', student_id)
+                # Try to find a Student first by student_id
+                student = Student.objects.filter(student_id=id_number).first()
+                if student:
+                    user = User.objects.get(email=student.email)
+                    user_name = f"{student.firstname} {student.lastname}".title()
+                else:
+                    # If not a student, try to find a Faculty by faculty_id
+                    faculty = Faculty.objects.filter(faculty_id=id_number).first()
+                    if faculty and faculty.user:
+                        user = faculty.user
+                        user_name = faculty.user.get_full_name() or faculty.user.username
 
-            # Retrieve student associated with the patient
-            student = get_object_or_404(Student, student_id=student_id)
-            full_name = f"{student.firstname} {student.lastname}"
+                # If a user is found, get or create the patient profile
+                if user:
+                     patient, created = Patient.objects.get_or_create(user=user)
+                     if created:
+                         messages.info(request, f"Patient profile created for {user_name} (ID: {id_number}).")
 
-            # Validate inputted name against student's name (case-insensitive)
-            if name.lower() != full_name.lower():
-                messages.error(request, "The entered name does not match the student's name associated with the inputted student ID.")
-                return render(request, "admin/prescription.html", {})
+                # If neither student nor faculty was found, or no user associated with faculty
+                if not user or not patient:
+                    messages.error(request, f"No student or faculty found with ID: {id_number} or no associated user/patient profile.")
+                    return render(request, "admin/prescription.html", { 'student_id': id_number, 'name': name, 'problem': problem, 'treatment': treatment, 'date_prescribed': str_date_prescribed})
 
-            # Create prescription record
-            PrescriptionRecord.objects.create(
-                patient=patient,
-                name=name,
-                problem=problem,
-                treatment=treatment,
-                date_prescribed=date_prescribed
-            )
+                # Validate inputted name against the retrieved user's name (case-insensitive)
+                if name.lower() != user_name.lower():
+                    messages.error(request, "The entered name does not match the name associated with the inputted ID Number.")
+                    # Return existing values to the form for correction
+                    return render(request, "admin/prescription.html", {
+                        'student_id': id_number, # Use student_id to match the form field name
+                        'name': name,
+                        'problem': problem,
+                        'treatment': treatment,
+                        'date_prescribed': str_date_prescribed # Pass back as string
+                    })
 
-            messages.success(request, "Record Saved")
-            record_transaction(patient, "Prescription Issuance")
-            return render(request, "admin/prescription.html", {})
+                # Create prescription record
+                PrescriptionRecord.objects.create(
+                    patient=patient,
+                    name=user_name, # Use the verified name from the database
+                    problem=problem,
+                    treatment=treatment,
+                    date_prescribed=date_prescribed
+                )
+
+                messages.success(request, "Record Saved")
+                record_transaction(patient, "Prescription Issuance")
+                # Redirect to the same page to clear the form after successful submission
+                return redirect('medical:prescription')
+
+            except Exception as e:
+                messages.error(request, f"An error occurred: {str(e)}")
+                # Return existing values to the form in case of other errors
+                return render(request, "admin/prescription.html", { 'student_id': id_number, 'name': name, 'problem': problem, 'treatment': treatment, 'date_prescribed': str_date_prescribed})
+
         else:
             return render(request, "admin/prescription.html", {})
     else:
@@ -2346,7 +2378,35 @@ def unverify_pwd(request, id):
 def view_prescription_records(request):
     if not request.user.is_superuser and not request.user.is_staff:
         return HttpResponseForbidden("You don't have permission to access this page.")
-    presc_record = PrescriptionRecord.objects.all()
+    # Fetch all prescription records and select related patient and user
+    presc_record = PrescriptionRecord.objects.all().select_related('patient__user').order_by('-date_prescribed') # Order by date as well
+
+    # Attach the correct ID (Student ID or Faculty ID) and name to each record
+    for prescription in presc_record:
+        prescription.user_id_display = "N/A"
+        prescription.user_name_display = prescription.name # Use the name saved in the record by default
+
+        if prescription.patient and prescription.patient.user:
+            user = prescription.patient.user
+            try:
+                # Try to get student first by user's email
+                student = Student.objects.filter(email=user.email).first()
+                if student:
+                    prescription.user_id_display = student.student_id
+                    # Update name display if needed, though the saved name should be correct now
+                    # prescription.user_name_display = f"{student.firstname} {student.lastname}".title()
+                else:
+                    # If not a student, try to get faculty by user
+                    faculty = Faculty.objects.filter(user=user).first()
+                    if faculty:
+                        prescription.user_id_display = faculty.faculty_id
+                        # prescription.user_name_display = faculty.user.get_full_name() or faculty.user.username
+                    # If neither student nor faculty found, ID remains "N/A"
+            except Exception as e:
+                # Handle potential errors during lookup
+                prescription.user_id_display = f"Error: {e}"
+                # Keep the saved name in case of lookup error
+
     return render(request, "admin/prescriptionrecords.html", {"prescription_records": presc_record})
 
 # List all record of emergency health assistance
