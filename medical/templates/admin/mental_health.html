@@ -130,8 +130,8 @@
                             {% comment %} Loop through student mental health records here {% endcomment %}
                             {% for record in student_mhr_list %}
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.student_id_display }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.student_name_display }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.id_number_display }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.name_display }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.status|title }}</td>
                             </tr>
                             {% empty %}
@@ -159,8 +159,8 @@
                             {% comment %} Loop through faculty mental health records here {% endcomment %}
                              {% for record in faculty_mhr_list %}
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.faculty.faculty_id }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.faculty.user.get_full_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.id_number_display }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.name_display }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ record.status|title }}</td>
                             </tr>
                             {% empty %}
