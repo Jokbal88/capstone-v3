@@ -1434,6 +1434,34 @@ def student_medical_requirements_tracker(request):
                          # More specific message when email is not found for the identified user
                          messages.warning(request, f"Could not send email notification: Recipient email not found for user {user.username}.")
 
+                    # Record transaction if requirements are approved
+                    if action == 'approve_requirements':
+                        # Determine the patient associated with the medical requirements
+                        patient_for_transaction = None
+                        if med_requirements.patient:
+                            patient_for_transaction = med_requirements.patient
+                        elif med_requirements.faculty:
+                            # If linked to a faculty, try to find their patient record
+                            try:
+                                patient_for_transaction = Patient.objects.get(user=med_requirements.faculty.user)
+                            except Patient.DoesNotExist:
+                                # Create a patient record for the faculty if it doesn't exist
+                                patient_for_transaction = Patient.objects.create(
+                                    user=med_requirements.faculty.user,
+                                    # Provide default values for required fields
+                                    birth_date=None, age=0, weight=0, height=0, bloodtype='Unknown',
+                                    allergies='None', medications='None', home_address='', city='',
+                                    state_province='', postal_zipcode='', country='', nationality='',
+                                    religion='', civil_status='', number_of_children=0, academic_year='',
+                                    section='', parent_guardian='', parent_guardian_contact_number=''
+                                )
+
+                        if patient_for_transaction:
+                            record_transaction(patient_for_transaction, "Medical Requirements Approval")
+                            messages.success(request, "Transaction record created for Medical Requirements Approval.")
+                        else:
+                            messages.warning(request, "Could not create transaction record: Patient not found or created.")
+
             except Exception as e:
                  messages.error(request, f"An error occurred while processing the update: {e}")
 

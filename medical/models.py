@@ -208,6 +208,7 @@ class MedicalRequirement(models.Model):
     cbc_remarks = models.CharField(max_length=100, null=True, blank=True)
     drug_test_remarks = models.CharField(max_length=100, null=True, blank=True)
     stool_examination_remarks = models.CharField(max_length=100, null=True, blank=True)
+    pwd_card_remarks = models.TextField(null=True, blank=True)
 
     def patient_directory_path(instance, filename, field_name):
         # Use patient's user or faculty's user for path
