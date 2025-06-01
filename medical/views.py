@@ -2769,12 +2769,12 @@ def mental_health_view(request):
     
     # Fetch all student and faculty mental health records for the lists
     student_mhr_list = MentalHealthRecord.objects.filter(
-        patient__isnull=False,
+        patient__isnull=False, 
         is_availing_mental_health=True
     ).select_related('patient__user')
     
     faculty_mhr_list = MentalHealthRecord.objects.filter(
-        faculty__isnull=False,
+        faculty__isnull=False, 
         is_availing_mental_health=True
     ).select_related('faculty__user')
 
@@ -2873,7 +2873,7 @@ def mental_health_view(request):
 
                     mental_health_record.status = status_action
                     mhr_modified = True
-
+                    
                     # Create transaction record when mental health service is approved
                     if status_action == 'approved' and mental_health_record.is_availing_mental_health:
                         # Get the patient from either student or faculty
