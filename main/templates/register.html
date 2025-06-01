@@ -375,10 +375,10 @@
             <!-- Password Match Indicator -->
             <div class="w-full mt-2">
               <p id="match" class="flex items-center font-semibold text-red-500">
-                <svg id="check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2 block">
+                <svg id="check" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2 hidden">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
-                <svg id="wrong" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2 hidden">
+                <svg id="wrong" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-5 mr-2 block">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                 </svg>
                 Passwords do not match
@@ -517,32 +517,53 @@
             const hideConfirmIcon = document.getElementById('hideConfirmIcon');
 
             function updateIndicator(element, isValid) {
+                const checkIcon = element.querySelector('#check');
+                const wrongIcon = element.querySelector('#wrong');
                 if (isValid) {
-                    element.classList.remove('text-red-500');
+                    element.classList.remove('text-red-500', 'text-gray-600');
                     element.classList.add('text-green-500');
-                    element.querySelector('#check').classList.replace('hidden', 'block');
-                    element.querySelector('#wrong').classList.replace('block', 'hidden');
+                    checkIcon.classList.replace('hidden', 'block');
+                    wrongIcon.classList.replace('block', 'hidden');
                 } else {
-                    element.classList.remove('text-green-500');
+                    element.classList.remove('text-green-500', 'text-gray-600');
                     element.classList.add('text-red-500');
-                    element.querySelector('#check').classList.replace('block', 'hidden');
-                    element.querySelector('#wrong').classList.replace('hidden', 'block');
+                    checkIcon.classList.replace('block', 'hidden');
+                    wrongIcon.classList.replace('hidden', 'block');
                 }
+            }
+
+            // Function to set indicator to neutral state
+            function setIndicatorNeutral(element) {
+                const checkIcon = element.querySelector('#check');
+                const wrongIcon = element.querySelector('#wrong');
+                element.classList.remove('text-red-500', 'text-green-500');
+                element.classList.add('text-gray-600'); // Set to gray
+                checkIcon.classList.replace('block', 'hidden'); // Hide both icons
+                wrongIcon.classList.replace('block', 'hidden');
             }
 
             function validatePassword() {
                 const password = passwordInput.value;
-                const hasLength = password.length >= 8;
-                const hasUppercase = /[A-Z]/.test(password);
-                const hasLowercase = /[a-z]/.test(password);
-                const hasNumber = /[\d]/.test(password);
-                const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-                updateIndicator(lengthIndicator, hasLength);
-                updateIndicator(uppercaseIndicator, hasUppercase);
-                updateIndicator(lowercaseIndicator, hasLowercase);
-                updateIndicator(numberIndicator, hasNumber);
-                updateIndicator(specialIndicator, hasSpecial);
+                if (password === '') {
+                    setIndicatorNeutral(lengthIndicator);
+                    setIndicatorNeutral(uppercaseIndicator);
+                    setIndicatorNeutral(lowercaseIndicator);
+                    setIndicatorNeutral(numberIndicator);
+                    setIndicatorNeutral(specialIndicator);
+                } else {
+                    const hasLength = password.length >= 8;
+                    const hasUppercase = /[A-Z]/.test(password);
+                    const hasLowercase = /[a-z]/.test(password);
+                    const hasNumber = /\d/.test(password);
+                    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password); // Ensure correct special characters
+
+                    updateIndicator(lengthIndicator, hasLength);
+                    updateIndicator(uppercaseIndicator, hasUppercase);
+                    updateIndicator(lowercaseIndicator, hasLowercase);
+                    updateIndicator(numberIndicator, hasNumber);
+                    updateIndicator(specialIndicator, hasSpecial);
+                }
 
                 checkPasswordMatch(); // Also check match when password changes
             }
@@ -550,9 +571,20 @@
             function checkPasswordMatch() {
                 const password = passwordInput.value;
                 const confirmPassword = confirmPasswordInput.value;
-                const isMatch = password === confirmPassword && confirmPassword !== '';
 
-                updateIndicator(matchIndicator, isMatch);
+                // Find the text node within the match indicator p element
+                const matchTextNode = matchIndicator.childNodes[matchIndicator.childNodes.length - 1];
+
+                if (password === '' && confirmPassword === '') {
+                     setIndicatorNeutral(matchIndicator);
+                     // Reset text content to default for neutral state
+                     matchTextNode.nodeValue = 'Passwords do not match';
+                } else {
+                    const isMatch = password === confirmPassword && confirmPassword !== '';
+                    updateIndicator(matchIndicator, isMatch);
+                     // Update text content based on match status
+                    matchTextNode.nodeValue = isMatch ? 'Passwords match' : 'Passwords do not match';
+                }
             }
 
             function togglePasswordVisibility(passwordField, showIcon, hideIcon) {
