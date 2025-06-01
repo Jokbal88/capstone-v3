@@ -2781,7 +2781,7 @@ def mental_health_view(request):
         try:
             student = Student.objects.get(student_id=search_id)
             # Filter student list to only show matching student
-            student_mhr_list = student_mhr_list.filter(patient__student=student)
+            student_mhr_list = student_mhr_list.filter(patient__user__email=student.email)
             faculty_mhr_list = MentalHealthRecord.objects.none()  # Empty faculty list when searching for student
         except Student.DoesNotExist:
             # If not a student, try finding as faculty
