@@ -7,6 +7,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstName = document.getElementById('firstName');
     const middleInitial = document.getElementById('middleInitial');
     const lastName = document.getElementById('lastName');
+    const hideConfirmIcon = document.getElementById('hideConfirmIcon');
+
+    const lengthIndicator = document.getElementById('length');
+    const uppercaseIndicator = document.getElementById('uppercase');
+    const lowercaseIndicator = document.getElementById('lowercase');
+    const numberIndicator = document.getElementById('number');
+    const specialIndicator = document.getElementById('special');
+    const matchIndicator = document.getElementById('match');
 
     // Password validation function
     function validatePassword() {
@@ -33,8 +41,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return Object.values(rules).every(rule => rule);
     }
 
+    function validatePasswordsMatch() {
+        const passwordsMatch = password.value === confirmPassword.value;
+        updateIndicator(matchIndicator, passwordsMatch);
+        const matchIcon = matchIndicator.querySelector('i');
+        if (passwordsMatch) {
+            matchIndicator.innerHTML = '<i class="' + matchIcon.classList.value + '"></i>Passwords match';
+        } else {
+            matchIndicator.innerHTML = '<i class="' + matchIcon.classList.value + '"></i>Passwords do not match';
+        }
+        return passwordsMatch;
+    }
+
+    // Initial validation on load
+    validatePassword();
+    validatePasswordsMatch();
+
+    function updateIndicator(element, isValid) {
+        if (isValid) {
+            element.classList.remove('text-red-500');
+            element.classList.add('text-green-500');
+            element.querySelector('i').classList.remove('fa-circle-xmark');
+        } else {
+            element.classList.remove('text-green-500');
+            element.classList.add('text-red-500');
+            element.querySelector('i').classList.add('fa-circle-xmark');
+        }
+    }
+
     // Real-time password validation
     password.addEventListener('input', validatePassword);
+    password.addEventListener('input', validatePasswordsMatch);
 
     // Real-time First Name validation
     firstName.addEventListener('input', function() {
@@ -82,13 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Real-time Confirm Password validation
-    confirmPassword.addEventListener('input', function() {
-        if (password.value !== confirmPassword.value) {
-            confirmPassword.classList.add('error');
-        } else {
-            confirmPassword.classList.remove('error');
-        }
-    });
+    confirmPassword.addEventListener('input', validatePasswordsMatch);
 
     // Form submission handler
     form.addEventListener('submit', function(e) {
@@ -151,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Confirm Password validation
-        if (password.value !== confirmPassword.value) {
+        if (!validatePasswordsMatch()) {
             isValid = false;
             errorMessage += 'Passwords do not match\n';
             confirmPassword.classList.add('error');
@@ -165,5 +196,16 @@ document.addEventListener('DOMContentLoaded', function() {
             // Form is valid, you can submit it
             form.submit();
         }
+    });
+
+    // Password Validation and Visibility Toggle
+    const togglePasswordButton = document.getElementById('togglePassword');
+
+    togglePasswordButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
     });
 });
