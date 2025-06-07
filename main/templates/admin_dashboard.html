@@ -21,7 +21,7 @@
     }
     .dashboard-main-grid {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Changed to a single column */
         gap: 2rem;
         flex: 1;
         height: 100%;
@@ -46,13 +46,13 @@
         text-transform: uppercase;
         font-size: 0.95rem;
         color: #374151;
-        background: #f9fafb;
+        background: #f9fafb; /* Ensure a solid background for sticky header */
         letter-spacing: 0.04em;
         padding-top: 0.75rem;
         padding-bottom: 0.75rem;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        position: sticky; /* Make header sticky */
+        top: 0; /* Stick to the top of its scrolling container */
+        z-index: 10; /* Ensure it stays above other table content */
     }
     .dashboard-table td {
         font-size: 1rem;
@@ -60,9 +60,12 @@
         background: #fff;
         padding-top: 0.75rem;
         padding-bottom: 0.75rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: nowrap; /* Keep text on one line */
+        overflow: hidden; /* Hide overflow content */
+        text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+    }
+    .dashboard-table tbody tr:hover {
+        background-color: #f0f4f8; /* Light gray-blue on hover */
     }
     .calendar-admin {
         width: 100%;
@@ -145,13 +148,13 @@
         border: 1px solid #34d399;
     }
     .calendar-day-admin.has-emergency-event {
-        background: #fbe6e6;
-        color: #c53030;
+        background: #fbe6e6; /* Lighter red */
+        color: #c53030; /* Darker red */
         border: 1px solid #f68787;
     }
     .calendar-day-admin.has-completed-event {
-        background: #e0f2fe;
-        color: #2b6cb0;
+        background: #e0f2fe; /* Lighter blue */
+        color: #2b6cb0; /* Darker blue */
         border: 1px solid #90cdf4;
     }
     .calendar-day-admin.has-event::after {
@@ -247,14 +250,51 @@
         max-height: 50vh; /* Adjust this value as needed */
         overflow-y: auto;
     }
+
+    .sticky-search-bar-container {
+        position: sticky;
+        top: 0;
+        z-index: 20; /* Ensure it's above other content */
+        background-color: #fff; /* Match background for seamless look */
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem; /* Space between search bar and content */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Optional subtle shadow */
+    }
 </style>
 {% endblock %} 
 
 {% block content %}
-<div class="flex flex-col bg-white rounded-[14px] h-min">
-    <div class="flex flex-col gap-4 h-auto p-4">
-        <div class="flex flex-row gap-4 p-4 w-full">
-            <div class="flex flex-col gap-2 basis-full">
+<div class="flex flex-col bg-white rounded-[14px] h-min w-full p-4">
+    <div class="flex flex-col gap-4 h-auto">
+        <div class="flex flex-row gap-4 w-full">
+            <div class="calendar-admin flex-1 flex flex-col justify-end">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-base font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-blue-400"></i> Calendar
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-sm shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
+                        <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="calendar-header-admin">
+                    <div class="calendar-header-cell-admin">Sun</div>
+                    <div class="calendar-header-cell-admin">Mon</div>
+                    <div class="calendar-header-cell-admin">Tue</div>
+                    <div class="calendar-header-cell-admin">Wed</div>
+                    <div class="calendar-header-cell-admin">Thu</div>
+                    <div class="calendar-header-cell-admin">Fri</div>
+                    <div class="calendar-header-cell-admin">Sat</div>
+                </div>
+                <div id="calendarDaysAdmin"></div>
+            </div>
+            <div class="flex flex-col flex-1">
                 <span class="font-bold text-gray-700 mr-4"><i class="fas fa-bolt text-blue-400"></i> Quick Actions:</span>
                 <div class="grid grid-cols-2 gap-2">
                     <a href="{% url 'main:register' %}" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition text-center">Add Patient</a>
@@ -262,80 +302,25 @@
                     <a href="{% url 'medical:upload_requirements' %}" class="bg-purple-500 text-white p-2 rounded-md hover:bg-purple-600 transition text-center">Upload Document</a>
                     <a href="mailto:" class="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600 transition text-center">Send Notification</a>
                 </div>
-                <div class="flex flex-col justify-center items-center flex-[2] bg-white rounded-xl shadow border border-blue-100 ml-auto p-8 w-full">
-                    <div id="adminLiveTime" class="text-5xl font-extrabold text-blue-700 mb-2 text-center"></div>
-                    <div id="adminLiveDate" class="text-base font-semibold text-gray-600 text-center"></div>
+                <div class="flex flex-col justify-center items-center flex-[2] bg-white rounded-xl shadow border border-blue-100 ml-auto p-8 w-full text-center">
+                    <div id="adminLiveTime" class="text-5xl font-extrabold text-blue-700 mb-2"></div>
+                    <div id="adminLiveDate" class="text-base font-semibold text-gray-600"></div>
                     <div class="flex flex-row justify-center items-center gap-4 mt-4">
-                        <div class="flex flex-col items-center">
+                        <div class="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
                             <i class="fas fa-calendar-check text-purple-500 text-xl"></i>
                             <span class="text-xs text-gray-500">Today's Schedule</span>
                             <span class="text-2xl font-bold text-purple-600">{{ todays_schedule|default:0 }}</span>
                         </div>
-                        <div class="flex flex-col items-center">
+                        <div class="flex flex-col items-center p-2 bg-gray-50 rounded-lg">
                             <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
                             <span class="text-xs text-gray-500">Urgent Cases</span>
                             <span class="text-2xl font-bold text-red-600">{{ urgent_cases|default:0 }}</span>
                         </div>
                     </div>
-                    <div class="flex flex-col p-4 w-full mt-4 bg-white rounded-xl shadow border border-blue-100">
-                        <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
-                            <i class="fas fa-calendar-day text-blue-400"></i> Today's Appointments
-                        </h2>
-                        <div class="overflow-x-auto flex-1">
-                            <table class="min-w-full dashboard-table">
-                                <thead>
-                                    <tr>
-                                        <th class="px-4 py-2">Student</th>
-                                        <th class="px-4 py-2">Service</th>
-                                        <th class="px-4 py-2">Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for appt in todays_appointments %}
-                                    <tr>
-                                        <td class="px-4 py-2">{{ appt.student }}</td>
-                                        <td class="px-4 py-2">{{ appt.service }}</td>
-                                        <td class="px-4 py-2">{{ appt.time }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="3" class="px-4 py-2 text-center">No appointments today</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
                 </div>
             </div>
-            <div class="calendar-admin w-full flex flex-col justify-end">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-base font-bold text-gray-800 flex items-center gap-2">
-                        <i class="fas fa-calendar-alt text-blue-400"></i> Calendar
-                    </span>
-      <div class="flex items-center gap-2">
-                                <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-                <i class="fas fa-chevron-left"></i>
-                </button>
-                        <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-sm shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
-                                <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-                <i class="fas fa-chevron-right"></i>
-                </button>
-                        </div>
-                        </div>
-                        <div class="calendar-header-admin">
-                            <div class="calendar-header-cell-admin">Sun</div>
-                            <div class="calendar-header-cell-admin">Mon</div>
-                            <div class="calendar-header-cell-admin">Tue</div>
-                            <div class="calendar-header-cell-admin">Wed</div>
-                            <div class="calendar-header-cell-admin">Thu</div>
-                            <div class="calendar-header-cell-admin">Fri</div>
-                            <div class="calendar-header-cell-admin">Sat</div>
-                        </div>
-                <div id="calendarDaysAdmin"></div>
-            </div>
         </div>
-        <div class="flex gap-4 bg-gray-50 rounded-xl p-4 border border-gray-200 items-stretch">
+        <div class="flex gap-4 bg-gray-50 rounded-xl border border-gray-200 items-stretch">
             <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
                 <i class="fas fa-users text-blue-500 text-xl mb-1"></i>
                 <span class="text-xs text-gray-500 mb-1">Total Patients</span>
@@ -351,6 +336,10 @@
                 <span class="text-xs text-gray-500 mb-1">Pending Requests</span>
                 <span class="text-2xl font-bold text-yellow-600">{{ pending_requests|default:0 }}</span>
         </div>
+        </div>
+        <div class="sticky-search-bar-container w-full px-4">
+            <input type="text" id="requestSearch" onkeyup="filterRequests()" placeholder="Search requests by ID, name, or type..." 
+                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
         </div>
         <div class="dashboard-main-grid">
             <!-- Left Column: Requests Card with Tabs -->
@@ -382,7 +371,8 @@
                                 <th class="px-4 py-2">Request Type</th>
                                 <th class="px-4 py-2">Date</th>
                                 <th class="px-4 py-2">Status</th>
-                            </tr>
+                                <!-- Removed Actions Header -->
+                                </tr>
                             </thead>
                             <tbody>
                             {% for request_data in all_upcoming_requests %}
@@ -421,42 +411,11 @@
                                             {{ request_data.request.status|title }}
                                         </span>
                                     {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                            <td colspan="6" class="px-4 py-2 text-center">No requests found</td>
-                            </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            <!-- Right Column: Today's Appointments -->
-            <div class="dashboard-card border border-gray-200 flex flex-col p-4 mb-2 w-full">
-                <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
-                    <i class="fas fa-calendar-day text-blue-400"></i> Today's Appointments
-                </h2>
-                <div class="overflow-x-auto flex-1">
-                    <table class="min-w-full dashboard-table">
-        <thead>
-                            <tr>
-                                <th class="px-4 py-2">Student</th>
-                                <th class="px-4 py-2">Service</th>
-                                <th class="px-4 py-2">Time</th>
-          </tr>
-        </thead>
-        <tbody>
-                            {% for appt in todays_appointments %}
-                            <tr>
-                                <td class="px-4 py-2">{{ appt.student }}</td>
-                                <td class="px-4 py-2">{{ appt.service }}</td>
-                                <td class="px-4 py-2">{{ appt.time }}</td>
+                                    </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                <td colspan="3" class="px-4 py-2 text-center">No appointments today</td>
+                                <td colspan="5" class="px-4 py-2 text-center">No requests found</td>
           </tr>
                                 {% endfor %}
         </tbody>
@@ -598,6 +557,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.style.display = 'none';
             }
         });
+        
+        // After tab switch, re-apply current search filter
+        filterRequests(); 
     }
     
     // Add click handlers to tab buttons
@@ -610,6 +572,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTab = urlParams.get('tab') || 'all';
     switchAdminTab(activeTab);
 })();
+
+// Request filtering functionality
+function filterRequests() {
+    const input = document.getElementById('requestSearch');
+    if (!input) return; // Exit if search input is not found
+    
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector('.dashboard-table');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) { // Start from 1 to skip the header row
+        let found = false;
+        const row = tr[i];
+        
+        // If the row is already hidden by a tab, skip search filtering unless it's the 'all' tab.
+        // Or if it's the 'all' tab, always search.
+        const activeTabFromURL = new URLSearchParams(window.location.search).get('tab') || 'all';
+        if (activeTabFromURL !== 'all' && row.dataset.type !== activeTabFromURL) {
+            row.style.display = 'none';
+            continue;
+        }
+
+        const tdId = row.getElementsByTagName('td')[0]; // ID column
+        const tdName = row.getElementsByTagName('td')[1]; // Name column
+        const tdType = row.getElementsByTagName('td')[2]; // Request Type column
+
+        if (tdId && tdId.textContent.toLowerCase().indexOf(filter) > -1) {
+            found = true;
+        } else if (tdName && tdName.textContent.toLowerCase().indexOf(filter) > -1) {
+            found = true;
+        } else if (tdType && tdType.textContent.toLowerCase().indexOf(filter) > -1) {
+            found = true;
+        }
+
+        // Only apply display change if not already hidden by tab and matches filter
+        if (found) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    }
+}
 
 // Request status update functions
 function updateRequestStatus(requestId, newStatus) {
