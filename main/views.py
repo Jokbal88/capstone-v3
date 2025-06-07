@@ -16,7 +16,8 @@ from medical.models import (
     TransactionRecord,
     DentalRecords,
     PrescriptionRecord,
-    FacultyRequest
+    FacultyRequest,
+    EmergencyHealthAssistanceRecord
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -842,32 +843,7 @@ def admin_dashboard_view(request):
     # Get total medical records
     total_records = medical_models.PhysicalExamination.objects.count()
     
-    # Get pending requests for both PatientRequest and FacultyRequest
-    pending_patient_requests = medical_models.PatientRequest.objects.filter(status='pending').select_related(
-        'patient__user'
-    ).order_by('date_requested')
-    
-    pending_faculty_requests = medical_models.FacultyRequest.objects.filter(status='pending').select_related(
-        'faculty__user'
-    ).order_by('date_requested')
-    
-    pending_requests_total = pending_patient_requests.count() + pending_faculty_requests.count()
-    
-    # Get today's accepted requests schedule count for both models
-    today = timezone.now().date()
-    todays_patient_schedule = medical_models.PatientRequest.objects.filter(
-        status='accepted',
-        date_responded__date=today
-    ).select_related('patient__user')
-    
-    todays_faculty_schedule = medical_models.FacultyRequest.objects.filter(
-        status='accepted',
-        date_responded__date=today
-    ).select_related('faculty__user')
-    
-    todays_schedule_total = todays_patient_schedule.count() + todays_faculty_schedule.count()
-    
-    # Get all requests that are not completed or rejected for upcoming requests section
+    # Get all requests that are not completed or rejected
     upcoming_patient_requests = medical_models.PatientRequest.objects.select_related(
         'patient__user'
     ).exclude(status__in=['completed', 'rejected']).order_by('date_requested')
@@ -876,273 +852,230 @@ def admin_dashboard_view(request):
         'faculty__user'
     ).exclude(status__in=['completed', 'rejected']).order_by('date_requested')
 
-    # Process upcoming requests to include proper user information
-    all_upcoming_requests = []
-    
-    # Process patient requests
-    for patient_request in upcoming_patient_requests:
-        request_data = {
-            'request': patient_request,
-            'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
-            }
-        }
-        if patient_request.patient and patient_request.patient.user:
-            try:
-                student = Student.objects.filter(email=patient_request.patient.user.email).first()
-                if student:
-                    request_data['user_info'] = {
-                        'id': student.student_id,
-                        'name': f"{student.lastname}, {student.firstname}"
-                    }
-                else:
-                    faculty = Faculty.objects.filter(user=patient_request.patient.user).first()
-                    if faculty:
-                        request_data['user_info'] = {
-                            'id': faculty.faculty_id,
-                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
-                        }
-                    else:
-                        request_data['user_info'] = {
-                            'id': 'N/A',
-                            'name': f"{patient_request.patient.user.first_name} {patient_request.patient.user.last_name}"
-                        }
-            except Exception:
-                request_data['user_info'] = {
-                    'id': 'N/A',
-                    'name': f"{patient_request.patient.user.first_name} {patient_request.patient.user.last_name}"
-                }
-        all_upcoming_requests.append(request_data)
-    
-    # Process faculty requests
-    for faculty_request in upcoming_faculty_requests:
-        request_data = {
-            'request': faculty_request,
-            'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
-            }
-        }
-        if faculty_request.faculty and faculty_request.faculty.user:
-            request_data['user_info'] = {
-                'id': faculty_request.faculty.faculty_id,
-                'name': f"{faculty_request.faculty.user.last_name}, {faculty_request.faculty.user.first_name}"
-            }
-        all_upcoming_requests.append(request_data)
-    
-    # Sort all requests by date
-    all_upcoming_requests.sort(key=lambda x: x['request'].date_requested)
-    
-    # Get dental service requests (pending) for dashboard display
+    # Get dental service requests
     dental_requests = medical_models.DentalRecords.objects.select_related(
         'patient__user'
     ).filter(appointed=False).order_by('date_requested')
+
+    # Get emergency health assistance records - no status filter needed
+    emergency_requests = medical_models.EmergencyHealthAssistanceRecord.objects.select_related(
+        'patient__user'
+    ).order_by('-date_assisted')
+
+    # Get mental health records
+    mental_health_requests = medical_models.MentalHealthRecord.objects.select_related(
+        'patient__user', 'faculty__user'
+    ).filter(status='pending').order_by('date_submitted')
+
+    # Process all requests into a unified format
+    all_requests = []
     
-    # Process dental requests to include proper user information
-    dental_requests_data = []
-    for dental_request in dental_requests:
+    # Process patient requests
+    for req in upcoming_patient_requests:
         request_data = {
-            'id': dental_request.id,
-            'service_type': dental_request.service_type,
-            'date_requested': dental_request.date_requested,
-            'date_appointed': dental_request.date_appointed,
-            'appointed': dental_request.appointed,
+            'request': req,
             'user_info': {
-                'id_number': 'N/A',
-                'full_name': 'Unknown User'
-            }
+                'id': 'N/A',
+                'name': 'Unknown User'
+            },
+            'type': 'documentary'
         }
-        
-        if dental_request.patient and dental_request.patient.user:
+        if req.patient and req.patient.user:
             try:
-                student = Student.objects.filter(email=dental_request.patient.user.email).first()
+                student = Student.objects.filter(email=req.patient.user.email).first()
                 if student:
                     request_data['user_info'] = {
-                        'id_number': student.student_id,
-                        'full_name': f"{student.lastname}, {student.firstname}"
+                        'id': student.student_id,
+                        'name': f"{student.lastname}, {student.firstname}"
                     }
                 else:
-                    faculty = Faculty.objects.filter(user=dental_request.patient.user).first()
+                    faculty = Faculty.objects.filter(user=req.patient.user).first()
                     if faculty:
                         request_data['user_info'] = {
-                            'id_number': faculty.faculty_id,
-                            'full_name': f"{faculty.user.last_name}, {faculty.user.first_name}"
-                        }
-                    else:
-                        request_data['user_info'] = {
-                            'id_number': 'N/A',
-                            'full_name': f"{dental_request.patient.user.first_name} {dental_request.patient.user.last_name}"
+                            'id': faculty.faculty_id,
+                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
                         }
             except Exception as e:
-                print(f"Error processing dental request {dental_request.id}: {str(e)}")
-                continue
+                print(f"Error processing patient request {req.request_id}: {str(e)}")
+        all_requests.append(request_data)
+
+    # Process faculty requests
+    for req in upcoming_faculty_requests:
+        request_data = {
+            'request': req,
+            'user_info': {
+                'id': 'N/A',
+                'name': 'Unknown User'
+            },
+            'type': 'documentary'
+        }
+        if req.faculty and req.faculty.user:
+            request_data['user_info'] = {
+                'id': req.faculty.faculty_id,
+                'name': f"{req.faculty.user.last_name}, {req.faculty.user.first_name}"
+            }
+        all_requests.append(request_data)
+
+    # Process dental requests
+    for req in dental_requests:
+        request_data = {
+            'request': req,
+            'user_info': {
+                'id': 'N/A',
+                'name': 'Unknown User'
+            },
+            'type': 'dental'
+        }
+        if req.patient and req.patient.user:
+            try:
+                student = Student.objects.filter(email=req.patient.user.email).first()
+                if student:
+                    request_data['user_info'] = {
+                        'id': student.student_id,
+                        'name': f"{student.lastname}, {student.firstname}"
+                    }
+                else:
+                    faculty = Faculty.objects.filter(user=req.patient.user).first()
+                    if faculty:
+                        request_data['user_info'] = {
+                            'id': faculty.faculty_id,
+                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
+                        }
+            except Exception as e:
+                print(f"Error processing dental request {req.id}: {str(e)}")
+        all_requests.append(request_data)
+
+    # Process emergency requests
+    for req in emergency_requests:
+        request_data = {
+            'request': req,
+            'user_info': {
+                'id': 'N/A',
+                'name': 'Unknown User'
+            },
+            'type': 'emergency'
+        }
+        if req.patient and req.patient.user:
+            try:
+                student = Student.objects.filter(email=req.patient.user.email).first()
+                if student:
+                    request_data['user_info'] = {
+                        'id': student.student_id,
+                        'name': f"{student.lastname}, {student.firstname}"
+                    }
+                else:
+                    faculty = Faculty.objects.filter(user=req.patient.user).first()
+                    if faculty:
+                        request_data['user_info'] = {
+                            'id': faculty.faculty_id,
+                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
+                        }
+            except Exception as e:
+                print(f"Error processing emergency request {req.id}: {str(e)}")
+        all_requests.append(request_data)
+
+    # Process mental health requests
+    for req in mental_health_requests:
+        request_data = {
+            'request': req,
+            'user_info': {
+                'id': 'N/A',
+                'name': 'Unknown User'
+            },
+            'type': 'mental'
+        }
+        if req.patient and req.patient.user:
+            try:
+                student = Student.objects.filter(email=req.patient.user.email).first()
+                if student:
+                    request_data['user_info'] = {
+                        'id': student.student_id,
+                        'name': f"{student.lastname}, {student.firstname}"
+                    }
+                else:
+                    faculty = Faculty.objects.filter(user=req.patient.user).first()
+                    if faculty:
+                        request_data['user_info'] = {
+                            'id': faculty.faculty_id,
+                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
+                        }
+            except Exception as e:
+                print(f"Error processing mental health record {req.id}: {str(e)}")
+        all_requests.append(request_data)
+
+    # Sort all requests by date
+    all_requests.sort(key=lambda x: (
+        getattr(x['request'], 'date_requested', None) or 
+        getattr(x['request'], 'date_assisted', None) or 
+        getattr(x['request'], 'date_submitted', None)
+    ), reverse=True)
+
+    # Get counts for dashboard cards
+    pending_requests_total = len([r for r in all_requests 
+                                if hasattr(r['request'], 'status') 
+                                and getattr(r['request'], 'status', None) == 'pending'])
+    
+    # Get today's schedule count
+    today = timezone.now().date()
+    todays_schedule_total = len([r for r in all_requests 
+                               if hasattr(r['request'], 'date_responded') 
+                               and getattr(r['request'], 'date_responded', None)
+                               and getattr(r['request'], 'date_responded').date() == today])
+
+    # Get urgent cases count (faculty requests with high priority)
+    urgent_cases = len([r for r in all_requests 
+                       if hasattr(r['request'], 'priority_level') 
+                       and getattr(r['request'], 'priority_level', None) == 'high'])
+
+    # Get active tab from URL parameter
+    active_tab = request.GET.get('tab', 'all')
+
+    # Prepare events for the calendar
+    calendar_events = []
+    for req_data in all_requests:
+        date_field = None
+        status_field = None
+
+        if req_data['type'] == 'emergency':
+            date_field = getattr(req_data['request'], 'date_assisted', None)
+            status_field = 'emergency' # Custom status for emergency
+        elif req_data['type'] == 'mental':
+            date_field = getattr(req_data['request'], 'date_submitted', None)
+            status_field = getattr(req_data['request'], 'status', None)
+        elif req_data['type'] == 'dental':
+            date_field = getattr(req_data['request'], 'date_requested', None)
+            status_field = 'completed' if getattr(req_data['request'], 'appointed', False) else 'pending'
+        else: # documentary requests (patient and faculty requests)
+            date_field = getattr(req_data['request'], 'date_requested', None)
+            status_field = getattr(req_data['request'], 'status', None)
         
-        dental_requests_data.append(request_data)
-    
-    # Get scheduled appointments for the calendar
-    scheduled_patient_appointments = medical_models.PatientRequest.objects.select_related(
-        'patient__user'
-    ).filter(status='accepted').values(
-        'date_responded',
-        'request_type',
-        'patient__user__first_name',
-        'patient__user__last_name',
-    )
-    
-    scheduled_faculty_appointments = medical_models.FacultyRequest.objects.select_related(
-        'faculty__user'
-    ).filter(status='accepted').values(
-        'date_responded',
-        'request_type',
-        'faculty__user__first_name',
-        'faculty__user__last_name',
-    )
-    
-    # Format appointments for the calendar
-    events = []
-    for appointment in scheduled_patient_appointments:
-        if appointment['date_responded']:
-            events.append({
-                'date': appointment['date_responded'].strftime('%Y-%m-%d'),
-                'title': f"{appointment['request_type']} for {appointment['patient__user__first_name']} {appointment['patient__user__last_name']}",
-                'type': 'patient'
-            })
+        if date_field and status_field:
+            # Ensure date is a date object for formatting
+            if isinstance(date_field, datetime):
+                date_str = date_field.strftime('%Y-%m-%d')
+            elif isinstance(date_field, date):
+                date_str = date_field.strftime('%Y-%m-%d')
+            else:
+                date_str = None # Handle cases where date_field is not a date/datetime object
 
-    for appointment in scheduled_faculty_appointments:
-        if appointment['date_responded']:
-            events.append({
-                'date': appointment['date_responded'].strftime('%Y-%m-%d'),
-                'title': f"{appointment['request_type']} for {appointment['faculty__user__first_name']} {appointment['faculty__user__last_name']}",
-                'type': 'faculty'
-            })
+            if date_str:
+                calendar_events.append({
+                    'date': date_str,
+                    'status': status_field
+                })
 
-    # Get urgent cases (patients with allergies or chronic conditions)
-    urgent_cases_count = medical_models.Patient.objects.filter(
-        models.Q(allergies__isnull=False) | 
-        models.Q(physical_examination__medicalhistory__heart_disease=True)
-    ).distinct().count()
-    
-    # Emergency Assistance Requests
-    emergency_requests = medical_models.PatientRequest.objects.select_related(
-        'patient__user'
-    ).filter(request_type__icontains='emergency').exclude(status__in=['completed', 'rejected']).order_by('date_requested')
-    
-    # Process emergency requests to include proper user information
-    emergency_requests_data = []
-    for emergency_request in emergency_requests:
-        request_data = {
-            'request': emergency_request,
-            'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
-            }
-        }
-        if emergency_request.patient and emergency_request.patient.user:
-            try:
-                student = Student.objects.filter(email=emergency_request.patient.user.email).first()
-                if student:
-                    request_data['user_info'] = {
-                        'id': student.student_id,
-                        'name': f"{student.lastname}, {student.firstname}"
-                    }
-                else:
-                    faculty = Faculty.objects.filter(user=emergency_request.patient.user).first()
-                    if faculty:
-                        request_data['user_info'] = {
-                            'id': faculty.faculty_id,
-                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
-                        }
-                    else:
-                        request_data['user_info'] = {
-                            'id': 'N/A',
-                            'name': f"{emergency_request.patient.user.first_name} {emergency_request.patient.user.last_name}"
-                        }
-            except Exception:
-                request_data['user_info'] = {
-                    'id': 'N/A',
-                    'name': f"{emergency_request.patient.user.first_name} {emergency_request.patient.user.last_name}"
-                }
-        emergency_requests_data.append(request_data)
-    
-    # Get prescription requests
-    prescription_requests = medical_models.PrescriptionRecord.objects.select_related(
-        'patient__user'
-    ).order_by('-date_prescribed')
-    
-    # Process prescription requests to include proper user information
-    prescription_requests_data = []
-    for prescription_request in prescription_requests:
-        request_data = {
-            'request': prescription_request,
-            'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
-            }
-        }
-        if prescription_request.patient and prescription_request.patient.user:
-            try:
-                student = Student.objects.filter(email=prescription_request.patient.user.email).first()
-                if student:
-                    request_data['user_info'] = {
-                        'id': student.student_id,
-                        'name': f"{student.lastname}, {student.firstname}"
-                    }
-                else:
-                    faculty = Faculty.objects.filter(user=prescription_request.patient.user).first()
-                    if faculty:
-                        request_data['user_info'] = {
-                            'id': faculty.faculty_id,
-                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
-                        }
-                    else:
-                        request_data['user_info'] = {
-                            'id': 'N/A',
-                            'name': f"{prescription_request.patient.user.first_name} {prescription_request.patient.user.last_name}"
-                        }
-            except Exception:
-                request_data['user_info'] = {
-                    'id': 'N/A',
-                    'name': f"{prescription_request.patient.user.first_name} {prescription_request.patient.user.last_name}"
-                }
-        prescription_requests_data.append(request_data)
-    
-    # Notifications
-    notifications = []
-    if pending_requests_total > 0:
-        notifications.append(f"{pending_requests_total} new requests pending (Students and Faculty).")
-    if urgent_cases_count > 0:
-        notifications.append(f"{urgent_cases_count} urgent cases require attention.")
-    if emergency_requests.count() > 0:
-        notifications.append(f"{emergency_requests.count()} emergency assistance requests pending.")
-    
-    # Today's Appointments
-    today_str = timezone.now().strftime('%Y-%m-%d')
-    todays_appointments = []
-    for event in events:
-        if event['date'] == today_str:
-            todays_appointments.append({
-                'student': event['title'].split(' for ')[1],
-                'service': event['title'].split(' for ')[0],
-                'time': 'Scheduled'
-            })
-    
     context = {
         'total_patients': total_patients,
         'total_records': total_records,
         'pending_requests': pending_requests_total,
         'todays_schedule': todays_schedule_total,
-        'urgent_cases': urgent_cases_count,
-        'upcoming_requests': all_upcoming_requests,
-        'dental_requests': dental_requests_data,
-        'emergency_requests': emergency_requests_data,
-        'prescription_requests': prescription_requests_data,
-        'events': events,
-        'notifications': notifications,
-        'todays_appointments': todays_appointments,
+        'urgent_cases': urgent_cases,
+        'all_upcoming_requests': all_requests,
+        'active_tab': active_tab,
+        'events': calendar_events, # Pass events to the template
     }
     
-    return render(request, 'admin_dashboard.html', context)
+    return render(request, "admin_dashboard.html", context)
 
 @login_required
 def dashboard_view(request):
