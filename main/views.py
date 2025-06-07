@@ -879,7 +879,7 @@ def admin_dashboard_view(request):
                 'name': 'Unknown User'
             },
             'type': 'documentary'
-        }
+            }
         if req.patient and req.patient.user:
             try:
                 student = Student.objects.filter(email=req.patient.user.email).first()
@@ -898,7 +898,7 @@ def admin_dashboard_view(request):
             except Exception as e:
                 print(f"Error processing patient request {req.request_id}: {str(e)}")
         all_requests.append(request_data)
-
+    
     # Process faculty requests
     for req in upcoming_faculty_requests:
         request_data = {
@@ -908,7 +908,7 @@ def admin_dashboard_view(request):
                 'name': 'Unknown User'
             },
             'type': 'documentary'
-        }
+            }
         if req.faculty and req.faculty.user:
             request_data['user_info'] = {
                 'id': req.faculty.faculty_id,
@@ -954,7 +954,7 @@ def admin_dashboard_view(request):
                 'name': 'Unknown User'
             },
             'type': 'emergency'
-        }
+            }
         if req.patient and req.patient.user:
             try:
                 student = Student.objects.filter(email=req.patient.user.email).first()
@@ -983,7 +983,7 @@ def admin_dashboard_view(request):
                 'name': 'Unknown User'
             },
             'type': 'mental'
-        }
+            }
         if req.patient and req.patient.user:
             try:
                 student = Student.objects.filter(email=req.patient.user.email).first()
@@ -1062,8 +1062,8 @@ def admin_dashboard_view(request):
                 calendar_events.append({
                     'date': date_str,
                     'status': status_field
-                })
-
+            })
+    
     context = {
         'total_patients': total_patients,
         'total_records': total_records,

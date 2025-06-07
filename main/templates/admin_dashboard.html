@@ -21,7 +21,7 @@
     }
     .dashboard-main-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
         gap: 2rem;
         flex: 1;
         height: 100%;
@@ -50,6 +50,9 @@
         letter-spacing: 0.04em;
         padding-top: 0.75rem;
         padding-bottom: 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
     .dashboard-table td {
         font-size: 1rem;
@@ -57,6 +60,9 @@
         background: #fff;
         padding-top: 0.75rem;
         padding-bottom: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .calendar-admin {
         width: 100%;
@@ -235,6 +241,12 @@
         background-color: #dbeafe;
         color: #1e40af;
     }
+
+    /* New style for requests table scroll */
+    .requests-table-scroll {
+        max-height: 50vh; /* Adjust this value as needed */
+        overflow-y: auto;
+    }
 </style>
 {% endblock %} 
 
@@ -265,6 +277,35 @@
                             <span class="text-2xl font-bold text-red-600">{{ urgent_cases|default:0 }}</span>
                         </div>
                     </div>
+                    <div class="flex flex-col p-4 w-full mt-4 bg-white rounded-xl shadow border border-blue-100">
+                        <h2 class="text-base font-bold text-gray-800 mb-2 flex items-center gap-2">
+                            <i class="fas fa-calendar-day text-blue-400"></i> Today's Appointments
+                        </h2>
+                        <div class="overflow-x-auto flex-1">
+                            <table class="min-w-full dashboard-table">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-2">Student</th>
+                                        <th class="px-4 py-2">Service</th>
+                                        <th class="px-4 py-2">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appt in todays_appointments %}
+                                    <tr>
+                                        <td class="px-4 py-2">{{ appt.student }}</td>
+                                        <td class="px-4 py-2">{{ appt.service }}</td>
+                                        <td class="px-4 py-2">{{ appt.time }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-2 text-center">No appointments today</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="calendar-admin w-full flex flex-col justify-end">
@@ -272,25 +313,25 @@
                     <span class="text-base font-bold text-gray-800 flex items-center gap-2">
                         <i class="fas fa-calendar-alt text-blue-400"></i> Calendar
                     </span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
+      <div class="flex items-center gap-2">
+                                <button onclick="previousMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <i class="fas fa-chevron-left"></i>
+                </button>
                         <span id="currentMonthAdmin" class="px-4 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold text-sm shadow-sm border border-blue-100" style="min-width:120px; text-align:center;"></span>
-                        <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="calendar-header-admin">
-                    <div class="calendar-header-cell-admin">Sun</div>
-                    <div class="calendar-header-cell-admin">Mon</div>
-                    <div class="calendar-header-cell-admin">Tue</div>
-                    <div class="calendar-header-cell-admin">Wed</div>
-                    <div class="calendar-header-cell-admin">Thu</div>
-                    <div class="calendar-header-cell-admin">Fri</div>
-                    <div class="calendar-header-cell-admin">Sat</div>
-                </div>
+                                <button onclick="nextMonthAdmin()" class="text-gray-500 hover:text-blue-600 transition p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-200">
+                <i class="fas fa-chevron-right"></i>
+                </button>
+                        </div>
+                        </div>
+                        <div class="calendar-header-admin">
+                            <div class="calendar-header-cell-admin">Sun</div>
+                            <div class="calendar-header-cell-admin">Mon</div>
+                            <div class="calendar-header-cell-admin">Tue</div>
+                            <div class="calendar-header-cell-admin">Wed</div>
+                            <div class="calendar-header-cell-admin">Thu</div>
+                            <div class="calendar-header-cell-admin">Fri</div>
+                            <div class="calendar-header-cell-admin">Sat</div>
+                        </div>
                 <div id="calendarDaysAdmin"></div>
             </div>
         </div>
@@ -299,17 +340,17 @@
                 <i class="fas fa-users text-blue-500 text-xl mb-1"></i>
                 <span class="text-xs text-gray-500 mb-1">Total Patients</span>
                 <span class="text-2xl font-bold text-blue-600">{{ total_patients }}</span>
-            </div>
+        </div>
             <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
                 <i class="fas fa-file-medical text-green-500 text-xl mb-1"></i>
                 <span class="text-xs text-gray-500 mb-1">Total Records</span>
                 <span class="text-2xl font-bold text-green-600">{{ total_records|default:0 }}</span>
-            </div>
+        </div>
             <div class="flex-1 dashboard-card flex flex-col items-center justify-center text-center shadow-none border-none bg-transparent hover:shadow-none">
                 <i class="fas fa-clock text-yellow-500 text-xl mb-1"></i>
                 <span class="text-xs text-gray-500 mb-1">Pending Requests</span>
                 <span class="text-2xl font-bold text-yellow-600">{{ pending_requests|default:0 }}</span>
-            </div>
+        </div>
         </div>
         <div class="dashboard-main-grid">
             <!-- Left Column: Requests Card with Tabs -->
@@ -332,19 +373,18 @@
                     </button>
                 </div>
 
-                <div class="overflow-x-auto flex-1">
+                <div class="overflow-x-auto flex-1 requests-table-scroll">
                     <table class="min-w-full dashboard-table">
-                        <thead>
+                            <thead>
                             <tr>
                                 <th class="px-4 py-2">ID</th>
                                 <th class="px-4 py-2">Name</th>
                                 <th class="px-4 py-2">Request Type</th>
                                 <th class="px-4 py-2">Date</th>
                                 <th class="px-4 py-2">Status</th>
-                                <th class="px-4 py-2">Actions</th>
                             </tr>
-                        </thead>
-                        <tbody>
+                            </thead>
+                            <tbody>
                             {% for request_data in all_upcoming_requests %}
                             <tr class="request-row" data-type="{{ request_data.type }}">
                                 <td class="px-4 py-2 text-center">{{ request_data.user_info.id }}</td>
@@ -382,31 +422,16 @@
                                         </span>
                                     {% endif %}
                                 </td>
-                                <td class="px-4 py-2 text-center">
-                                    {% if request_data.type == 'documentary' %}
-                                        {% if request_data.request.status == 'pending' %}
-                                            <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" onclick="updateRequestStatus('{{ request_data.request.request_id }}', 'approved')">Approve</button>
-                                            <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onclick="updateRequestStatus('{{ request_data.request.request_id }}', 'rejected')">Reject</button>
-                                        {% elif request_data.request.status == 'approved' %}
-                                            <button class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600" onclick="updateRequestStatus('{{ request_data.request.request_id }}', 'completed')">Complete</button>
-                                        {% endif %}
-                                    {% elif request_data.type == 'dental' and not request_data.request.appointed %}
-                                        <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" onclick="updateDentalAppointment('{{ request_data.request.id }}')">Schedule</button>
-                                    {% elif request_data.type == 'mental' and request_data.request.status == 'pending' %}
-                                        <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" onclick="updateMentalHealthStatus('{{ request_data.request.id }}', 'approved')">Approve</button>
-                                        <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600" onclick="updateMentalHealthStatus('{{ request_data.request.id }}', 'rejected')">Reject</button>
-                                    {% endif %}
-                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="px-4 py-2 text-center">No requests found</td>
+                            <td colspan="6" class="px-4 py-2 text-center">No requests found</td>
                             </tr>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
             <!-- Right Column: Today's Appointments -->
             <div class="dashboard-card border border-gray-200 flex flex-col p-4 mb-2 w-full">
@@ -415,31 +440,31 @@
                 </h2>
                 <div class="overflow-x-auto flex-1">
                     <table class="min-w-full dashboard-table">
-                        <thead>
+        <thead>
                             <tr>
                                 <th class="px-4 py-2">Student</th>
                                 <th class="px-4 py-2">Service</th>
                                 <th class="px-4 py-2">Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+          </tr>
+        </thead>
+        <tbody>
                             {% for appt in todays_appointments %}
                             <tr>
                                 <td class="px-4 py-2">{{ appt.student }}</td>
                                 <td class="px-4 py-2">{{ appt.service }}</td>
                                 <td class="px-4 py-2">{{ appt.time }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
+                                </tr>
+                                {% empty %}
+                                <tr>
                                 <td colspan="3" class="px-4 py-2 text-center">No appointments today</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+          </tr>
+                                {% endfor %}
+        </tbody>
+      </table>
     </div>
+                </div>
+      </div>
+        </div>
 </div>
 
 <!-- Pass Django events to JS safely -->
@@ -498,7 +523,7 @@ function updateCalendarAdmin() {
             const hasPending = dayEvents.some(event => event.status === 'pending');
             const hasEmergency = dayEvents.some(event => event.status === 'emergency');
             const hasCompleted = dayEvents.some(event => event.status === 'completed');
-
+            
             if (hasApproved && hasPending) {
                 cell.className += ' has-both-events';
             } else if (hasApproved) {
