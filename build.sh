@@ -28,6 +28,13 @@ cd ..
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Debug database connection
+echo "Checking database connection..."
+echo "DATABASE_URL is set: $([ ! -z "$DATABASE_URL" ] && echo "Yes" || echo "No")"
+if [ ! -z "$DATABASE_URL" ]; then
+    echo "Database host: $(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\).*/\1/p')"
+fi
+
 # Run migrations with error handling
 echo "Running database migrations..."
 python manage.py migrate --noinput || {
