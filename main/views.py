@@ -34,6 +34,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 import re
 import random
 from django.views.decorators.http import require_http_methods
+import json # Import json for parsing request body
 
 def is_admin(user):
     return user.is_staff
@@ -129,7 +130,14 @@ def register(request):
             email = request.POST.get("email")
             password = request.POST.get("password")
             confirmPassword = request.POST.get("confirmPassword")
-            role = request.POST.get("role", 'Student') # Get selected role, default to Student
+            role = request.POST.get("role", 'Student')  # Get role from hidden input
+
+            # Security check for faculty registration
+            if role == 'Faculty' and not request.GET.get('role') == 'faculty':
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Invalid registration attempt.'
+                })
 
             print("Received role:", role)
 
@@ -295,9 +303,20 @@ def register(request):
                 })
 
             # If registration is successful for either role
+            # If the registration was initiated by an authenticated staff/superuser (admin)
+            if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+                # Retrieve the patient instance that was just created during student/faculty creation
+                patient_instance = Patient.objects.get(user=user)
+                # Redirect to patient form with patient_id and admin flag
+                redirect_url = reverse('main:patient_form') + f'?patient_id={patient_instance.id}&from_admin_register=true'
+            else:
+                # Default redirect for non-admin registrations
+                redirect_url = reverse('main:login')
+
             return JsonResponse({
                 'status': 'success',
-                'message': 'Registration successful. Please log in to verify your email.'
+                'message': 'Registration successful.',
+                'redirect_url': redirect_url # Pass the redirect URL
             })
 
         except Exception as e:
@@ -307,7 +326,10 @@ def register(request):
             })
 
     # For GET request, render the registration form
-    return render(request, "register.html")
+    context = {
+        'is_faculty_registration': request.GET.get('role') == 'faculty'
+    }
+    return render(request, "register.html", context)
 
 def verify_otp(request):
     if request.method == 'POST':
@@ -643,74 +665,86 @@ def main_view(request):
 
 @login_required
 def patient_form(request):
-    # Try to get the Patient record for the current user
-    try:
-        patient = medical_models.Patient.objects.get(user=request.user)
-    except medical_models.Patient.DoesNotExist:
-        # If no patient record exists, create one and link it to the user
-        print("Patient object does not exist. Creating a new one.")
-        patient = medical_models.Patient.objects.create(user=request.user)
-        # A message might be helpful here to inform the user that a new record was created
-        messages.info(request, "A new medical profile record has been created for your account. Please fill out the form.")
+    patient = None
+    admin_initiated_patient_id = request.GET.get('patient_id')
+    from_admin_register_flag = request.GET.get('from_admin_register') == 'true'
+
+    if admin_initiated_patient_id and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+        try:
+            patient = medical_models.Patient.objects.get(id=admin_initiated_patient_id)
+        except medical_models.Patient.DoesNotExist:
+            messages.error(request, 'Invalid patient ID provided for registration.')
+            return redirect('main:admin_dashboard') # Redirect admin back if ID is bad
+    else:
+        try:
+            patient = medical_models.Patient.objects.get(user=request.user)
+        except medical_models.Patient.DoesNotExist:
+            print("Patient object does not exist for current user. Creating a new one.")
+            patient = medical_models.Patient.objects.create(user=request.user)
+            messages.info(request, "A new medical profile record has been created for your account. Please fill out the form.")
+
+    if patient is None:
+        messages.error(request, 'Could not retrieve or create patient record.')
+        return redirect('main:login')
 
     if request.method == 'GET':
         profile_complete = True # Assume complete initially, prove otherwise
-        try:
-            # Check for the existence of essential linked medical records sequentially
-            if not patient.examination:
-                print("PatientForm GET: PhysicalExamination does not exist.")
-                profile_complete = False
-            else:
+        if patient.examination:
+            try:
                 physical_exam = patient.examination
-                try:
-                    # Check MedicalHistory linked via PhysicalExamination
-                    medical_history = physical_exam.medicalhistory
-
-                    # Check FamilyMedicalHistory linked via PhysicalExamination
-                    family_history = physical_exam.familymedicalhistory
-
-                    # Check RiskAssessment linked directly to Patient
-                    risk_assessment = patient.riskassessment
-
-                    # If we reached here, all essential related objects exist
-                    # profile_complete remains True
-
-                except medical_models.MedicalHistory.RelatedObjectDoesNotExist:
-                    print(f"PatientForm GET: Missing related medical record: {e}")
-                    profile_complete = False # Explicitly set to False if any related object is missing
-                except Exception as e:
-                    print(f"PatientForm GET: Unexpected error checking related medical records: {e}")
-                    profile_complete = False # Treat unexpected errors as incomplete profile
-
-        except medical_models.Patient.DoesNotExist:
-            # This exception should ideally be caught by the outer try-except,
-            # but including for robustness in this nested structure if needed.
-            print("PatientForm GET: Patient object does not exist in nested check.")
+                medical_history = physical_exam.medicalhistory
+                family_history = physical_exam.familymedicalhistory
+                risk_assessment = patient.riskassessment
+            except (medical_models.MedicalHistory.RelatedObjectDoesNotExist,
+                    medical_models.FamilyMedicalHistory.DoesNotExist,
+                    medical_models.RiskAssessment.DoesNotExist):
+                profile_complete = False
+            except Exception as e:
+                print(f"PatientForm GET: Unexpected error checking related medical records: {e}")
+                profile_complete = False
+        else:
             profile_complete = False
-        except Exception as e:
-            print(f"PatientForm GET: Unexpected error getting patient object: {e}")
-            profile_complete = False # Treat unexpected errors as incomplete
 
-        if profile_complete:
+        if profile_complete and not from_admin_register_flag:
             messages.info(request, 'Your medical profile is already complete.')
-            # Redirect based on user role
             if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
                 return redirect('main:faculty_dashboard')
             else:
                 return redirect('main:student_dashboard')
 
-        # If profile is incomplete, render the form
         today = date.today()
         context = {
             'current_date': today,
-            'patient': patient, # Pass the patient object to pre-fill the form if data exists
+            'patient': patient,
+            'is_admin_onboarding': from_admin_register_flag
         }
         return render(request, 'patient_form.html', context)
 
     if request.method == 'POST':
         try:
-            # Update the existing Patient record with form data
-            patient = medical_models.Patient.objects.get(user=request.user)
+            # Ensure we are working with the correct patient object for POST requests as well
+            patient = None
+            admin_initiated_patient_id = request.POST.get('patient_id')
+
+            if admin_initiated_patient_id and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+                try:
+                    patient = medical_models.Patient.objects.get(id=admin_initiated_patient_id)
+                    print(f"POST: Retrieved patient by ID for admin onboarding: {patient.id}")
+                except medical_models.Patient.DoesNotExist:
+                    messages.error(request, 'Invalid patient ID provided for form submission.')
+                    return JsonResponse({'status': 'error', 'message': 'Invalid patient ID for submission.'})
+            else:
+                try:
+                    patient = medical_models.Patient.objects.get(user=request.user)
+                    print(f"POST: Retrieved patient for current user: {patient.id}")
+                except medical_models.Patient.DoesNotExist:
+                    messages.error(request, 'Patient record not found for current user.')
+                    return JsonResponse({'status': 'error', 'message': 'Patient record not found.'})
+            
+            if patient is None:
+                messages.error(request, 'Could not determine patient record for submission.')
+                return JsonResponse({'status': 'error', 'message': 'Could not determine patient record.'})
+
             patient.birth_date = request.POST.get('birth_date')
             patient.age = calculate_age(request.POST.get('birth_date')) if patient.birth_date else None
             patient.weight = float(request.POST.get('weight')) if request.POST.get('weight') else None
@@ -736,10 +770,11 @@ def patient_form(request):
             patient.parent_guardian_contact_number = request.POST.get('parent_guardian_contact', '')
 
             patient.save() # Save updated patient info first
+            print(f"POST: Patient {patient.id} basic info saved.")
 
-            # --- Physical Examination logic --- 
-            # Get or create PhysicalExamination linked to the patient
-            physical_exam, _ = medical_models.PhysicalExamination.objects.get_or_create(patient=patient)
+            # --- Physical Examination logic ---
+            physical_exam, created_pe = medical_models.PhysicalExamination.objects.get_or_create(patient=patient)
+            print(f"POST: PhysicalExamination get_or_create - created: {created_pe}")
             exam_date_str = request.POST.get('date_of_physical_examination')
             if exam_date_str:
                 physical_exam.date_of_physical_examination = exam_date_str
@@ -748,15 +783,16 @@ def patient_form(request):
                     physical_exam.date_of_physical_examination = timezone.now().strftime('%Y-%m-%d')
             physical_exam.save()
 
-            # Link the examination to the patient if it wasn't already linked
-            if not patient.examination:
+            # Ensure the examination is linked to the patient
+            if patient.examination != physical_exam:
                 patient.examination = physical_exam
-                patient.save() # Save patient again to establish the link
+                patient.save() # Save patient again to establish the link if not already linked
+                print(f"POST: Patient {patient.id} linked to PhysicalExamination {physical_exam.id}.")
             
             # --- Medical History logic ---
             med_hist_list = request.POST.getlist('medical_history')
-            # Get or create MedicalHistory linked to the physical_exam
-            medical_history, _ = medical_models.MedicalHistory.objects.get_or_create(examination=physical_exam)
+            medical_history, created_mh = medical_models.MedicalHistory.objects.get_or_create(examination=physical_exam)
+            print(f"POST: MedicalHistory get_or_create - created: {created_mh}")
             medical_history.tuberculosis = 'tuberculosis' in med_hist_list
             medical_history.hypertension = 'hypertension' in med_hist_list
             medical_history.heart_disease = 'heart_disease' in med_hist_list
@@ -773,11 +809,12 @@ def patient_form(request):
             medical_history.others = request.POST.get('other_medical', '')
             medical_history.no_history = 'No Medical History' in med_hist_list
             medical_history.save()
+            print(f"POST: MedicalHistory {medical_history.id} saved.")
 
             # --- Family Medical History logic ---
             fam_hist_list = request.POST.getlist('family_history')
-            # Get or create FamilyMedicalHistory linked to the physical_exam
-            family_history, _ = medical_models.FamilyMedicalHistory.objects.get_or_create(examination=physical_exam)
+            family_history, created_fmh = medical_models.FamilyMedicalHistory.objects.get_or_create(examination=physical_exam)
+            print(f"POST: FamilyMedicalHistory get_or_create - created: {created_fmh}")
             family_history.hypertension = 'hypertension' in fam_hist_list
             family_history.asthma = 'asthma' in fam_hist_list
             family_history.cancer = 'cancer' in fam_hist_list
@@ -789,11 +826,12 @@ def patient_form(request):
             family_history.no_history = 'No Family History' in fam_hist_list
             family_history.other_medical_history = request.POST.get('other_family_medical', '')
             family_history.save()
+            print(f"POST: FamilyMedicalHistory {family_history.id} saved.")
 
             # --- Risk Assessment logic ---
             risk_list = request.POST.getlist('risk_assessment')
-            # Get or create RiskAssessment linked to the patient
-            risk_assessment, _ = medical_models.RiskAssessment.objects.get_or_create(clearance=patient)
+            risk_assessment, created_ra = medical_models.RiskAssessment.objects.get_or_create(clearance=patient)
+            print(f"POST: RiskAssessment get_or_create - created: {created_ra}")
             risk_assessment.cardiovascular_disease = 'cardiovascular' in risk_list
             risk_assessment.chronic_lung_disease = 'chronic_lung' in risk_list
             risk_assessment.chronic_renal_disease = 'chronic_kidney' in risk_list
@@ -803,22 +841,34 @@ def patient_form(request):
             risk_assessment.pwd = 'pwd' in risk_list
             risk_assessment.disability = request.POST.get('disability', '')
             risk_assessment.save()
+            print(f"POST: RiskAssessment {risk_assessment.id} saved.")
 
             # After successfully saving all related data and linking examination, redirect
             messages.success(request, 'Medical information submitted successfully!')
-            # Redirect based on user role
-            if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
-                return redirect('main:faculty_dashboard')
+            
+            # Check if the form submission came from an admin-initiated registration
+            from_admin_register_flag = request.POST.get('from_admin_register') == 'true'
+            if from_admin_register_flag:
+                # If initiated by admin, redirect back to admin dashboard
+                print("POST: Redirecting to admin dashboard after admin-initiated patient form submission.")
+                return redirect('main:admin_dashboard')
             else:
-                return redirect('main:student_dashboard')
+                # Otherwise, redirect based on the user's role (existing logic)
+                if hasattr(request.user, 'profile') and request.user.profile.role == 'Faculty':
+                    print("POST: Redirecting to faculty dashboard for non-admin patient form submission.")
+                    return redirect('main:faculty_dashboard')
+                else:
+                    print("POST: Redirecting to student dashboard for non-admin patient form submission.")
+                    return redirect('main:student_dashboard')
             
         except Exception as e:
-            print(f"Error saving patient information: {e}")
+            print(f"Error saving patient information in POST: {e}")
             messages.error(request, f'Error saving patient information: {str(e)}')
         today = date.today()
         context = {
             'current_date': today,
-            'patient': patient, # Pass the patient object back to the form on error
+            'patient': patient,
+            'is_admin_onboarding': from_admin_register_flag
         }
         return render(request, 'patient_form.html', context)
 
@@ -1449,3 +1499,49 @@ def faculty_dashboard_view(request):
         print(f"Error in faculty_dashboard_view: {e}")
         messages.error(request, 'Error loading dashboard data.')
         return redirect('main:login')
+
+@user_passes_test(is_admin)
+@require_http_methods(["POST"])
+def send_faculty_registration_link(request):
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+
+        if not email:
+            return JsonResponse({'status': 'error', 'message': 'Email address is required.'})
+
+        # Optional: Add more robust email validation if needed
+        if not re.match(r"^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$", email):
+            return JsonResponse({'status': 'error', 'message': 'Please enter a valid email address.'})
+
+        # Construct the faculty registration link
+        registration_link = request.build_absolute_uri(reverse('main:register') + '?role=faculty')
+
+        subject = 'Faculty Registration Link for HealthHub Connect'
+        message = f"""
+Dear Faculty Member,
+
+You have been invited to register for the HealthHub Connect system as a Faculty member.
+
+Please use the following link to complete your registration:
+{registration_link}
+
+This link is specifically for faculty registration. If you believe this email was sent to you in error, please disregard it.
+
+Thank you,
+HealthHub Connect Team
+"""
+
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER, # From email defined in settings.py
+            [email],
+            fail_silently=False,
+        )
+
+        return JsonResponse({'status': 'success', 'message': f'Registration link sent to {email}'})
+
+    except Exception as e:
+        print(f"Error sending faculty registration link: {e}")
+        return JsonResponse({'status': 'error', 'message': f'Failed to send registration link: {str(e)}'})

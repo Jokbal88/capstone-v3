@@ -283,6 +283,17 @@
         max-height: calc(100vh - 250px); /* Adjust based on actual header heights */
         overflow-y: auto;
     }
+
+    /* SweetAlert2 custom button styles */
+    .swal2-confirm-button {
+        @apply bg-blue-500 text-white hover:bg-blue-600;
+    }
+    .swal2-deny-button {
+        @apply bg-purple-500 text-white hover:bg-purple-600;
+    }
+    .swal2-cancel-button {
+        @apply bg-gray-300 text-gray-800 hover:bg-gray-400;
+    }
 </style>
 {% endblock %} 
 
@@ -317,10 +328,10 @@
                 <div id="calendarDaysAdmin"></div>
             </div>
             <div class="flex flex-col flex-1">
-                <span class="font-bold text-gray-700 mr-4"><i class="fas fa-bolt text-blue-400"></i> Quick Actions:</span>
+                <span class="font-bold text-gray-700 mr-4"> Additional Actions:</span>
                 <div class="grid grid-cols-2 gap-2">
-                    <a href="{% url 'main:register' %}" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition text-center">Add Patient</a>
-                    <a href="{% url 'main:patient_form' %}" class="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition text-center">Record Visit</a>
+                    <a href="#" onclick="addPatientPrompt(event)" class="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition text-center">Onsite Registration</a>
+                    <a href="#" onclick="sendFacultyRegistrationLinkPrompt(event)" class="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition text-center">Online Faculty Registration</a>
                     <a href="{% url 'medical:upload_requirements' %}" class="bg-purple-500 text-white p-2 rounded-md hover:bg-purple-600 transition text-center">Upload Document</a>
                     <a href="mailto:" class="bg-yellow-500 text-white p-2 rounded-md hover:bg-yellow-600 transition text-center">Send Notification</a>
                 </div>
@@ -711,6 +722,93 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+function addPatientPrompt(event) {
+    event.preventDefault(); // Prevent default link behavior
+    Swal.fire({
+        title: 'Register New User As:',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Student',
+        denyButtonText: 'Faculty',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            confirmButton: 'swal2-confirm-button',
+            denyButton: 'swal2-deny-button',
+            cancelButton: 'swal2-cancel-button'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = '{% url "main:register" %}'; // Student registration
+        } else if (result.isDenied) {
+            window.location.href = '{% url "main:register" %}?role=faculty'; // Faculty registration
+        }
+    });
+}
+
+function sendFacultyRegistrationLinkPrompt(event) {
+    event.preventDefault(); // Prevent default link behavior
+
+    Swal.fire({
+        title: 'Send Faculty Registration Link',
+        input: 'email',
+        inputLabel: 'Faculty Email Address',
+        inputPlaceholder: 'Enter faculty email',
+        showCancelButton: true,
+        confirmButtonText: 'Send Link',
+        showLoaderOnConfirm: true,
+        preConfirm: (email) => {
+            if (!email) {
+                Swal.showValidationMessage('Email address is required');
+                return false; // Prevent closing the modal
+            }
+            // Basic email format validation
+            const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+            if (!emailRegex.test(email)) {
+                Swal.showValidationMessage('Please enter a valid email address');
+                return false; // Prevent closing the modal
+            }
+            
+            // Send AJAX request
+            return fetch('{% url "main:send_faculty_registration_link" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.message || 'Network response was not ok.');
+                    });
+                }
+                return response.json();
+            })
+            .catch(error => {
+                Swal.showValidationMessage(`Request failed: ${error.message}`);
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+        if (result.isConfirmed) {
+            if (result.value.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: result.value.message,
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: result.value.message || 'An unknown error occurred.',
+                });
+            }
+        }
+    });
 }
 </script>
 {% endblock %}

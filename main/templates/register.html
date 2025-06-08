@@ -30,22 +30,14 @@
 
           <form id="registrationForm" class="flex flex-col w-full gap-2" method="POST">
             {% csrf_token %}
+            <input type="hidden" name="role" value="{% if request.GET.role == 'faculty' %}Faculty{% else %}Student{% endif %}" id="roleInput">
 
-          <!-- Role Selection -->
-          <div class="flex flex-col w-full mb-4">
-                <label class="text-base">Registering as:</label>
-                <div class="flex gap-4 mt-2">
-                    <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Student" id="studentRole" checked>
-                        <span class="ml-2">Student</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" class="form-radio cursor-pointer" name="role" value="Faculty" id="facultyRole">
-                        <span class="ml-2">Faculty</span>
-                    </label>
-                </div>
-                 <p class="text-sm text-red-600 mt-2">It is strongly advised to select the proper role, as some parts of the system will be inaccessible to the other role.</p>
-          </div>
+            {% if request.GET.role == 'faculty' %}
+            <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4" role="alert">
+                <p class="font-bold">Faculty Registration</p>
+                <p>You are registering as a faculty member. Please fill in all required information.</p>
+            </div>
+            {% endif %}
 
             <div class="flex w-full gap-2">
               <div class="w-full flex flex-col">
@@ -84,18 +76,18 @@
               </div>
             </div>
             <!-- Student Fields Section -->
-            <div id="studentFields" class="flex flex-col w-full gap-2">
+            <div id="studentFields" class="{% if request.GET.role == 'faculty' %}hidden{% endif %} flex-col w-full gap-2">
             <div class="flex w-full gap-2">
               <div class="flex flex-col w-full">
                 <label for="sex">Sex</label>
-                <select class="w-full rounded-md" name="sex" id="sex" required>
+                <select class="w-full rounded-md" name="sex" id="sex">
                   <option value="M">Male</option>
                   <option value="F">Female</option>
                 </select>
               </div>
               <div class="flex flex-col w-full">
                 <label for="yrLevel">Year Level</label>
-                <select class="w-full rounded-md" name="yrLevel" id="yrLevel" required>
+                <select class="w-full rounded-md" name="yrLevel" id="yrLevel">
                   <option value="1">First Year</option>
                   <option value="2">Second Year</option>
                   <option value="3">Third Year</option>
@@ -113,7 +105,6 @@
                   name="idNumber"
                   maxlength="7"
                     placeholder="Enter your Student ID number"
-                  required
                   pattern="[0-9]{7}"
                     title="Please enter a valid 7-digit Student ID number"
                 />
@@ -127,7 +118,6 @@
                   name="lrn"
                   maxlength="12"
                   placeholder="Enter your LRN"
-                  required
                   pattern="[0-9]{12}"
                   title="Please enter a valid 12-digit LRN"
                 />
@@ -135,7 +125,7 @@
             </div>
             <div class="flex flex-col w-full">
               <label for="course">Course</label>
-              <select class="w-full rounded-md" id="course" name="course" required>
+              <select class="w-full rounded-md" id="course" name="course">
                 <optgroup label="College of Education">
                   <option value="Bachelor of Elementary Education">
                     Bachelor of Elementary Education
@@ -242,7 +232,7 @@
             </div>
 
             <!-- Faculty Fields Section -->
-            <div id="facultyFields" class="hidden flex-col w-full gap-2">
+            <div id="facultyFields" class="{% if request.GET.role != 'faculty' %}hidden{% endif %} flex-col w-full gap-2">
               <div class="flex w-full gap-2">
             <div class="flex flex-col w-full">
                   <label for="department">Department</label>
@@ -395,62 +385,34 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const studentRoleRadio = document.getElementById('studentRole');
-            const facultyRoleRadio = document.getElementById('facultyRole');
+            // Remove role switching event listeners since we're using URL parameters
+            const roleInput = document.getElementById('roleInput');
             const studentFieldsDiv = document.getElementById('studentFields');
             const facultyFieldsDiv = document.getElementById('facultyFields');
 
-            function toggleFields() {
-                if (studentRoleRadio.checked) {
-                    studentFieldsDiv.classList.remove('hidden');
-                    studentFieldsDiv.classList.add('flex', 'flex-col');
-                    facultyFieldsDiv.classList.add('hidden');
-                    facultyFieldsDiv.classList.remove('flex', 'flex-col');
-                    // Set required attribute for student fields
-                    studentFieldsDiv.querySelectorAll('input, select').forEach(input => input.setAttribute('required', ''));
-                    facultyFieldsDiv.querySelectorAll('input, select').forEach(input => input.removeAttribute('required'));
-
-                    // Explicitly set required for specific student inputs
-                    document.getElementById('studentIdNumber').setAttribute('required', '');
-                    document.getElementById('lrn').setAttribute('required', '');
-                    document.getElementById('sex').setAttribute('required', '');
-                    document.getElementById('yrLevel').setAttribute('required', '');
-                    document.getElementById('course').setAttribute('required', '');
-
-                    // Ensure faculty-specific inputs are NOT required
-                    document.getElementById('department').removeAttribute('required');
-                    document.getElementById('position').removeAttribute('required');
-                    document.getElementById('facultyIdNumber').removeAttribute('required');
-
-                } else if (facultyRoleRadio.checked) {
-                    studentFieldsDiv.classList.add('hidden');
-                    studentFieldsDiv.classList.remove('flex', 'flex-col');
-                    facultyFieldsDiv.classList.remove('hidden');
-                    facultyFieldsDiv.classList.add('flex', 'flex-col');
-                     // Set required attribute for faculty fields
-                    facultyFieldsDiv.querySelectorAll('input, select').forEach(input => input.setAttribute('required', ''));
-                    studentFieldsDiv.querySelectorAll('input, select').forEach(input => input.removeAttribute('required'));
-
-                    // Explicitly set required for specific faculty inputs
-                    document.getElementById('department').setAttribute('required', '');
-                    document.getElementById('position').setAttribute('required', '');
-                    document.getElementById('facultyIdNumber').setAttribute('required', '');
-
-                    // Ensure student-specific inputs are NOT required
-                    document.getElementById('studentIdNumber').removeAttribute('required');
-                    document.getElementById('lrn').removeAttribute('required');
-                    document.getElementById('sex').removeAttribute('required');
-                    document.getElementById('yrLevel').removeAttribute('required');
-                    document.getElementById('course').removeAttribute('required');
-                }
+            // Set initial visibility based on role
+            if (roleInput.value === 'Faculty') {
+                studentFieldsDiv.classList.add('hidden');
+                facultyFieldsDiv.classList.remove('hidden');
+                setRequiredFields(facultyFieldsDiv, true);
+                setRequiredFields(studentFieldsDiv, false);
+            } else {
+                studentFieldsDiv.classList.remove('hidden');
+                facultyFieldsDiv.classList.add('hidden');
+                setRequiredFields(studentFieldsDiv, true);
+                setRequiredFields(facultyFieldsDiv, false);
             }
 
-            // Initial toggle based on checked radio button
-            toggleFields();
-
-            // Add event listeners to radio buttons
-            studentRoleRadio.addEventListener('change', toggleFields);
-            facultyRoleRadio.addEventListener('change', toggleFields);
+            // Function to set/remove required attribute for fields within a div
+            function setRequiredFields(container, isRequired) {
+                container.querySelectorAll('input, select').forEach(field => {
+                    if (isRequired) {
+                        field.setAttribute('required', '');
+                    } else {
+                        field.removeAttribute('required');
+                    }
+                });
+            }
 
             // Handle form submission with SweetAlert2
             const registrationForm = document.getElementById('registrationForm');
@@ -474,7 +436,7 @@
                             title: 'Success!',
                             text: data.message,
                         }).then(() => {
-                            window.location.href = '{% url "main:login" %}'; // Redirect on success
+                            window.location.href = data.redirect_url; // Use dynamic redirect URL
                         });
                     } else {
                          let errorMessage = data.message || 'An error occurred.';

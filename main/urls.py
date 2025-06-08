@@ -9,7 +9,7 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('register/', views.register, name='register'),
     path('recovery/', views.recovery, name='recovery'),
-    path('password-reset/<str:token>/', views.password_reset, name='password_reset'),
+    path('password-reset/<uuid:token>/', views.password_reset, name='password_reset'),
     path('main/', views.main_view, name='main'),
     path('medical/', include('medical.urls', namespace='medical')),
     path('patient-form/', views.patient_form, name='patient_form'),
@@ -23,6 +23,7 @@ urlpatterns = [
     path('resend-verification/', views.resend_verification, name='resend_verification'),
     path('upload-profile-picture/', views.upload_profile_picture_view, name='upload_profile_picture'),
     path('faculty/dashboard/', views.faculty_dashboard_view, name='faculty_dashboard'),
+    path('send-faculty-registration-link/', views.send_faculty_registration_link, name='send_faculty_registration_link'),
 ]
 
 if settings.DEBUG:
