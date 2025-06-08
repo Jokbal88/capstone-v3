@@ -124,162 +124,156 @@ def patient_basic_info(request, student_id):
 # view for handling clearance form submission
 @user_passes_test(is_admin)
 def medicalclearance_view(request, student_id):
+    try:
+        student = Student.objects.get(student_id=student_id)
+        user = User.objects.get(email=student.email)
+        patient = Patient.objects.get(user=user)
+    except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist):
+        messages.error(request, "Student, User, or Patient record not found.")
+        return redirect('medical:viewrequest') # Redirect to a safe page
+
+    # Initialize all related objects to None
+    clearance = None
+    riskass = None
+    med_requirements = None
+
+    # Fetch existing objects if they exist
+    try:
+        clearance = MedicalClearance.objects.get(patient=patient)
+        riskass = RiskAssessment.objects.get(clearance=clearance)
+        med_requirements = MedicalRequirement.objects.get(patient=patient)
+    except MedicalClearance.DoesNotExist:
+        pass # Clearance doesn't exist yet
+    except RiskAssessment.DoesNotExist:
+        pass # RiskAssessment doesn't exist for this clearance
+    except MedicalRequirement.DoesNotExist:
+        pass # MedicalRequirement doesn't exist for this patient
+
+    if request.method == "POST":
+        # Handle patient basic information
+        age = request.POST.get("age")
+        birth_date = request.POST.get("birth-date")
+        street_address = request.POST.get("street-address")
+        city = request.POST.get("city")
+        state_province = request.POST.get("state-province")
+        postal_zip_code = request.POST.get("postal-zip-code")
+        country = request.POST.get("country")
+
+        # Handle risk assessment 
+        age_above_60 = request.POST.get("age_above_60") == "True"
+        cardiovascular_disease = request.POST.get("cardiovascular-disease") == "True"
+        chronic_lung_disease = request.POST.get("lung-disease") == "True"
+        chronic_metabolic_disease = request.POST.get("diabetes") == "True"
+        chronic_renal_disease = request.POST.get("renal-disease") == "True"
+        chronic_liver_disease = request.POST.get("liver-disease") == "True"
+        cancer = request.POST.get("cancer") == "True"
+        autoimmune_disease = request.POST.get("autoimmune") == "True"
+        pregnant = request.POST.get("pregnant") == "True"
+        other_conditions = request.POST.get("other_conditions")
+        living_with_vulnerable = request.POST.get("living_with_vulnerable") == "True"
+        pwd = request.POST.get("pwd") == "True"
+        disability = request.POST.get("disability_type")
+        
+        # Handles medical requirements 
+        vaccination_type = request.POST.get("vaccination_type")
+        vaccinated_1st = request.POST.get("vaccinated_1st", "off") == "on"
+        vaccinated_2nd = request.POST.get("vaccinated_2nd", "off") == "on"
+        vaccinated_booster = request.POST.get("vaccinated_booster", "off") == "on"
+        x_ray_remarks = request.POST.get("x-ray-remark")
+        cbc_remarks = request.POST.get("cbc-remark")
+        drug_test_remarks = request.POST.get("drug-test-remark")
+        stool_examination_remarks = request.POST.get("stool-examination-remark")
+        pwd_card_remarks = request.POST.get("pwd-card-remark")
+            
         try:
-            student = Student.objects.get(student_id=student_id)
-            user = User.objects.get(email=student.email)
-            patient = Patient.objects.get(user=user)
-        except (Student.DoesNotExist, User.DoesNotExist, Patient.DoesNotExist):
-            messages.error(request, "Student, User, or Patient record not found.")
-            return redirect('medical:viewrequest') # Redirect to a safe page
-        
-        if request.method == "POST":
-            # Handle patient basic information
-            age = request.POST.get("age")
-            birth_date = request.POST.get("birth-date")
-            street_address = request.POST.get("street-address")
-            city = request.POST.get("city")
-            state_province = request.POST.get("state-province")
-            postal_zip_code = request.POST.get("postal-zip-code")
-            country = request.POST.get("country")
+            # Update patient's basic info
+            patient.age = age
+            patient.birth_date = birth_date
+            patient.home_address = street_address
+            patient.city = city
+            patient.state_province = state_province
+            patient.postal_zipcode = postal_zip_code
+            patient.country = country
+            patient.save()
 
-            # student = Student.objects.get(student_id=student_id)
-            # patient = Patient.objects.get(student__student_id = student_id)
-            
-            # Handle risk assessment 
-            age_above_60 = request.POST.get("age_above_60") == "True"
-            cardiovascular_disease = request.POST.get("cardiovascular-disease") == "True"
-            chronic_lung_disease = request.POST.get("lung-disease") == "True"
-            chronic_metabolic_disease = request.POST.get("diabetes") == "True"
-            chronic_renal_disease = request.POST.get("renal-disease") == "True"
-            chronic_liver_disease = request.POST.get("liver-disease") == "True"
-            cancer = request.POST.get("cancer") == "True"
-            autoimmune_disease = request.POST.get("autoimmune") == "True"
-            pregnant = request.POST.get("pregnant") == "True"
-            other_conditions = request.POST.get("other_conditions")
-            living_with_vulnerable = request.POST.get("living_with_vulnerable") == "True"
-            pwd = request.POST.get("pwd") == "True"
-            disability = request.POST.get("disability_type")
-            
-            # Handles medical requirements 
-            vaccination_type = request.POST.get("vaccination_type")
-            vaccinated_1st = request.POST.get("vaccinated_1st", "off") == "on"
-            vaccinated_2nd = request.POST.get("vaccinated_2nd", "off") == "on"
-            vaccinated_booster = request.POST.get("vaccinated_booster", "off") == "on"
+            # Get or create MedicalClearance
+            clearance, created_clearance = MedicalClearance.objects.get_or_create(patient=patient)
 
-            x_ray_remarks = request.POST.get("x-ray-remark")
-            cbc_remarks = request.POST.get("cbc-remark")
-            drug_test_remarks = request.POST.get("drug-test-remark")
-            stool_examination_remarks = request.POST.get("stool-examination-remark")
-                
-            # Insert medical requirements files
-            try:
-                med_requirements = MedicalRequirement.objects.get(patient__student__student_id = student_id)
-                med_requirements.vaccination_type = vaccination_type
-                med_requirements.vaccinated_1st = vaccinated_1st
-                med_requirements.vaccinated_2nd = vaccinated_2nd
-                med_requirements.vaccinated_booster = vaccinated_booster
-                med_requirements.x_ray_remarks = x_ray_remarks
-                med_requirements.cbc_remarks = cbc_remarks
-                med_requirements.drug_test_remarks = drug_test_remarks
-                med_requirements.stool_examination_remarks = stool_examination_remarks
-                med_requirements.pwd_card_remarks = request.POST.get("pwd-card-remark")
-                med_requirements.save()
-            except MedicalRequirement.DoesNotExist:
-                messages.error(request, "This patient doesn't have a medical requirements")
-                return render(request, "admin/patientclearance_comp.html", {"patient":patient})
+            # Get or create RiskAssessment
+            riskass, created_riskass = RiskAssessment.objects.get_or_create(clearance=clearance)
+            riskass.age_above_60 = age_above_60
+            riskass.cardiovascular_disease = cardiovascular_disease
+            riskass.chronic_lung_disease = chronic_lung_disease
+            riskass.chronic_metabolic_disease = chronic_metabolic_disease
+            riskass.chronic_renal_disease = chronic_renal_disease
+            riskass.chronic_liver_disease = chronic_liver_disease
+            riskass.cancer = cancer
+            riskass.autoimmune_disease = autoimmune_disease
+            riskass.pregnant = pregnant
+            riskass.other_conditions = other_conditions
+            riskass.living_with_vulnerable = living_with_vulnerable
+            riskass.pwd = pwd
+            riskass.disability = disability # Always update disability field
+            riskass.save()
 
-            if MedicalClearance.objects.filter(patient__student__student_id = student_id).exists():
-                clearance = MedicalClearance.objects.get(patient__student__student_id = student_id)
-                # Get MedicalRequirement for the fetched patient
-                med_requirements = MedicalRequirement.objects.get(patient=patient)
+            # Get or create MedicalRequirement
+            med_requirements, created_medreq = MedicalRequirement.objects.get_or_create(patient=patient)
+            med_requirements.vaccination_type = vaccination_type
+            med_requirements.vaccinated_1st = vaccinated_1st
+            med_requirements.vaccinated_2nd = vaccinated_2nd
+            med_requirements.vaccinated_booster = vaccinated_booster
+            med_requirements.x_ray_remarks = x_ray_remarks
+            med_requirements.cbc_remarks = cbc_remarks
+            med_requirements.drug_test_remarks = drug_test_remarks
+            med_requirements.stool_examination_remarks = stool_examination_remarks
+            med_requirements.pwd_card_remarks = pwd_card_remarks
+            med_requirements.save()
 
-                clearance.patient.age = age
-                clearance.patient.birth_date = birth_date
-                clearance.patient.home_address = street_address
-                clearance.patient.city = city
-                clearance.patient.state_province = state_province
-                clearance.patient.postal_zipcode = postal_zip_code
-                clearance.patient.country = country
-                
+            messages.success(request, "Medical Clearance information updated successfully!")
+            return redirect('medical:medicalclearance', student_id=student_id)
 
-                # Update Risk Ass
-                riskass = RiskAssessment.objects.get(clearance__patient__student__student_id = student_id)
-                riskass.age_above_60 = age_above_60
-                riskass.cardiovascular_disease = cardiovascular_disease
-                riskass.chronic_lung_disease = chronic_lung_disease
-                riskass.chronic_metabolic_disease = chronic_metabolic_disease
-                riskass.chronic_renal_disease = chronic_renal_disease
-                riskass.chronic_liver_disease = chronic_liver_disease
-                riskass.cancer = cancer
-                riskass.autoimmune_disease = autoimmune_disease
-                riskass.pregnant = pregnant
-                riskass.other_conditions = other_conditions
-                riskass.living_with_vulnerable = living_with_vulnerable
-                riskass.pwd = pwd
-                riskass.disability = disability
-                
+        except Exception as e:
+            messages.error(request, f"Error saving medical clearance information: {e}")
+            return redirect('medical:medicalclearance', student_id=student_id)
 
-                # Update Medical Requirements
-                med_requirements_files = MedicalRequirement.objects.get(patient=patient)
-                med_requirements_files.vaccination_type = vaccination_type
-                med_requirements_files.vaccinated_1st = vaccinated_1st
-                med_requirements_files.vaccinated_2nd = vaccinated_2nd
-                med_requirements_files.vaccinated_booster = vaccinated_booster
-                med_requirements_files.x_ray_remarks = x_ray_remarks
-                med_requirements_files.cbc_remarks = cbc_remarks
-                med_requirements_files.drug_test_remarks = drug_test_remarks
-                med_requirements_files.stool_examination_remarks = stool_examination_remarks
-                med_requirements_files.pwd_card_remarks = request.POST.get("pwd-card-remark")
-                
-                # Save All
-                clearance.save()
-                riskass.save()
-                med_requirements_files.save()
-                messages.success(request, "Record Updated")
-                # return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
-            
-            # Create the clearance object
-            # patient = Student.objects.get(student_id = student_id)
-            clearance = MedicalClearance.objects.create(patient = patient)
+    # GET request logic
+    student_full_name = 'N/A' # Default placeholder if no student is found or names are utterly empty
+    if student:
+        first_name = student.firstname.strip() if student.firstname else ''
+        last_name = student.lastname.strip() if student.lastname else ''
+        if first_name and last_name:
+            student_full_name = f"{first_name} {last_name}"
+        elif first_name:
+            student_full_name = first_name
+        elif last_name:
+            student_full_name = last_name
+        else:
+            # This case means student object exists, but both names are empty/whitespace
+            student_full_name = "this student"
+    
+    # Add SweetAlert message only if MedicalClearance doesn't exist for a new form
+    if not clearance:
+        messages.info(request, f"Fill out the necessary information to complete {student_full_name.title()}'s Medical Clearance.")
 
-            # The risk assessment
-            rsk = RiskAssessment.objects.create(
-                    clearance = clearance, 
-                    age_above_60 = age_above_60, 
-                    cardiovascular_disease = cardiovascular_disease,
-                    chronic_lung_disease = chronic_lung_disease, 
-                    chronic_metabolic_disease = chronic_metabolic_disease,
-                    chronic_renal_disease = chronic_renal_disease, 
-                    chronic_liver_disease = chronic_liver_disease,
-                    cancer = cancer, 
-                    autoimmune_disease = autoimmune_disease, 
-                    pregnant = pregnant, 
-                    other_conditions = other_conditions, 
-                    living_with_vulnerable = living_with_vulnerable,
-                    pwd = pwd
-                )
-            # Handle if pwd
-            if pwd:
-                rsk.disability = disability
-                rsk.save()
+    # Prepare messages for SweetAlert
+    all_messages = []
+    for message in messages.get_messages(request):
+        all_messages.append({
+            'text': str(message),
+            'tags': message.tags
+        })
+    messages_json = json.dumps(all_messages)
 
-            # Record requests
-            # patient_request = PatientRequest.objects.get(patient__student__student_id = student_id, request_type = "Medical Clearance for OJT/Practicum")
-        
-            # patient_request.save()
-
-            messages.success(request, "Medical Clearance created successfully.")
-            # return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance":clearance, "med_requirements": med_requirements})
-
-        if MedicalClearance.objects.filter(patient=patient).exists():
-            clearance = MedicalClearance.objects.get(patient=patient)
-            # Get MedicalRequirement for the fetched patient
-            med_requirements = MedicalRequirement.objects.get(patient=patient)
-            return render(request, "admin/patientclearance_comp.html", {"patient": patient, "clearance": clearance, "med_requirements": med_requirements})
-        # Access student's first name through the patient's user and linked student object
-        student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
-        messages.info(request, f"Fill out the necessary information to complete {student_first_name.title()}'s Medical Clearance.")
-        return render(request, "admin/patientclearance_comp.html", {"patient":patient})
+    context = {
+        "student": student,
+        "patient": patient,
+        "clearance": clearance,
+        "riskassessment": riskass, # Ensure this matches the template's usage: clearance.riskassessment
+        "med_requirements": med_requirements,
+        "student_full_name": student_full_name, # For SweetAlert in template
+        "messages_json": messages_json # Pass the JSON string of messages
+    }
+    return render(request, "admin/patientclearance_comp.html", context)
 
 # Views for handling eligibilty form creation
 @user_passes_test(is_admin)
@@ -331,7 +325,15 @@ def eligibilty_form(request, student_id):
                 patient_eligibilty_form.save()
 
                 messages.success(request, "Eligibility Form record updated.")
-                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
+                # Prepare messages for SweetAlert
+                all_messages = []
+                for message in messages.get_messages(request):
+                    all_messages.append({
+                        'text': str(message),
+                        'tags': message.tags
+                    })
+                messages_json = json.dumps(all_messages)
+                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student, "messages_json": messages_json})
 
             else:
                 # Create the EligibilityForm object if it does not exists
@@ -361,17 +363,53 @@ def eligibilty_form(request, student_id):
                 # student_request.save()
 
                 messages.success(request, "Eligibility Form successfully created.")
-                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})      
+                # Prepare messages for SweetAlert
+                all_messages = []
+                for message in messages.get_messages(request):
+                    all_messages.append({
+                        'text': str(message),
+                        'tags': message.tags
+                    })
+                messages_json = json.dumps(all_messages)
+                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student, "messages_json": messages_json})      
 
         # For GET request or if POST doesn't have necessary data, check if EligibilityForm exists
         if EligibilityForm.objects.filter(patient=patient).exists():
             patient_eligibilty_form = EligibilityForm.objects.get(patient=patient)
-            return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
+            # Prepare messages for SweetAlert even for GET request if there are any
+            all_messages = []
+            for message in messages.get_messages(request):
+                all_messages.append({
+                    'text': str(message),
+                    'tags': message.tags
+                })
+            messages_json = json.dumps(all_messages)
+            return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student, "messages_json": messages_json})
 
-        # Access student's first name through the patient's user object and linked student object
-        student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
-        messages.info(request, f"Fill out the necessary information to complete {student_first_name.title()}'s Eligibility Form.")
-        return render(request, "admin/eligibilityformcomp.html", {"patient": patient})
+        # Access student's full name for SweetAlert message
+        student_full_name = 'N/A'
+        if student:
+            first_name = student.firstname.strip() if student.firstname else ''
+            last_name = student.lastname.strip() if student.lastname else ''
+            if first_name and last_name:
+                student_full_name = f"{first_name} {last_name}"
+            elif first_name:
+                student_full_name = first_name
+            elif last_name:
+                student_full_name = last_name
+            else:
+                student_full_name = "this student"
+
+        messages.info(request, f"Fill out the necessary information to complete {student_full_name.title()}'s Eligibility Form.")
+        # Prepare messages for SweetAlert
+        all_messages = []
+        for message in messages.get_messages(request):
+            all_messages.append({
+                'text': str(message),
+                'tags': message.tags
+            })
+        messages_json = json.dumps(all_messages)
+        return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "student": student, "messages_json": messages_json})
     
 # List of student for patient profile
 @user_passes_test(is_admin)
@@ -2724,15 +2762,51 @@ def med_cert(request, student_id):
             physically_not_able = physically_not_able
         )
         messages.success(request, "Medical certificate successfully created")
-        return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert})
+        # Prepare messages for SweetAlert
+        all_messages = []
+        for message in messages.get_messages(request):
+            all_messages.append({
+                'text': str(message),
+                'tags': message.tags
+            })
+        messages_json = json.dumps(all_messages)
+        return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert, "messages_json": messages_json})
     # For GET request, check if MedicalCertificate exists for the fetched patient
     if MedicalCertificate.objects.filter(patient=patient).exists():
         med_cert = MedicalCertificate.objects.get(patient=patient)
-        return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert})
-    # Access student's first name through the patient's user and linked student object
-    student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
-    messages.info(request, f"Issue Medical Certificate for {student_first_name.title()}")
-    return render(request, "admin/med_cert.html", {"patient": patient})
+        # Prepare messages for SweetAlert even for GET request if there are any
+        all_messages = []
+        for message in messages.get_messages(request):
+            all_messages.append({
+                'text': str(message),
+                'tags': message.tags
+            })
+        messages_json = json.dumps(all_messages)
+        return render(request, "admin/med_cert.html", {"patient": patient, "cedicalcertificate": med_cert, "messages_json": messages_json})
+    # Access student's full name for SweetAlert message
+    student_full_name = 'N/A'
+    if student:
+        first_name = student.firstname.strip() if student.firstname else ''
+        last_name = student.lastname.strip() if student.lastname else ''
+        if first_name and last_name:
+            student_full_name = f"{first_name} {last_name}"
+        elif first_name:
+            student_full_name = first_name
+        elif last_name:
+            student_full_name = last_name
+        else:
+            student_full_name = "this student"
+
+    messages.info(request, f"Issue Medical Certificate for {student_full_name.title()}")
+    # Prepare messages for SweetAlert
+    all_messages = []
+    for message in messages.get_messages(request):
+        all_messages.append({
+            'text': str(message),
+            'tags': message.tags
+        })
+    messages_json = json.dumps(all_messages)
+    return render(request, "admin/med_cert.html", {"patient": patient, "student": student, "messages_json": messages_json})
 
 # For uploading student from a csv file
 
