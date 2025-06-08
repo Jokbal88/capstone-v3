@@ -1042,16 +1042,15 @@ def admin_dashboard_view(request):
                         'id': student.student_id,
                         'name': f"{student.lastname}, {student.firstname}"
                     }
+                else:
+                    faculty = Faculty.objects.filter(user=req.patient.user).first()
+                    if faculty:
+                        request_data['user_info'] = {
+                            'id': faculty.faculty_id,
+                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
+                        }
             except Exception as e:
-                print(f"Error processing student-linked mental health record {req.id}: {str(e)}")
-        elif req.faculty and req.faculty.user:
-            try:
-                request_data['user_info'] = {
-                    'id': req.faculty.faculty_id,
-                    'name': f"{req.faculty.user.last_name}, {req.faculty.user.first_name}"
-                }
-            except Exception as e:
-                print(f"Error processing faculty-linked mental health record {req.id}: {str(e)}")
+                print(f"Error processing mental health record {req.id}: {str(e)}")
         all_requests.append(request_data)
 
     # Sort all requests by date

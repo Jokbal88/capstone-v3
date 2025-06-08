@@ -331,7 +331,7 @@ def eligibilty_form(request, student_id):
                 patient_eligibilty_form.save()
 
                 messages.success(request, "Eligibility Form record updated.")
-                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student})
+                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
 
             else:
                 # Create the EligibilityForm object if it does not exists
@@ -361,17 +361,17 @@ def eligibilty_form(request, student_id):
                 # student_request.save()
 
                 messages.success(request, "Eligibility Form successfully created.")
-                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student})      
+                return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})      
 
         # For GET request or if POST doesn't have necessary data, check if EligibilityForm exists
         if EligibilityForm.objects.filter(patient=patient).exists():
             patient_eligibilty_form = EligibilityForm.objects.get(patient=patient)
-            return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form, "student": student})
+            return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "eligibility_form": patient_eligibilty_form})
 
         # Access student's first name through the patient's user object and linked student object
-        student_full_name = f"{student.firstname} {student.lastname}" if student else 'N/A'
-        messages.info(request, f"Fill out the necessary information to complete {student_full_name.title()}'s Eligibility Form.")
-        return render(request, "admin/eligibilityformcomp.html", {"patient": patient, "student": student})
+        student_first_name = patient.user.student.firstname if patient.user and hasattr(patient.user, 'student') and patient.user.student else 'N/A'
+        messages.info(request, f"Fill out the necessary information to complete {student_first_name.title()}'s Eligibility Form.")
+        return render(request, "admin/eligibilityformcomp.html", {"patient": patient})
     
 # List of student for patient profile
 @user_passes_test(is_admin)
@@ -525,44 +525,20 @@ def view_request(request):
     for request_obj in pending_faculty_requests:
         if request_obj.faculty:
             request_obj.faculty_id = request_obj.faculty.faculty_id
-            if request_obj.faculty.user:
-                request_obj.faculty_first_name = request_obj.faculty.user.first_name
-                request_obj.faculty_last_name = request_obj.faculty.user.last_name
-            else:
-                request_obj.faculty_first_name = "Unknown"
-                request_obj.faculty_last_name = "User"
         else:
             request_obj.faculty_id = "N/A"
-            request_obj.faculty_first_name = "Unknown"
-            request_obj.faculty_last_name = "User"
             
     for request_obj in accepted_faculty_requests:
         if request_obj.faculty:
             request_obj.faculty_id = request_obj.faculty.faculty_id
-            if request_obj.faculty.user:
-                request_obj.faculty_first_name = request_obj.faculty.user.first_name
-                request_obj.faculty_last_name = request_obj.faculty.user.last_name
-            else:
-                request_obj.faculty_first_name = "Unknown"
-                request_obj.faculty_last_name = "User"
         else:
             request_obj.faculty_id = "N/A"
-            request_obj.faculty_first_name = "Unknown"
-            request_obj.faculty_last_name = "User"
 
     for request_obj in completed_faculty_requests:
         if request_obj.faculty:
             request_obj.faculty_id = request_obj.faculty.faculty_id
-            if request_obj.faculty.user:
-                request_obj.faculty_first_name = request_obj.faculty.user.first_name
-                request_obj.faculty_last_name = request_obj.faculty.user.last_name
-            else:
-                request_obj.faculty_first_name = "Unknown"
-                request_obj.faculty_last_name = "User"
         else:
             request_obj.faculty_id = "N/A"
-            request_obj.faculty_first_name = "Unknown"
-            request_obj.faculty_last_name = "User"
 
     
     if request.method == "POST":
@@ -1682,8 +1658,8 @@ def upload_requirements(request):
 
     # Handle POST request for file uploads
     if request.method == "POST":
-        # Check if the request is from the mental health availment form and the save button was clicked
-        if 'save_mental_health_choice' in request.POST and 'avail_mental_health' in request.POST:
+        # Check if the request is from the mental health availment form
+        if 'avail_mental_health' in request.POST:
             avail_mental_health = request.POST.get('avail_mental_health')
             if mental_health_record:
                 if avail_mental_health == 'yes':
@@ -1694,14 +1670,13 @@ def upload_requirements(request):
                     mental_health_record.is_availing_mental_health = False
                     mental_health_record.save()
                     messages.success(request, "Your choice regarding Mental Health Services has been saved.")
-            # Redirect back to the same page after saving the choice with URL parameters
+            # Redirect back to the same page after saving the choice
             from django.urls import reverse
             base_url = reverse('medical:upload_requirements')
-            redirect_url = f'{base_url}?mental_health={avail_mental_health}&message=saved'
             if is_faculty:
-                return redirect(redirect_url)
+                return redirect(f'{base_url}')
             elif student:
-                return redirect(f'{redirect_url}&student_id={student.student_id}')
+                return redirect(f'{base_url}?student_id={student.student_id}')
             else:
                  return redirect('main:login'); # Fallback
 
