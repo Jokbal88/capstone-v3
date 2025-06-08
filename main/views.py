@@ -17,7 +17,10 @@ from medical.models import (
     DentalRecords,
     PrescriptionRecord,
     FacultyRequest,
-    EmergencyHealthAssistanceRecord
+    EmergencyHealthAssistanceRecord,
+    MedicalRequirement,
+    EligibilityForm,
+    MedicalCertificate
 )
 from datetime import datetime, date
 from django.utils import timezone
@@ -1158,6 +1161,69 @@ def dashboard_view(request):
                 patient=patient
             ).order_by('-date_requested')
             
+            # Fetch other request types for the patient
+            medical_requirements = medical_models.MedicalRequirement.objects.filter(patient=patient)
+            eligibility_forms = medical_models.EligibilityForm.objects.filter(patient=patient)
+            medical_certificates = medical_models.MedicalCertificate.objects.filter(patient=patient)
+            dental_records = medical_models.DentalRecords.objects.filter(patient=patient)
+            emergency_records = medical_models.EmergencyHealthAssistanceRecord.objects.filter(patient=patient)
+            mental_health_records = medical_models.MentalHealthRecord.objects.filter(patient=patient)
+
+            # Combine all requests into a single list and standardize their format
+            all_patient_requests = []
+
+            for req in patient_requests:
+                all_patient_requests.append({
+                    'request_type': req.request_type,
+                    'date_requested': req.date_requested,
+                    'status': req.status
+                })
+            
+            for req in medical_requirements:
+                all_patient_requests.append({
+                    'request_type': 'Medical Requirement',
+                    'date_requested': req.reviewed_date if req.reviewed_date else timezone.now(), # Use reviewed_date if available, else current time
+                    'status': req.status
+                })
+            
+            for req in eligibility_forms:
+                all_patient_requests.append({
+                    'request_type': 'Eligibility Form',
+                    'date_requested': req.date_of_examination, # Assuming this is the closest to date_requested
+                    'status': 'completed' # Assuming eligibility forms are "completed" once filled
+                })
+            
+            for req in medical_certificates:
+                all_patient_requests.append({
+                    'request_type': 'Medical Certificate',
+                    'date_requested': req.date_created, # Assuming this is the closest to date_requested
+                    'status': 'completed' # Assuming medical certificates are "completed" once issued
+                })
+            
+            for req in dental_records:
+                all_patient_requests.append({
+                    'request_type': f'Dental - {req.service_type}',
+                    'date_requested': req.date_requested,
+                    'status': 'accepted' if req.appointed else 'pending' # Assuming "accepted" if appointed, else "pending"
+                })
+
+            for req in emergency_records:
+                all_patient_requests.append({
+                    'request_type': f'Emergency Assistance - {req.reason}',
+                    'date_requested': req.date_assisted, # Using date_assisted as date_requested
+                    'status': 'completed' # Assuming emergency records are "completed" once assisted
+                })
+
+            for req in mental_health_records:
+                all_patient_requests.append({
+                    'request_type': 'Mental Health Record',
+                    'date_requested': req.date_submitted,
+                    'status': req.status
+                })
+
+            # Sort all requests by date_requested in descending order
+            all_patient_requests.sort(key=lambda x: x['date_requested'], reverse=True)
+
         # Get student information
         student = None
         try:
@@ -1193,8 +1259,8 @@ def dashboard_view(request):
             'family_history': family_history,
             'risk_assessment': risk_assessment,
             'physical_exam': physical_exam,
-            'patient_requests': patient_requests,
-            'appointments': calendar_events,
+            'patient_requests': all_patient_requests, # Pass the combined list
+            'appointments_json': json.dumps(calendar_events), # Pass JSON string of appointments
             'medical_profile_incomplete': not patient.examination
         }
             
@@ -1430,6 +1496,31 @@ def faculty_dashboard_view(request):
             faculty=faculty
         ).order_by('-date_requested')
 
+        # Fetch dental records associated with the faculty's patient
+        dental_records = []
+        if patient:
+            dental_records = medical_models.DentalRecords.objects.filter(patient=patient)
+
+        # Combine all requests into a single list and standardize their format
+        all_faculty_requests = []
+
+        for req in faculty_requests:
+            all_faculty_requests.append({
+                'request_type': req.request_type,
+                'date_requested': req.date_requested,
+                'status': req.status
+            })
+
+        for req in dental_records:
+            all_faculty_requests.append({
+                'request_type': f'Dental - {req.service_type}',
+                'date_requested': req.date_requested,
+                'status': 'accepted' if req.appointed else 'pending'  # Assuming "accepted" if appointed, else "pending"
+            })
+
+        # Sort all requests by date_requested in descending order
+        all_faculty_requests.sort(key=lambda x: x['date_requested'], reverse=True)
+
         # Get appointments for calendar (only faculty's accepted requests)
         appointments = medical_models.FacultyRequest.objects.filter(
             faculty=faculty,
@@ -1485,7 +1576,7 @@ def faculty_dashboard_view(request):
             'physical_exam': physical_exam,
             'faculty_medical_requirements': faculty_medical_requirements,
             'faculty_mental_health_record': faculty_mental_health_record,
-            'faculty_requests': faculty_requests,
+            'faculty_requests': all_faculty_requests, # Pass the combined list
             'appointments': calendar_events,
             'medical_profile_incomplete': medical_profile_incomplete,
         }
