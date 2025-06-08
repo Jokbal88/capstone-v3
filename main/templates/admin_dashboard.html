@@ -46,13 +46,25 @@
         text-transform: uppercase;
         font-size: 0.95rem;
         color: #374151;
-        background: #f9fafb; /* Ensure a solid background for sticky header */
+        background: #fff; /* Ensure a solid background for sticky header */
         letter-spacing: 0.04em;
         padding-top: 0.75rem;
         padding-bottom: 0.75rem;
-        position: sticky; /* Make header sticky */
-        top: 0; /* Stick to the top of its scrolling container */
-        z-index: 10; /* Ensure it stays above other table content */
+    }
+    .dashboard-table thead, .dashboard-table tbody {
+        display: block;
+    }
+    .dashboard-table tbody {
+        max-height: calc(70vh - 120px); /* Adjust based on actual header heights */
+        overflow-y: auto;
+    }
+    .dashboard-table tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+    .dashboard-table th, .dashboard-table td {
+        width: calc(100% / 5); /* Assuming 5 columns */
     }
     .dashboard-table td {
         font-size: 1rem;
@@ -247,19 +259,29 @@
 
     /* New style for requests table scroll */
     .requests-table-scroll {
-        max-height: 50vh; /* Adjust this value as needed */
+        max-height: 70vh; /* Adjust this value as needed to show more lists */
         overflow-y: auto;
+        /* overflow: visible; */ /* Ensure it does not create a new stacking context for sticky headers */
     }
 
-    .sticky-search-bar-container {
+    /* New style for Requests Section sticky header */
+    .requests-header-sticky-container {
         position: sticky;
         top: 0;
-        z-index: 20; /* Ensure it's above other content */
+        z-index: 999; /* Ensure it's above other content */
         background-color: #fff; /* Match background for seamless look */
         padding-top: 1rem;
         padding-bottom: 1rem;
-        margin-bottom: 1rem; /* Space between search bar and content */
+        margin-bottom: 1rem; /* Space between header and content */
         box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Optional subtle shadow */
+        border-radius: 12px; /* Apply border-radius for consistency with dashboard-card */
+        isolation: isolate; /* Ensures a new stacking context */
+    }
+
+    /* New style for scrollable table body */
+    .table-body-scroll {
+        max-height: calc(100vh - 250px); /* Adjust based on actual header heights */
+        overflow-y: auto;
     }
 </style>
 {% endblock %} 
@@ -337,34 +359,34 @@
                 <span class="text-2xl font-bold text-yellow-600">{{ pending_requests|default:0 }}</span>
         </div>
         </div>
-        <div class="sticky-search-bar-container w-full px-4">
-            <input type="text" id="requestSearch" onkeyup="filterRequests()" placeholder="Search requests by ID, name, or type..." 
-                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-        </div>
         <div class="dashboard-main-grid">
             <!-- Left Column: Requests Card with Tabs -->
-            <div class="dashboard-card border border-gray-200 flex-1 flex flex-col p-4 mb-2 w-full">
-                <div class="tab-buttons">
-                    <button class="tab-button {% if active_tab == 'all' %}active{% endif %}" data-tab="all">
-                        All Requests
-                    </button>
-                    <button class="tab-button {% if active_tab == 'documentary' %}active{% endif %}" data-tab="documentary">
-                        Documentary
-                    </button>
-                    <button class="tab-button {% if active_tab == 'dental' %}active{% endif %}" data-tab="dental">
-                        Dental
-                    </button>
-                    <button class="tab-button {% if active_tab == 'emergency' %}active{% endif %}" data-tab="emergency">
-                        Emergency
-                    </button>
-                    <button class="tab-button {% if active_tab == 'mental' %}active{% endif %}" data-tab="mental">
-                        Mental Health
-                    </button>
+            <div class="dashboard-card border border-gray-200 flex-1 flex flex-col mb-2 w-full">
+                <div class="requests-header-sticky-container px-4">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Requests Section</h3>
+                    <div class="tab-buttons">
+                        <button class="tab-button {% if active_tab == 'all' %}active{% endif %}" data-tab="all">
+                            All Requests
+                        </button>
+                        <button class="tab-button {% if active_tab == 'documentary' %}active{% endif %}" data-tab="documentary">
+                            Documentary
+                        </button>
+                        <button class="tab-button {% if active_tab == 'dental' %}active{% endif %}" data-tab="dental">
+                            Dental
+                        </button>
+                        <button class="tab-button {% if active_tab == 'emergency' %}active{% endif %}" data-tab="emergency">
+                            Emergency
+                        </button>
+                        <button class="tab-button {% if active_tab == 'mental' %}active{% endif %}" data-tab="mental">
+                            Mental Health
+                        </button>
+                    </div>
+                    <input type="text" id="requestSearch" onkeyup="filterRequests()" placeholder="Search requests by ID, name, or type..." 
+                           class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-4 mb-4">
                 </div>
-
-                <div class="overflow-x-auto flex-1 requests-table-scroll">
+                <div class="overflow-x-auto flex-1 requests-table-scroll p-4">
                     <table class="min-w-full dashboard-table">
-                            <thead>
+                            <thead style="background-color: #fff;">
                             <tr>
                                 <th class="px-4 py-2">ID</th>
                                 <th class="px-4 py-2">Name</th>

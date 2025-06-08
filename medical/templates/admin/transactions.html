@@ -86,23 +86,23 @@
     </form>
     <div class="h-fit max-h-full w-full flex overflow-auto">
         <table class="w-full table-auto border-separate border-spacing-0">
-            <thead class="bg-[#e6e6e6] w-full">
+            <thead class="bg-[#e6e6e6] w-full" style="position: sticky; top: 0; z-index: 10; background-color: white;">
                 <tr class="tr-header">
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">No</th>  <!-- Table column headers -->
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">ID Number</th>
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Name</th>
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Type of Transaction</th>
-                    <th class="text-center p-2 xs:text-[14px] sm:text-base">Date of Transaction</th>
+                    <th class="p-2 xs:text-[14px] sm:text-base" style="text-align: center !important;">No</th>  <!-- Table column headers -->
+                    <th class="p-2 xs:text-[14px] sm:text-base" style="text-align: center !important;">ID Number</th>
+                    <th class="p-2 xs:text-[14px] sm:text-base" style="text-align: center !important;">Name</th>
+                    <th class="p-2 xs:text-[14px] sm:text-base" style="text-align: center !important;">Type of Transaction</th>
+                    <th class="p-2 xs:text-[14px] sm:text-base" style="text-align: center !important;">Date of Transaction</th>
                 </tr>
             </thead>
             <tbody>
                 {% for record in transaction_records %}
                     <tr>
-                        <td class="text-center">{{ forloop.counter }}</td>  <!-- Displays the counter (record number) -->
-                        <td class="text-center">{{ record.student_id }}</td>
-                        <td class="text-center">{{ record.patient.user.first_name }} {{ record.patient.user.last_name }}</td>  <!-- Displays the full name of the student -->
-                        <td class="text-center">{{ record.transac_type }}</td>  <!-- Displays the type of transaction -->
-                        <td class="text-center">{{ record.transac_date }}</td>  <!-- Displays the date of transaction -->
+                        <td style="text-align: left !important;">{{ forloop.counter }}</td>  <!-- Displays the counter (record number) -->
+                        <td style="text-align: left !important;">{{ record.student_id }}</td>
+                        <td style="text-align: left !important;">{{ record.patient.user.first_name }} {{ record.patient.user.last_name }}</td>  <!-- Displays the full name of the student -->
+                        <td style="text-align: left !important;">{{ record.transac_type }}</td>  <!-- Displays the type of transaction -->
+                        <td style="text-align: left !important;">{{ record.transac_date }}</td>  <!-- Displays the date of transaction -->
                     </tr>
                 {% endfor %}
             </tbody>
