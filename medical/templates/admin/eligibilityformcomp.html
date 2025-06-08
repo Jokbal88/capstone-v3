@@ -9,9 +9,11 @@
 
 {% block content %}
 <div class="w-full h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    {% comment %}
     {% if messages %}
     
     {% endif %}
+    {% endcomment %}
     <form action="" method="POST" class="flex flex-col gap-4 w-full">
         {% csrf_token %}
         <div class="flex items-center self-center gap-4">
@@ -33,97 +35,78 @@
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Name of Athlete:</span>
-                        <input type="text" value="{{ patient.student.firstname|title }} {{ patient.student.lastname|title }}" name="name" required>
+                        <input type="text" value="{{ student.firstname|default_if_none:'' }} {{ student.lastname|default_if_none:'' }}" name="name" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Age:</span>
-                        <input type="number" placeholder="Enter your age" name="age" value="{{ patient.age }}" required>
+                        <input type="number" placeholder="Enter your age" name="age" value="{{ patient.age|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full" >
-                        {% if eligibility_form.birth_date %}
-                            <span class="details">Birth Date:</span>
-                            <input type="text" name="birth-date" value="{{ patient.birth_date }}" required>
-                        {% else %}
-                            <span class="details">Birth Date:</span>
-                            <input type="date" name="birth-date" value="{{ patient.birth_date }}" required>
-                        {% endif %}
+                        <span class="details">Birth Date:</span>
+                        <input type="date" name="birth-date" value="{{ patient.birth_date|date:'Y-m-d'|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Weight:</span>
-                        <input type="text" placeholder="Enter your weight" name="weight" value="{{ patient.weight }}" required>
+                        <input type="text" placeholder="Enter your weight" name="weight" value="{{ patient.weight|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Height:</span>
-                        <input type="text" placeholder="Enter your height" name="height" value="{{ patient.height }}" required>
+                        <input type="text" placeholder="Enter your height" name="height" value="{{ patient.height|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Bloodtype:</span>
-                        <input type="text" id="blood-type" name="blood-type" placeholder="Enter your bloodtype" value="{{ patient.bloodtype }}" required>
+                        <input type="text" id="blood-type" name="blood-type" placeholder="Enter your bloodtype" value="{{ patient.bloodtype|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Allergies:</span>
-                        <input type="text" placeholder="Enter your allergies" value="{{ patient.allergies }}" name="allergies" required>
+                        <input type="text" placeholder="Enter your allergies" value="{{ patient.allergies|default_if_none:'' }}" name="allergies" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Medications (if any):</span>
-                        <input type="text" placeholder="Enter your medication" name="medication" value="{{ patient.medications }}" required>
+                        <input type="text" placeholder="Enter your medication" name="medication" value="{{ patient.medications|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Address:</span>
-                        <input type="text" id="address" name="address" placeholder="Enter your address" value="{{ patient.home_address }}" required>
+                        <input type="text" id="address" name="address" placeholder="Enter your address" value="{{ patient.home_address|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Contact Number:</span>
-                        <input type="number" name="contact-number" value="{{ patient.student.contact_number }}" required>
+                        <input type="number" name="contact-number" value="{{ student.contact_number|default_if_none:'' }}" required>
                     </div>
                 </div>
             
             </fieldset>
             <fieldset class="flex flex-col gap-2 py-4">
                 <legend><strong>Medical Certificate</strong></legend>
-                <div>This is to certify that: {{ student.firstname }} {{ student.lastname }} is Physically Fit to participate the following competitions; <input class="place-event" type="text" name="competition" value="{{ eligibility_form.competetions }}" style="outline: none;"> on
-                {% if eligibility_form.date_of_event %}
-                    <input style="outline: none;" class="date-event" type="text" name="date-event" value="{{ eligibility_form.date_of_event }}" required>
-                {% else %}
-                    <input style="outline: none;" class="date-event" type="date" name="date-event" value="{{ eligibility_form.date_of_event }}" required>
-                {% endif %}    
+                <div>This is to certify that: {{ student.firstname|default_if_none:'' }} {{ student.lastname|default_if_none:'' }} is Physically Fit to participate the following competitions; <input class="place-event" type="text" name="competition" value="{{ eligibility_form.competetions|default_if_none:'' }}" style="outline: none;"> on
+                    <input style="outline: none;" class="date-event" type="date" name="date-event" value="{{ eligibility_form.date_of_event|date:'Y-m-d'|default_if_none:'' }}" required>
                  at <input class="place-event" 
-                    name="place-event" type="text" value="{{ eligibility_form.venue }}" style="outline: none;" >
+                    name="place-event" type="text" value="{{ eligibility_form.venue|default_if_none:'' }}" style="outline: none;" >
                 </div>
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Blood Pressure:</span>
-                        <input type="text" name="blood-pressure" placeholder="Enter blood pressure" value="{{ eligibility_form.blood_pressure }}" required>
+                        <input type="text" name="blood-pressure" placeholder="Enter blood pressure" value="{{ eligibility_form.blood_pressure|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full">
-                        {% if eligibility_form.date_of_examination %}
-                            <span class="details">Date of Examination:</span>
-                            <input type="text" name="date-exam" value="{{ eligibility_form.date_of_examination }}" required>
-                        {% else %}
-                            <span class="details">Date of Examination:</span>
-                            <input type="date" name="date-exam" value="{{ eligibility_form.date_of_examination }}" required>
-                        {% endif %}
+                        <span class="details">Date of Examination:</span>
+                        <input type="date" name="date-exam" value="{{ eligibility_form.date_of_examination|date:'Y-m-d'|default_if_none:'' }}" required>
                     </div>
                 </div>
                <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Liscence Number:</span>
-                        <input type="number" name="liscence-number" placeholder="Liscence Number" value="{{ eligibility_form.liscence_number }}" required>
+                        <input type="number" name="liscence-number" placeholder="Liscence Number" value="{{ eligibility_form.liscence_number|default_if_none:'' }}" required>
                     </div>
                     <div class="flex flex-col w-full">
-                        {% if eligibility_form.validity_date %}
-                            <span class="details">Validity Date:</span>
-                            <input type="text" name="validity-date" value="{{ eligibility_form.validity_date }}" required>
-                        {% else %}
-                            <span class="details">Validity Date:</span>
-                            <input type="date" name="validity-date" value="{{ eligibility_form.validity_date }}" required>
-                        {% endif %}
+                        <span class="details">Validity Date:</span>
+                        <input type="date" name="validity-date" value="{{ eligibility_form.validity_date|date:'Y-m-d'|default_if_none:'' }}" required>
                     </div>
                </div>
                <div class="self-center py-14">
@@ -153,13 +136,10 @@
                 <legend><strong>Parent/Guardian Permit/Consent</strong></legend>
                 <p>
                     This is to certify that I have full knowledge of and permission for my son/daughter/foster child 
-                    to join the following competetions;<input class="place-event" type="text" name="competitionv2" value="{{ eligibility_form.competetions }}" style="outline: none;" required>  on 
-                    {% if eligibility_form.date_of_event %}
-                        <input style="width: 100px;" class="date-event" type="text" value="{{ eligibility_form.date_of_event }}" name="date-events" required> 
-                   {% else %}
-                        <input style="width: 100px;" class="date-event" type="date" value="{{ eligibility_form.date_of_event }}" name="date-events" required>
-                    {% endif %} at 
-                    <input class="place-event" type="text" value="{{ eligibility_form.venue }}" required>
+                    to join the following competetions;<input class="place-event" type="text" name="competitionv2" value="{{ eligibility_form.competetions|default_if_none:'' }}" style="outline: none;" required>  on 
+                    <input style="width: 100px;" class="date-event" type="date" value="{{ eligibility_form.date_of_event|date:'Y-m-d'|default_if_none:'' }}" name="date-events" required> 
+                    at 
+                    <input class="place-event" type="text" value="{{ eligibility_form.venue|default_if_none:'' }}" required>
                 </p>
                 <p>I concur and agree on the rules and regulations being implemented by the concerned organizers.</p>
                 <div class="flex justify-between mt-14">
@@ -184,6 +164,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script id="messages-data" type="application/json">
+    {{ messages_json|safe }}
+</script>
 <script>
     function printSpecificContent() {
         const printContent = document.getElementById('eligibility_form').innerHTML;
@@ -195,5 +179,18 @@
         location.reload(true);
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
+        const messagesJson = document.getElementById('messages-data').textContent;
+        const messages = JSON.parse(messagesJson);
+
+        messages.forEach(function(message) {
+            Swal.fire({
+                icon: message.tags,
+                title: 'Notification',
+                text: message.text,
+                confirmButtonText: 'OK'
+            });
+        });
+    });
 </script>
 {% endblock %}

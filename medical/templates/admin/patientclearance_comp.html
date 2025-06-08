@@ -38,7 +38,7 @@
                 <legend class="text-lg font-medium mb-2">I. Information</legend>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="flex flex-col">
-                        <label for="student_id" class="text-sm font-medium text-gray-700">Student ID:</label>
+                        <label for="student_id" class="text-sm font-medium text-gray-700">ID Number:</label>
                         <input type="text" name="student_id" id="student_id" value="{{ student.student_id|default_if_none:'' }}" readonly class="mt-1 p-2 border rounded-md bg-gray-100">
                     </div>
                      <div class="flex flex-col">
@@ -119,58 +119,58 @@
                             <span>No</span>
                          </div>
                          <div class="flex justify-around">
-                             <input type="radio" name="age_above_60" value="True" {% if clearance.riskassessment.age_above_60 %}checked{% endif %}> 
-                             <input type="radio" name="age_above_60" value="False" {% if clearance.riskassessment.age_above_60 is False %}checked{% endif %}>
+                             <input type="radio" name="age_above_60" value="True" {% if riskassessment.age_above_60 %}checked{% endif %}> 
+                             <input type="radio" name="age_above_60" value="False" {% if riskassessment.age_above_60 is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="cardiovascular-disease" value="True" {% if clearance.riskassessment.cardiovascular_disease %}checked{% endif %}>
-                             <input type="radio" name="cardiovascular-disease" value="False" {% if clearance.riskassessment.cardiovascular_disease is False %}checked{% endif %}>
+                             <input type="radio" name="cardiovascular-disease" value="True" {% if riskassessment.cardiovascular_disease %}checked{% endif %}>
+                             <input type="radio" name="cardiovascular-disease" value="False" {% if riskassessment.cardiovascular_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="lung-disease" value="True" {% if clearance.riskassessment.chronic_lung_disease %}checked{% endif %}>
-                             <input type="radio" name="lung-disease" value="False" {% if clearance.riskassessment.chronic_lung_disease is False %}checked{% endif %}>
+                             <input type="radio" name="lung-disease" value="True" {% if riskassessment.chronic_lung_disease %}checked{% endif %}>
+                             <input type="radio" name="lung-disease" value="False" {% if riskassessment.chronic_lung_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="diabetes" value="True" {% if clearance.riskassessment.chronic_metabolic_disease %}checked{% endif %}>
-                             <input type="radio" name="diabetes" value="False" {% if clearance.riskassessment.chronic_metabolic_disease is False %}checked{% endif %}>
+                             <input type="radio" name="diabetes" value="True" {% if riskassessment.chronic_metabolic_disease %}checked{% endif %}>
+                             <input type="radio" name="diabetes" value="False" {% if riskassessment.chronic_metabolic_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="renal-disease" value="True" {% if clearance.riskassessment.chronic_renal_disease %}checked{% endif %}>
-                             <input type="radio" name="renal-disease" value="False" {% if clearance.riskassessment.chronic_renal_disease is False %}checked{% endif %}>
+                             <input type="radio" name="renal-disease" value="True" {% if riskassessment.chronic_renal_disease %}checked{% endif %}>
+                             <input type="radio" name="renal-disease" value="False" {% if riskassessment.chronic_renal_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="liver-disease" value="True" {% if clearance.riskassessment.chronic_liver_disease %}checked{% endif %}>
-                             <input type="radio" name="liver-disease" value="False" {% if clearance.riskassessment.chronic_liver_disease is False %}checked{% endif %}>
+                             <input type="radio" name="liver-disease" value="True" {% if riskassessment.chronic_liver_disease %}checked{% endif %}>
+                             <input type="radio" name="liver-disease" value="False" {% if riskassessment.chronic_liver_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="cancer" value="True" {% if clearance.riskassessment.cancer %}checked{% endif %}>
-                             <input type="radio" name="cancer" value="False" {% if clearance.riskassessment.cancer is False %}checked{% endif %}>
+                             <input type="radio" name="cancer" value="True" {% if riskassessment.cancer %}checked{% endif %}>
+                             <input type="radio" name="cancer" value="False" {% if riskassessment.cancer is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="autoimmune" value="True" {% if clearance.riskassessment.autoimmune_disease %}checked{% endif %}>
-                             <input type="radio" name="autoimmune" value="False" {% if clearance.riskassessment.autoimmune_disease is False %}checked{% endif %}>
+                             <input type="radio" name="autoimmune" value="True" {% if riskassessment.autoimmune_disease %}checked{% endif %}>
+                             <input type="radio" name="autoimmune" value="False" {% if riskassessment.autoimmune_disease is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="pregnant" value="True" {% if clearance.riskassessment.pregnant %}checked{% endif %}>
-                             <input type="radio" name="pregnant" value="False" {% if clearance.riskassessment.pregnant is False %}checked{% endif %}>
+                             <input type="radio" name="pregnant" value="True" {% if riskassessment.pregnant %}checked{% endif %}>
+                             <input type="radio" name="pregnant" value="False" {% if riskassessment.pregnant is False %}checked{% endif %}>
                          </div>
                           <div class="flex justify-around">
-                             <input type="radio" name="living_with_vulnerable" value="True" {% if clearance.riskassessment.living_with_vulnerable %}checked{% endif %}>
-                             <input type="radio" name="living_with_vulnerable" value="False" {% if clearance.riskassessment.living_with_vulnerable is False %}checked{% endif %}>
+                             <input type="radio" name="living_with_vulnerable" value="True" {% if riskassessment.living_with_vulnerable %}checked{% endif %}>
+                             <input type="radio" name="living_with_vulnerable" value="False" {% if riskassessment.living_with_vulnerable is False %}checked{% endif %}>
                          </div>
                          <div class="flex justify-around">
-                             <input type="radio" name="pwd" value="True" id="pwd" {% if clearance.riskassessment.pwd %}checked{% endif %}>
-                             <input type="radio" name="pwd" value="False" {% if clearance.riskassessment.pwd is False %}checked{% endif %}>
+                             <input type="radio" name="pwd" value="True" id="pwd" {% if riskassessment.pwd %}checked{% endif %}>
+                             <input type="radio" name="pwd" value="False" {% if riskassessment.pwd is False %}checked{% endif %}>
                          </div>
                      </div>
                  </div>
                  <div class="flex flex-col w-full mt-4">
                     <label for="other_conditions" class="text-sm font-medium text-gray-700">Specify other conditions not listed ab:</label>
-                    <input type="text" name="other_conditions" id="other_conditions" value="{{ clearance.riskassessment.other_conditions|default_if_none:'' }}" class="mt-1 p-2 border rounded-md">
+                    <input type="text" name="other_conditions" id="other_conditions" value="{{ riskassessment.other_conditions|default_if_none:'' }}" class="mt-1 p-2 border rounded-md">
                  </div>
-                 <div class="flex flex-col w-full mt-4">
+                 <div class="flex flex-col w-full mt-4" id="pwd-details">
                     <label for="disability_type" class="text-sm font-medium text-gray-700">If you are a PWD, please provide the following details:</label>
-                    <input type="text" name="disability_type" id="disability_type" value="{{ clearance.riskassessment.disability|default_if_none:'' }}" class="mt-1 p-2 border rounded-md" placeholder="Type of Disability">
+                    <input type="text" name="disability_type" id="disability_type" value="{{ riskassessment.disability|default_if_none:'' }}" class="mt-1 p-2 border rounded-md" placeholder="Type of Disability">
                  </div>
                   <p class="mt-4 text-sm text-gray-600">
                       If you answered yes to any of the above, you are advised against joining face-to-face activities and should opt for online mode of class/OJT/Practicum due
@@ -249,6 +249,9 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script id="messages-data" type="application/json">
+    {{ messages_json|safe }}
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.getElementById('medicalclearance-form');
@@ -272,20 +275,9 @@
                 }
             });
         });
-    });
-    function printSpecificContent() {
-        const printContent = document.getElementById('medicalclearance-form').innerHTML;
-        const originalContent = document.body.innerHTML;
 
-        document.body.innerHTML = printContent;
-        window.print();
-        document.body.innerHTML = originalContent;
-        location.reload(true); // Reload to restore original page content
-    }
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const messagesJson = '{{ messages_json|escapejs }}';
+        // SweetAlert message display
+        const messagesJson = document.getElementById('messages-data').textContent;
         const messages = JSON.parse(messagesJson);
 
         messages.forEach(function(message) {
@@ -297,5 +289,14 @@
             });
         });
     });
+    function printSpecificContent() {
+        const printContent = document.getElementById('medicalclearance-form').innerHTML;
+        const originalContent = document.body.innerHTML;
+
+        document.body.innerHTML = printContent;
+        window.print();
+        document.body.innerHTML = originalContent;
+        location.reload(true); // Reload to restore original page content
+    }
 </script>
 {% endblock %}

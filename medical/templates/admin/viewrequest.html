@@ -66,7 +66,7 @@
                             {% for request in pending_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4"><span class="text-black">{{ request.student_id }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</span></td>
+                                    <td class="text-center p-4"><span class="text-black">{{ request.student_first_name|title }} {{ request.student_last_name|title }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.request_type }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.date_requested|date:'M d, Y' }}</span></td>
                                     <td class="text-center p-4">
@@ -105,7 +105,7 @@
                             {% for request in accepted_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.student_id }}</td>
-                                    <td class="text-center p-4">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
+                                    <td class="text-center p-4">{{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
                                     <td class="text-center p-4">
                                          {% comment %} Link only if relevant and student exists {% endcomment %}
                                          {% if request.student_id and request.student_id|length > 0 %}
@@ -153,7 +153,7 @@
                             {% for request in completed_patient_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.student_id }}</td>
-                                    <td class="text-center p-4">Student: {{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
+                                    <td class="text-center p-4">{{ request.student_first_name|title }} {{ request.student_last_name|title }}</td>
                                     <td class="text-center p-4">{{ request.request_type }}</td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                     <td class="text-center p-4">
@@ -193,7 +193,7 @@
                             {% for request in pending_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4"><span class="text-black">{{ request.faculty_id }}</span></td>
-                                    <td class="text-center p-4"><span class="text-black">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</span></td>
+                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.request_type }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.date_requested|date:'M d, Y' }}</span></td>
                                     <td class="text-center p-4">
@@ -233,7 +233,7 @@
                             {% for request in accepted_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
                                     <td class="text-center p-4">
                                         {% if request.request_type == 'Eligibility Form' %}
                                             <a href="{% url 'medical:physical_exam' request.faculty_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>
@@ -277,7 +277,7 @@
                             {% for request in completed_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
                                     <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">Faculty: {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
                                     <td class="text-center p-4">{{ request.request_type }}</td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                      <td class="text-center p-4">

@@ -37,6 +37,8 @@
         </div>
         <form method="POST" class="flex flex-col gap-4 h-full">
             {% csrf_token %}
+            {% if patient.id %}<input type="hidden" name="patient_id" value="{{ patient.id }}">{% endif %}
+            {% if is_admin_onboarding %}<input type="hidden" name="from_admin_register" value="true">{% endif %}
             <div class="flex flex-col gap-2">
                 <h3 class="font-bold">Personal Information</h3>
                 <div class="flex flex-col md:flex-row gap-2">

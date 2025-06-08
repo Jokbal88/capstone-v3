@@ -24,3 +24,94 @@
     padding: 8px;
     text-align: left;
 }
+
+@page {
+    margin: 1cm; /* Set default margins for all pages */
+}
+
+/* Ensure the main content and table containers do not restrict height or flex behavior in print */
+.w-full.h-screen.rounded-\[14px\].bg-white.xs\:p-4.md\:p-8.flex.flex-col.gap-2 {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    display: block !important; /* Override flex display for print */
+    page-break-after: auto; /* Allow natural page breaks after this container */
+}
+
+.h-fit.max-h-full.w-full.flex.overflow-auto {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    display: block !important; /* Override flex display for print */
+    page-break-after: auto; /* Allow natural page breaks after this container */
+}
+
+/* Ensure table headers repeat on each page */
+.table-auto thead {
+    display: table-header-group;
+}
+
+/* Ensure table rows do not break across pages */
+.table-auto tbody tr {
+    page-break-inside: avoid; /* Apply to table body rows */
+}
+
+/* Ensure table itself can break across pages naturally */
+.table-auto {
+    page-break-after: auto;
+}
+
+/* Ensure that the body and html have auto height for printing */
+html, body {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+body {
+    font-size: 10pt; /* Smaller base font size for print */
+}
+
+/* Adjust font sizes for table headers and data */
+.table-auto th {
+    font-size: 10pt;
+    padding: 6px; /* Slightly reduce padding for more compact tables */
+    text-align: center; /* Ensure headers remain centered */
+}
+
+.table-auto td {
+    font-size: 10pt;
+    padding: 6px; /* Slightly reduce padding for more compact tables */
+    text-align: left !important; /* Ensure records are left-aligned */
+}
+
+/* Ensure images scale correctly for print */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Prevent page breaks inside the header and footer */
+.flex.self-center.items-center.gap-8,
+.font-bold.xs\:text-\[1\.3rem\].sm\:text-\[1\.5rem\].my-4.text-center,
+.self-center.flex.justify-center {
+    page-break-inside: avoid;
+}
+
+/* Ensure no page break immediately after the header */
+.flex.self-center.items-center.gap-8 {
+    page-break-after: avoid;
+}
+
+/* Position footer correctly at the end of the content */
+footer {
+    page-break-before: auto; /* Allow normal flow, not forced new page */
+    text-align: center;
+    width: 100%;
+    margin-top: auto; /* Push to bottom of content if space allows */
+    display: block !important; /* Override flex display for print */
+}
+
+footer img {
+    page-break-inside: avoid; /* Ensure image does not break across pages */
+}

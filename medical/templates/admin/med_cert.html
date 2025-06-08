@@ -9,11 +9,13 @@
 
 {% block content %}
 <div class="w-full h-fit rounded-[14px] bg-white xs:p-4 md:p-8 flex flex-col gap-2">
+    {% comment %}
     {% if messages %}
         {% for message in messages %}
             <div class="{{ message.tags }} p-2 rounded-md">{{ message }}</div>
         {% endfor %}
     {% endif %}
+    {% endcomment %}
     <form action="" method="POST" class="flex flex-col gap-4 w-full">
         {% csrf_token %}
         <div class="flex items-center self-center gap-4">
@@ -36,7 +38,7 @@
                 </p>
                 <p>
                     This is to certify that I allow my son/daughter 
-                    <input type="text" value="{{ patient.user.get_full_name|default_if_none:'' }}" style="outline: none;" readonly> to participate as athlete in the CTU INTRAMURALS GAME. I understand the
+                    <input type="text" value="{{ patient.user.get_full_name|default_if_none:'' }}" style="outline: none;" readonly> to participate as athlete in the CTU INTRAMURALS GAME. I understand that the
                     benefits that our child may derive from this activity and I am giving my consent with the understanding that all precautionary measures be undertaken to
                     ensure the safety of my child. However, I will not hold the Cebu Technological University Argao - Campus or any of its representatives responsible for any
                     incident that may occur.
@@ -144,6 +146,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script id="messages-data" type="application/json">
+    {{ messages_json|safe }}
+</script>
 <script>
     function printSpecificContent() {
         const printContent = document.querySelector('.flex.flex-col').innerHTML; // Target the main content div
@@ -155,5 +161,18 @@
         location.reload(true); // Reload to restore original page content
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
+        const messagesJson = document.getElementById('messages-data').textContent;
+        const messages = JSON.parse(messagesJson);
+
+        messages.forEach(function(message) {
+            Swal.fire({
+                icon: message.tags,
+                title: 'Notification',
+                text: message.text,
+                confirmButtonText: 'OK'
+            });
+        });
+    });
 </script>
 {% endblock %}
