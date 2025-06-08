@@ -3148,3 +3148,30 @@ def update_mental_health_status(request, pk):
         'success': False,
         'error': 'Method not allowed'
     }, status=405)
+
+@login_required
+def update_mental_health_choice(request):
+    if request.method == 'POST':
+        is_availing = request.POST.get('avail_mental_health') == 'yes'
+        
+        user = request.user
+        mental_health_record = None
+
+        student = get_student_by_user(user)
+        faculty = get_faculty_by_user(user)
+
+        if student:
+            # If the user is a student, get their associated patient record
+            patient = get_object_or_404(Patient, user=user)
+            mental_health_record, created = MentalHealthRecord.objects.get_or_create(patient=patient)
+        elif faculty:
+            # If the user is a faculty, directly use the faculty object
+            mental_health_record, created = MentalHealthRecord.objects.get_or_create(faculty=faculty)
+        else:
+            return JsonResponse({'error': 'User is neither student nor faculty.'}, status=400)
+
+        mental_health_record.is_availing_mental_health = is_availing
+        mental_health_record.save()
+
+        return JsonResponse({'message': 'Mental health choice updated successfully.'}, status=200)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
