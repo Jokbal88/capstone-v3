@@ -102,18 +102,18 @@
 <div class="bg-white xs:h-fit md:h-full xs:p-4 lg:p-8 flex flex-col gap-6 rounded-[18px] xs:w-full md:w-auto shadow-lg">
     <h2 class="font-bold text-[1.5rem] text-black tracking-tight text-center mb-2">Upload Medical Requirements</h2>
     
-    <!-- Section for Availing Mental Health Services -->
-    <form method="POST" id="mental-health-form" class="flex flex-col gap-4 w-full">
+    <!-- Section for Mental Health Service -->
+    <form method="POST" id="mental-health-form" class="flex flex-col gap-4 w-full" onsubmit="return false;">
         {% csrf_token %}
         {% if is_faculty %}
             <input type="hidden" name="faculty_id" value="{{ faculty.faculty_id }}">
         {% else %}
             <input type="hidden" name="student_id" value="{{ student.student_id|default:user.username }}">
         {% endif %}
-        <div class="bg-[#f8fafc] rounded-lg p-4 mb-6 border border-gray-200 w-full">
-            <h3 class="font-semibold text-blue-700 mb-2">Avail Mental Health Services</h3>
+        <div id="mental-health-choice-section" class="bg-[#f8fafc] rounded-lg p-4 mb-6 border border-gray-200 w-full">
+            <h3 class="font-semibold text-blue-700 mb-2">Mental Health Service</h3>
             <div class="mb-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-                <p class="text-sm text-blue-800">Would you like to avail of Mental Health Services?</p>
+                <p class="text-sm text-blue-800">Do you have any history regarding Mental Health or taking any prescriptions?</p>
             </div>
             <div class="flex items-center space-x-4">
                 <input type="radio" id="avail_mh_yes" name="avail_mental_health" value="yes" class="form-radio text-blue-600" {% if mental_health_record and mental_health_record.is_availing_mental_health %}checked{% endif %}>
@@ -121,8 +121,8 @@
                 <input type="radio" id="avail_mh_no" name="avail_mental_health" value="no" class="form-radio text-red-600" {% if mental_health_record and not mental_health_record.is_availing_mental_health %}checked{% endif %}>
                 <label for="avail_mh_no" class="text-gray-700">No</label>
             </div>
-             <div class="mt-4 flex justify-center">
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Choice</button>
+            <div class="mt-4 flex justify-center">
+                <button type="button" id="save-mental-health-choice" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">Save Choice</button>
             </div>
         </div>
     </form>
@@ -334,6 +334,11 @@
 
 {% block extra_js %}
 <script>
+    // Define Django-derived booleans as JavaScript variables at the very top
+    const DJANGO_IS_AVAILING_MENTAL_HEALTH_INITIALLY = {% if mental_health_record and mental_health_record.is_availing_mental_health %}true{% else %}false{% endif %};
+    const DJANGO_HAS_STUDENT = {% if student %}true{% else %}false{% endif %};
+    const DJANGO_HAS_FACULTY = {% if faculty %}true{% else %}false{% endif %};
+
     // Script to display chosen filename next to Choose File button
     document.addEventListener('change', function(event) {
         if (event.target.type === 'file') {
@@ -421,7 +426,7 @@
     }
 
     function zoomOut() {
-        currentZoom = Math.max(zoomStep, currentZoom - zoomStep); // Prevent zooming out to zero or negative
+        currentZoom = Math.max(zoomStep, currentZoom - zoomStep);
         applyZoom();
     }
 
@@ -431,62 +436,98 @@
 
         if (imageElement) {
             imageElement.style.transform = `scale(${currentZoom})`;
-             // Adjust transform origin if needed, currently set to top left in CSS
         } else if (objectElement) {
-            // Applying transform to object element (for PDFs) - behavior may vary across browsers
-             // Consider alternative PDF viewers for reliable zoom
             objectElement.style.transform = `scale(${currentZoom})`;
-             // You might need to adjust the container's overflow and dimensions if zooming causes content to exceed boundaries
         }
-         // You might also want to update a visual indicator of the current zoom level
     }
 
-    // JavaScript for showing/hiding Mental Health Documents section and SweetAlert
+    // Consolidated DOMContentLoaded listener
     document.addEventListener('DOMContentLoaded', function () {
-        const availMentalHealthRadios = document.querySelectorAll('input[name="avail_mental_health"]');
         const mentalHealthDocsSection = document.getElementById('mental-health-docs-section');
+        const mentalHealthChoiceSection = document.getElementById('mental-health-choice-section');
+        const mentalHealthForm = document.getElementById('mental-health-form');
+        const saveChoiceButton = document.getElementById('save-mental-health-choice');
+        const availMentalHealthRadios = document.querySelectorAll('input[name="avail_mental_health"]');
+        
+        // Initial state from Django, ensuring it's a valid JS boolean
+        const isAvailingMentalHealthInitially = {% if mental_health_record and mental_health_record.is_availing_mental_health %}true{% else %}false{% endif %};
 
-        function toggleMentalHealthDocsSection() {
-            const selectedValue = document.querySelector('input[name="avail_mental_health"]:checked').value;
-            if (selectedValue === 'yes') {
-                mentalHealthDocsSection.classList.remove('hidden');
-            } else {
+        // Handle URL parameters for post-submission state
+        const urlParams = new URLSearchParams(window.location.search);
+        const mentalHealthParam = urlParams.get('mental_health');
+        const messageParam = urlParams.get('message');
+
+        // Hide the choice section if a choice has already been made and saved as Yes, or if parameter indicates it
+        if (mentalHealthChoiceSection) {
+            if (isAvailingMentalHealthInitially || (mentalHealthParam === 'yes' && messageParam === 'saved')) {
+                mentalHealthChoiceSection.style.display = 'none';
+            }
+        }
+
+        // Initially hide the mental health docs section unless there's an existing record for 'Yes' or parameter indicates it
+        if (mentalHealthDocsSection) {
+            if (!(isAvailingMentalHealthInitially || (mentalHealthParam === 'yes' && messageParam === 'saved'))) {
                 mentalHealthDocsSection.classList.add('hidden');
             }
         }
 
-        // Add event listeners to radio buttons
+        // Prevent form submission on radio button change (still needed for consistency)
         availMentalHealthRadios.forEach(radio => {
-            radio.addEventListener('change', toggleMentalHealthDocsSection);
+            radio.addEventListener('change', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+            });
         });
 
-        // Set initial visibility on page load
-        toggleMentalHealthDocsSection();
+        // Handle the Save Choice button click
+        if (saveChoiceButton) {
+            saveChoiceButton.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default button submission
 
-        // Check for success message and show SweetAlert
-        {% if messages %}
-            {% for message in messages %}
-                {% if 'mental_health_availed' in message.tags %}
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Mental Health Services Availed, please check the necessary documents below to upload',
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    });
-                {% endif %}
-            {% endfor %}
-        {% endif %}
+                const formData = new FormData(mentalHealthForm);
+                formData.append('save_mental_health_choice', 'true');
+                
+                // Perform standard form submission (will trigger a page reload)
+                mentalHealthForm.submit();
+            });
+        }
+
+        // Show SweetAlert and handle section visibility based on URL parameters on page load
+        if (mentalHealthParam === 'yes' && messageParam === 'saved') {
+            Swal.fire({
+                title: 'Thank you!',
+                text: 'Thank you for answering the Mental Health Service question.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Ensure choice section is hidden
+                if (mentalHealthChoiceSection) {
+                    mentalHealthChoiceSection.style.display = 'none';
+                }
+                // Ensure docs section is visible
+                if (mentalHealthDocsSection) {
+                    setTimeout(() => {
+                        mentalHealthDocsSection.classList.remove('hidden');
+                        mentalHealthDocsSection.scrollIntoView({ behavior: 'smooth' });
+                    }, 300);
+                }
+                
+                // Clear URL parameters to prevent alert on subsequent refreshes
+                const newUrl = window.location.href.split('?')[0];
+                window.history.replaceState({}, document.title, newUrl);
+            });
+        }
+        // Add this outside the if (mentalHealthParam... ) block to ensure the logic runs for other scenarios
+        else if (isAvailingMentalHealthInitially && mentalHealthChoiceSection && mentalHealthDocsSection) {
+            // If page loads with existing 'Yes' choice, hide question and show docs
+            mentalHealthChoiceSection.style.display = 'none';
+            mentalHealthDocsSection.classList.remove('hidden');
+        }
+        else if (!isAvailingMentalHealthInitially && mentalHealthDocsSection && !mentalHealthDocsSection.classList.contains('hidden')) {
+            // If no existing 'Yes' choice, but docs section is somehow visible, hide it
+            mentalHealthDocsSection.classList.add('hidden');
+        }
     });
-
-     // Event listeners for file input change to display filename
-     document.addEventListener('change', function(event) {
-         if (event.target.type === 'file') {
-             const fileNameSpan = document.getElementById(event.target.id + '_filename');
-             if (fileNameSpan) {
-                 fileNameSpan.textContent = event.target.files.length > 0 ? event.target.files[0].name : 'No file chosen';
-             }
-         }
-     });
 
 </script>
 {% endblock %}

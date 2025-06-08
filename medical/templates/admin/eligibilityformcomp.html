@@ -33,7 +33,7 @@
                 <div class="flex gap-2">
                     <div class="flex flex-col w-full">
                         <span class="details">Name of Athlete:</span>
-                        <input type="text" value="{{ patient.student.firstname|title }} {{ patient.student.lastname|title }}" name="name" required>
+                        <input type="text" value="{{ student.firstname|title }} {{ student.lastname|title }}" name="name" required>
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Age:</span>
@@ -80,7 +80,7 @@
                     </div>
                     <div class="flex flex-col w-full">
                         <span class="details">Contact Number:</span>
-                        <input type="number" name="contact-number" value="{{ patient.student.contact_number }}" required>
+                        <input type="number" name="contact-number" value="{{ student.contact_number }}" required>
                     </div>
                 </div>
             
