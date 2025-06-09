@@ -423,5 +423,10 @@ class MentalHealthRecord(models.Model):
     certification_remarks = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f'Mental Health Record for {self.patient.user.get_full_name() or self.patient.user.username}'
+        if self.patient and self.patient.user:
+            return f'Mental Health Record for {self.patient.user.get_full_name() or self.patient.user.username}'
+        elif self.faculty and self.faculty.user:
+            return f'Mental Health Record for {self.faculty.user.get_full_name() or self.faculty.user.username}'
+        else:
+            return 'Mental Health Record (Unknown)'
     

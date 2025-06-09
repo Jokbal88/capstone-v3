@@ -192,8 +192,20 @@
                         <tbody>
                             {% for request in pending_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
-                                    <td class="text-center p-4"><span class="text-black">{{ request.faculty_id }}</span></td>
-                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">
+                                        {% if request.faculty and request.faculty.user %}
+                                            <span class="text-black">{{ request.faculty.faculty_id }}</span>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center p-4">
+                                        {% if request.faculty and request.faculty.user %}
+                                            {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.request_type }}</span></td>
                                     <td class="text-center p-4"><span class="text-black">{{ request.date_requested|date:'M d, Y' }}</span></td>
                                     <td class="text-center p-4">
@@ -232,8 +244,12 @@
                         <tbody>
                             {% for request in accepted_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
-                                    <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">
+                                        <span class="text-black">{{ request.faculty_id_display }}</span>
+                                    </td>
+                                    <td class="text-center p-4">
+                                        {{ request.faculty_first_name|title }} {{ request.faculty_last_name|title }}
+                                    </td>
                                     <td class="text-center p-4">
                                         {% if request.request_type == 'Eligibility Form' %}
                                             <a href="{% url 'medical:physical_exam' request.faculty_id %}" class="text-blue-600 hover:underline">{{ request.request_type }}</a>
@@ -276,8 +292,20 @@
                         <tbody>
                             {% for request in completed_faculty_requests %}
                                 <tr class="{% if forloop.counter0|divisibleby:2 %}bg-gray-100{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors">
-                                    <td class="text-center p-4">{{ request.faculty_id }}</td>
-                                    <td class="text-center p-4">{{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}</td>
+                                    <td class="text-center p-4">
+                                        {% if request.faculty and request.faculty.user %}
+                                            <span class="text-black">{{ request.faculty.faculty_id }}</span>
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center p-4">
+                                        {% if request.faculty and request.faculty.user %}
+                                            {{ request.faculty.user.first_name|title }} {{ request.faculty.user.last_name|title }}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
                                     <td class="text-center p-4">{{ request.request_type }}</td>
                                     <td class="text-center p-4">{{ request.date_responded|date:'M d, Y' }}</td>
                                      <td class="text-center p-4">
