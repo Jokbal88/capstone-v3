@@ -200,7 +200,12 @@ def medicalclearance_view(request, student_id):
             clearance, created_clearance = MedicalClearance.objects.get_or_create(patient=patient)
 
             # Get or create RiskAssessment
-            riskass, created_riskass = RiskAssessment.objects.get_or_create(clearance=clearance)
+            try:
+                riskass = RiskAssessment.objects.get(clearance=clearance)
+            except RiskAssessment.DoesNotExist:
+                riskass = RiskAssessment.objects.create(clearance=clearance, patient=patient)
+            
+            # Update risk assessment fields
             riskass.age_above_60 = age_above_60
             riskass.cardiovascular_disease = cardiovascular_disease
             riskass.chronic_lung_disease = chronic_lung_disease
@@ -213,7 +218,7 @@ def medicalclearance_view(request, student_id):
             riskass.other_conditions = other_conditions
             riskass.living_with_vulnerable = living_with_vulnerable
             riskass.pwd = pwd
-            riskass.disability = disability # Always update disability field
+            riskass.disability = disability
             riskass.save()
 
             # Get or create MedicalRequirement
@@ -509,9 +514,12 @@ def view_request(request):
     )
 
     # Fetch all faculty requests and filter by status
-    pending_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='pending')
-    accepted_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='accepted')
-    completed_faculty_requests = FacultyRequest.objects.select_related('faculty__user').filter(status='completed')
+    pending_faculty_requests = FacultyRequest.objects.select_related('faculty', 'faculty__user').filter(status='pending')
+    print('DEBUG: FacultyRequest objects in pending_faculty_requests:')
+    for request_obj in pending_faculty_requests:
+        print(f"Request ID: {request_obj.request_id}, Faculty: {request_obj.faculty}, Faculty ID: {getattr(request_obj.faculty, 'faculty_id', None)}, Faculty User: {getattr(request_obj.faculty, 'user', None)}")
+    accepted_faculty_requests = FacultyRequest.objects.select_related('faculty', 'faculty__user').filter(status='accepted')
+    completed_faculty_requests = FacultyRequest.objects.select_related('faculty', 'faculty__user').filter(status='completed')
 
     # Ensure unique requests
     pending_patient_requests = pending_patient_requests.distinct()
@@ -561,22 +569,51 @@ def view_request(request):
                 request_obj.student_last_name = "N/A"
 
     for request_obj in pending_faculty_requests:
-        if request_obj.faculty:
-            request_obj.faculty_id = request_obj.faculty.faculty_id
-        else:
-            request_obj.faculty_id = "N/A"
-            
+        try:
+            if request_obj.faculty and request_obj.faculty.user:
+                request_obj.faculty_id_display = request_obj.faculty.faculty_id or "N/A"
+                request_obj.faculty_first_name = request_obj.faculty.user.first_name or "N/A"
+                request_obj.faculty_last_name = request_obj.faculty.user.last_name or "N/A"
+            else:
+                request_obj.faculty_id_display = "N/A"
+                request_obj.faculty_first_name = "N/A"
+                request_obj.faculty_last_name = "N/A"
+        except Faculty.DoesNotExist:
+            request_obj.faculty_id_display = "N/A"
+            request_obj.faculty_first_name = "N/A"
+            request_obj.faculty_last_name = "N/A"
+        print(f"DEBUG: request_obj.faculty_id_display = {request_obj.faculty_id_display}")  # Debug print statement
+
     for request_obj in accepted_faculty_requests:
-        if request_obj.faculty:
-            request_obj.faculty_id = request_obj.faculty.faculty_id
-        else:
-            request_obj.faculty_id = "N/A"
+        try:
+            if request_obj.faculty and request_obj.faculty.user:
+                request_obj.faculty_id_display = request_obj.faculty.faculty_id or "N/A"
+                request_obj.faculty_first_name = request_obj.faculty.user.first_name or "N/A"
+                request_obj.faculty_last_name = request_obj.faculty.user.last_name or "N/A"
+            else:
+                request_obj.faculty_id_display = "N/A"
+                request_obj.faculty_first_name = "N/A"
+                request_obj.faculty_last_name = "N/A"
+        except Faculty.DoesNotExist:
+            request_obj.faculty_id_display = "N/A"
+            request_obj.faculty_first_name = "N/A"
+            request_obj.faculty_last_name = "N/A"
+        print(f"DEBUG: [ACCEPTED] faculty={request_obj.faculty}, faculty_id={getattr(request_obj.faculty, 'faculty_id', None)}, user={getattr(request_obj.faculty, 'user', None)}, first_name={getattr(getattr(request_obj.faculty, 'user', None), 'first_name', None)}, last_name={getattr(getattr(request_obj.faculty, 'user', None), 'last_name', None)}")
 
     for request_obj in completed_faculty_requests:
-        if request_obj.faculty:
-            request_obj.faculty_id = request_obj.faculty.faculty_id
-        else:
+        try:
+            if request_obj.faculty and request_obj.faculty.user:
+                request_obj.faculty_id = request_obj.faculty.faculty_id or "N/A"
+                request_obj.faculty_first_name = request_obj.faculty.user.first_name or "N/A"
+                request_obj.faculty_last_name = request_obj.faculty.user.last_name or "N/A"
+            else:
+                request_obj.faculty_id = "N/A"
+                request_obj.faculty_first_name = "N/A"
+                request_obj.faculty_last_name = "N/A"
+        except Faculty.DoesNotExist:
             request_obj.faculty_id = "N/A"
+            request_obj.faculty_first_name = "N/A"
+            request_obj.faculty_last_name = "N/A"
 
     
     if request.method == "POST":
@@ -1173,24 +1210,6 @@ def get_user_name_by_id(request):
         except Exception as e:
             return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
     return JsonResponse({"error": "Invalid request method"}, status=405)
-
-#check if student matched
-# def check_student_match(request):
-#     if request.method == "GET":
-#         student_id = request.GET.get("student_id")
-#         name = request.GET.get("name")
-
-#         try:
-#             student = Student.objects.get(student_id=student_id)
-#             student_name = f"{student.firstname} {student.lastname}"
-
-#             # Check if the provided name matches the student name associated with the student ID
-#             if name.lower() == student_name.lower():
-#                 return JsonResponse({'success': True})
-#             else:
-#                 return JsonResponse({'success': False, 'message': 'Student name does not match the provided name'})
-#         except Student.DoesNotExist:
-#             return JsonResponse({'success': False, 'message': 'Student with the provided ID does not exist'})   
 
 # Record Emergency Health Assistance
 @user_passes_test(is_admin)

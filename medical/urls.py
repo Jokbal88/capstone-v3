@@ -4,10 +4,10 @@ from . import views
 app_name = 'medical'
 
 urlpatterns = [
-    path('patientbasicinfo/<int:student_id>/', views.patient_basic_info, name='patient_basicinfo'),
-    path('medicalclearance/<int:student_id>/', views.medicalclearance_view, name='medicalclearance'),
-    path('eligibilityform/<int:student_id>/', views.eligibilty_form, name='eligibility_form'),
-    path('medicalcertificate/<int:student_id>/', views.med_cert, name='med_cert_for_intrams'),
+    path('patientbasicinfo/<str:student_id>/', views.patient_basic_info, name='patient_basicinfo'),
+    path('medicalclearance/<str:student_id>/', views.medicalclearance_view, name='medicalclearance'),
+    path('eligibilityform/<str:student_id>/', views.eligibilty_form, name='eligibility_form'),
+    path('medicalcertificate/<str:student_id>/', views.med_cert, name='med_cert_for_intrams'),
     path('viewrequest/', views.view_request, name='viewrequest'),
     path('request/', views.submit_request, name="request"),
     path('patient/profile/', views.patient_profile, name='patient_profile'),

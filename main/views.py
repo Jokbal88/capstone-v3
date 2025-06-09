@@ -136,11 +136,11 @@ def register(request):
             role = request.POST.get("role", 'Student')  # Get role from hidden input
 
             # Security check for faculty registration
-            if role == 'Faculty' and not request.GET.get('role') == 'faculty':
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'Invalid registration attempt.'
-                })
+            # if role == 'Faculty' and not request.GET.get('role') == 'faculty':
+            #     return JsonResponse({
+            #         'status': 'error',
+            #         'message': 'Invalid registration attempt.'
+            #     })
 
             print("Received role:", role)
 
@@ -283,8 +283,8 @@ def register(request):
                     last_name=lastName,
                 )
 
-                # Create Profile for the user
-                profile = Profile.objects.create(user=user, role=role)
+                # Always set role to 'Faculty' for faculty registration
+                profile = Profile.objects.create(user=user, role='Faculty')
 
                 # Create Faculty instance
                 Faculty.objects.create(
