@@ -378,9 +378,6 @@
                         <button class="tab-button {% if active_tab == 'emergency' %}active{% endif %}" data-tab="emergency">
                             Emergency
                         </button>
-                        <button class="tab-button {% if active_tab == 'mental' %}active{% endif %}" data-tab="mental">
-                            Mental Health
-                        </button>
                     </div>
                     <input type="text" id="requestSearch" onkeyup="filterRequests()" placeholder="Search requests by ID, name, or type..." 
                            class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 mt-4 mb-4">
@@ -409,15 +406,13 @@
                                         {{ request_data.request.service_type }}
                                     {% elif request_data.type == 'emergency' %}
                                         Emergency Assistance
-                                    {% elif request_data.type == 'mental' %}
-                                        Mental Health Consultation
+                                    {% else %}
+                                        {{ request_data.request.status|title }}
                                     {% endif %}
                                 </td>
                                 <td class="px-4 py-2">
                                     {% if request_data.type == 'emergency' %}
                                         {{ request_data.request.date_assisted }}
-                                    {% elif request_data.type == 'mental' %}
-                                        {{ request_data.request.date_submitted|date:"F d, Y" }}
                                     {% else %}
                                         {{ request_data.request.date_requested|date:"F d, Y" }}
                                     {% endif %}

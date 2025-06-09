@@ -915,11 +915,6 @@ def admin_dashboard_view(request):
         'patient__user'
     ).order_by('-date_assisted')
 
-    # Get mental health records
-    mental_health_requests = medical_models.MentalHealthRecord.objects.select_related(
-        'patient__user', 'faculty__user'
-    ).filter(status='pending').order_by('date_submitted')
-
     # Process all requests into a unified format
     all_requests = []
     
@@ -1027,35 +1022,6 @@ def admin_dashboard_view(request):
                 print(f"Error processing emergency request {req.id}: {str(e)}")
         all_requests.append(request_data)
 
-    # Process mental health requests
-    for req in mental_health_requests:
-        request_data = {
-            'request': req,
-            'user_info': {
-                'id': 'N/A',
-                'name': 'Unknown User'
-            },
-            'type': 'mental'
-            }
-        if req.patient and req.patient.user:
-            try:
-                student = Student.objects.filter(email=req.patient.user.email).first()
-                if student:
-                    request_data['user_info'] = {
-                        'id': student.student_id,
-                        'name': f"{student.lastname}, {student.firstname}"
-                    }
-                else:
-                    faculty = Faculty.objects.filter(user=req.patient.user).first()
-                    if faculty:
-                        request_data['user_info'] = {
-                            'id': faculty.faculty_id,
-                            'name': f"{faculty.user.last_name}, {faculty.user.first_name}"
-                        }
-            except Exception as e:
-                print(f"Error processing mental health record {req.id}: {str(e)}")
-        all_requests.append(request_data)
-
     # Sort all requests by date
     all_requests.sort(key=lambda x: (
         getattr(x['request'], 'date_requested', None) or 
@@ -1092,9 +1058,6 @@ def admin_dashboard_view(request):
         if req_data['type'] == 'emergency':
             date_field = getattr(req_data['request'], 'date_assisted', None)
             status_field = 'emergency' # Custom status for emergency
-        elif req_data['type'] == 'mental':
-            date_field = getattr(req_data['request'], 'date_submitted', None)
-            status_field = getattr(req_data['request'], 'status', None)
         elif req_data['type'] == 'dental':
             date_field = getattr(req_data['request'], 'date_requested', None)
             status_field = 'completed' if getattr(req_data['request'], 'appointed', False) else 'pending'
